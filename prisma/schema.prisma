@@ -1,0 +1,153 @@
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x", "linux-musl-openssl-3.0.x", "debian-openssl-1.1.x"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String   // Simple password for now (or omitted if using just simulation)
+  role      String   @default("OPERATOR") // OPERATOR, BOSS, ENGINEER
+  lastLogin DateTime? // Track login for accountability
+  lastLoginIP String? // Track IP
+  lastLoginCountry String? // Track Country
+  currentPath String? // Real-time activity
+  lastActive DateTime? // Real-time activity
+  image     String?
+  schedule  String?  // JSON string: [{ days: [], start: 0, end: 0 }]
+  tempSchedule String? // JSON string: Override for current week
+  reports   Report[]
+  comments  Comment[]
+  commentReactions CommentReaction[]
+  reactions Reaction[]
+  reportViews ReportView[]
+  tasks     Task[]
+  workSchedules WorkSchedule[]
+  createdAt DateTime @default(now())
+}
+
+model Report {
+  id                 String   @id @default(uuid())
+  operatorId         String
+  operator           User     @relation(fields: [operatorId], references: [id])
+  operatorName       String
+  operatorEmail      String
+  problemDescription String
+  category           String
+  priority           String
+  status             String
+  dateStarted        DateTime
+  dateResolved       DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  comments           Comment[]
+  reactions          Reaction[]
+  views              ReportView[]
+  attachments        Attachment[]
+}
+
+model ReportView {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  reportId  String
+  report    Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  viewedAt  DateTime @default(now())
+
+  @@unique([userId, reportId]) // Count unique viewers
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  content   String
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  reportId  String
+  report    Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  
+  parentId  String?  // For threading
+  parent    Comment? @relation("CommentReplies", fields: [parentId], references: [id])
+  replies   Comment[] @relation("CommentReplies")
+
+  reactions CommentReaction[]
+
+  createdAt DateTime @default(now())
+}
+
+model CommentReaction {
+  id        String   @id @default(uuid())
+  emoji     String
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  commentId String
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([authorId, commentId, emoji])
+}
+
+model Reaction {
+  id        String   @id @default(uuid())
+  emoji     String
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  reportId  String
+  report    Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([authorId, reportId, emoji]) // Prevent duplicate reactions of same type
+}
+
+model Attachment {
+  id        String   @id @default(uuid())
+  url       String
+  type      String   // IMAGE, VIDEO
+  reportId  String
+  report    Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Task {
+  id            String    @id @default(uuid())
+  title         String
+  description   String?
+  userId        String    
+  user          User      @relation(fields: [userId], references: [id])
+  priority      String    @default("MEDIUM") 
+  deadline      String?   
+  scheduledDate String  // YYYY-MM-DD
+  status        String    @default("PENDING") // PENDING, COMPLETED, INCOMPLETE
+  reminderSent  Boolean   @default(false)
+  comment       String?   // Completion comment
+  completedAt   DateTime?
+  createdAt     DateTime  @default(now())
+}
+// TaskLog removed as Task is now the record itself.
+
+model WorkSchedule {
+  id        String   @id @default(uuid())
+  date      DateTime @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  isOverride Boolean @default(false)
+}
+
+model StreamMetric {
+  id        String   @id @default(uuid())
+  channel   String
+  type      String   // BLACK_SCREEN, SILENCE, ERROR, RECOVERY
+  value     Float?   // Duration, error code, level
+  createdAt DateTime @default(now())
+}
+
+model ValidProgram {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  createdAt DateTime @default(now())
+}

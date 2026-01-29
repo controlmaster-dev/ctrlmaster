@@ -1,0 +1,21 @@
+{
+    "name": "Enlace Control Master",
+    "short_name": "EnlaceSys",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#070708",
+    "theme_color": "#070708",
+    "orientation": "portrait",
+    "icons": [
+        {
+            "src": "https://res.cloudinary.com/daivus5rc/image/upload/v1766111600/mid_rznjvg.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "https://res.cloudinary.com/daivus5rc/image/upload/v1766111600/mid_rznjvg.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}
