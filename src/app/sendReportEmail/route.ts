@@ -203,7 +203,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, messageId: data.data?.id, provider: 'resend' })
 
     } catch (resendError) {
-      console.warn('⚠️ Falló el envío con Resend. Iniciando protocolo de respaldo (Nodemailer)...', resendError)
+      console.warn('⚠️ Falló el envío con Resend. Detalles:', resendError)
+      console.warn('Iniciando protocolo de respaldo (Nodemailer)...')
       // No retornamos, dejamos que el código siga hacia abajo (Nodemailer)
     }
 
