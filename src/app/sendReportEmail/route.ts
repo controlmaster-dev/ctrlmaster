@@ -150,7 +150,70 @@ export async function POST(req: Request) {
       </html>
     `;
 
+
+    // ---------------------------------------------------------
+    // INTENTO 1: RESEND (Prioridad)
+    // ---------------------------------------------------------
+    try {
+      console.log('🚀 Intentando enviar vía Resend...')
+
+      // Dynamic import to avoid issues if dependency is missing, though checked package.json
+      const { Resend } = await import('resend')
+
+      if (!process.env.RESEND_API_KEY) throw new Error("No RESEND_API_KEY found")
+
+      const resend = new Resend(process.env.RESEND_API_KEY)
+
+      const recipientsJson = formData.get('recipients') as string;
+      let toAddresses = ['rjimenez@enlace.org', 'ingenieria@enlace.org'];
+
+      if (recipientsJson) {
+        try {
+          const parsed = JSON.parse(recipientsJson);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            toAddresses = parsed;
+          }
+        } catch (e) {
+          console.error("Error parsing recipients for Resend", e);
+        }
+      }
+
+      // Convert Buffer to Array/appropriate format if needed, but Resend node sdk handles Buffer usually.
+      // Checking Resend docs: attachments content can be a node Buffer.
+
+      const data = await resend.emails.send({
+        from: 'Control Master <alertas@resend.dev>', // Usamos dominio de pruebas o configurado
+        to: toAddresses,
+        replyTo: operatorEmail,
+        subject: `Reporte - #${shortReportId}`,
+        html: htmlContent,
+        attachments: [
+          {
+            filename: `reporte_${reportId}.pdf`,
+            content: buffer,
+          },
+        ],
+      })
+
+      if (data.error) {
+        throw new Error(data.error.message)
+      }
+
+      console.log('✅ Correo enviado con ÉXITO vía Resend:', data.data?.id)
+      return NextResponse.json({ success: true, messageId: data.data?.id, provider: 'resend' })
+
+    } catch (resendError) {
+      console.warn('⚠️ Falló el envío con Resend. Iniciando protocolo de respaldo (Nodemailer)...', resendError)
+      // No retornamos, dejamos que el código siga hacia abajo (Nodemailer)
+    }
+
+    // ---------------------------------------------------------
+    // INTENTO 2: NODEMAILER (Respaldo)
+    // ---------------------------------------------------------
+    console.log('🛡️ Usando sistema de respaldo (SMTP Office 365)...')
+
     // Configurar transporter de Nodemailer (Office 365)
+    // ... (sigue el código original)
     const transporter = nodemailer.createTransport({
       host: 'smtp.office365.com',
       port: 587,
