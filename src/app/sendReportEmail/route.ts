@@ -182,7 +182,7 @@ export async function POST(req: Request) {
       // Checking Resend docs: attachments content can be a node Buffer.
 
       const data = await resend.emails.send({
-        from: 'Control Master <noreply@enlacemaster.live>', // Usamos dominio de pruebas o configurado
+        from: 'Control Master <alertas@send.enlacemaster.live>', // Subdominio 'send' verificado + 'alertas' para evitar spam score
         to: toAddresses,
         replyTo: operatorEmail,
         subject: `Reporte - #${shortReportId}`,
