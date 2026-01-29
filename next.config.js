@@ -7,8 +7,8 @@ const nextConfig = {
       "source.unsplash.com",
       "images.unsplash.com",
     ],
-    
   },
+  output: "standalone",
 };
 
 module.exports = nextConfig;
