@@ -177,14 +177,9 @@ export async function POST(req: Request) {
           console.error("Error parsing recipients for Resend", e);
         }
       }
-
-      // Convert Buffer to Array/appropriate format if needed, but Resend node sdk handles Buffer usually.
-      // Checking Resend docs: attachments content can be a node Buffer.
-
       const data = await resend.emails.send({
-        from: 'Control Master <alertas@send.enlacemaster.live>', // Subdominio 'send' verificado + 'alertas' para evitar spam score
+        from: 'Control Master <alertas@enlacemaster.live>',
         to: toAddresses,
-        replyTo: operatorEmail,
         subject: `Reporte - #${shortReportId}`,
         html: htmlContent,
         attachments: [
