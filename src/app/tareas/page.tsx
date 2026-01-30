@@ -170,8 +170,21 @@ function OperatorView({ user }: { user: any }) {
         setLoading(true)
         const dateStr = format(date, 'yyyy-MM-dd')
         // Direct fetch
-        const res = await fetch(`/api/tasks?userId=${user.id}&date=${dateStr}`, { cache: 'no-store' })
-        setTasks(await res.json())
+        try {
+            const res = await fetch(`/api/tasks?userId=${user.id}&date=${dateStr}`, { cache: 'no-store' })
+            if (!res.ok) throw new Error("Failed to fetch")
+
+            const data = await res.json()
+            if (Array.isArray(data)) {
+                setTasks(data)
+            } else {
+                console.error("API returned invalid data format:", data)
+                setTasks([])
+            }
+        } catch (err) {
+            console.error(err)
+            setTasks([])
+        }
         setLoading(false)
     }
 

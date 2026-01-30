@@ -16,18 +16,18 @@ export async function GET(req: Request) {
         let tasks: any[] = []
 
         if (dateStr) {
-            tasks = await prisma.$queryRaw`
-                SELECT * FROM Task 
-                WHERE userId = ${userId} 
-                AND scheduledDate = ${dateStr}
-                ORDER BY createdAt DESC
-            `
+            tasks = await prisma.task.findMany({
+                where: {
+                    userId: userId,
+                    scheduledDate: dateStr
+                },
+                orderBy: { createdAt: 'desc' }
+            })
         } else {
-            tasks = await prisma.$queryRaw`
-                SELECT * FROM Task 
-                WHERE userId = ${userId} 
-                ORDER BY createdAt DESC
-            `
+            tasks = await prisma.task.findMany({
+                where: { userId: userId },
+                orderBy: { createdAt: 'desc' }
+            })
         }
 
         console.log(`[API_GET] Found ${tasks.length} tasks`)
