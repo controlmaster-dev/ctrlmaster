@@ -466,7 +466,83 @@ export default function ReportsPage() {
             )}
           </Card>
         </motion.div>
+
+        {/* Email History Section */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-12 mb-20">
+          <h2 className="text-2xl font-bold text-white mb-6">Historial de Envíos (Resend)</h2>
+          <EmailHistoryCard />
+        </motion.div>
+
       </div>
     </div>
+  )
+}
+
+function EmailHistoryCard() {
+  const [emails, setEmails] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/resend/history')
+      .then(res => res.json())
+      .then(data => {
+        // Resend returns { data: [...] }
+        if (data && Array.isArray(data.data)) {
+          setEmails(data.data.slice(0, 5))
+        }
+      })
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading) return <div className="text-slate-500 text-sm">Cargando historial...</div>
+
+  if (emails.length === 0) {
+    return (
+      <Card className="bg-gradient-to-b from-white/5 via-black/5 to-black/40 backdrop-blur-xl border border-white/5 p-8 text-center rounded-3xl">
+        <p className="text-slate-500">No hay registros de correos enviados recientemente.</p>
+      </Card>
+    )
+  }
+
+  return (
+    <Card className="bg-gradient-to-b from-white/5 via-black/5 to-black/40 backdrop-blur-xl border border-white/5 shadow-2xl overflow-hidden rounded-3xl ring-1 ring-white/5">
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader className="bg-white/[0.02]">
+            <TableRow className="border-white/5 hover:bg-transparent">
+              <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-widest pl-6">Asunto</TableHead>
+              <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Destinatario</TableHead>
+              <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Fecha</TableHead>
+              <TableHead className="text-right text-slate-500 font-bold uppercase text-[10px] tracking-widest pr-6">Estado</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {emails.map((email) => (
+              <TableRow key={email.id} className="border-white/5 hover:bg-white/[0.02] transition-colors">
+                <TableCell className="pl-6 py-4 text-slate-300 font-medium">
+                  {email.subject}
+                </TableCell>
+                <TableCell className="py-4 text-slate-400 text-sm">
+                  {Array.isArray(email.to) ? email.to.join(', ') : email.to}
+                </TableCell>
+                <TableCell className="py-4 text-slate-500 text-xs">
+                  {new Date(email.created_at).toLocaleString()}
+                </TableCell>
+                <TableCell className="py-4 pr-6 text-right">
+                  <Badge variant="outline" className={`
+                                    ${email.last_event === 'delivered' ? 'text-emerald-400 border-emerald-500/20 bg-emerald-500/10' : ''}
+                                    ${email.last_event === 'sent' ? 'text-blue-400 border-blue-500/20 bg-blue-500/10' : ''}
+                                    ${!['delivered', 'sent'].includes(email.last_event) ? 'text-slate-400 border-slate-700' : ''}
+                                `}>
+                    {email.last_event === 'delivered' ? 'Entregado' : (email.last_event === 'sent' ? 'Enviado' : email.last_event)}
+                  </Badge>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </Card>
   )
 }
