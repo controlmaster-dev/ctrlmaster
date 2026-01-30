@@ -27,7 +27,8 @@ const REF_INDEX = 1 // Gabriel
 
 export function getBitcentralUser(date: Date, overrides: Record<string, string> = {}): { name: string, isRotation: boolean, isOverride: boolean } {
     const day = getDay(date)
-    const dateKey = date.toISOString().split('T')[0]
+    const toISO = (d: Date) => (isNaN(d.getTime()) ? '' : d.toISOString().split('T')[0])
+    const dateKey = toISO(date)
 
     // 1. Check DB Override (Vacation Mode)
     if (overrides[dateKey]) {

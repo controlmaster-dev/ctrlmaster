@@ -469,7 +469,7 @@ export default function ReportsPage() {
 
         {/* Email History Section */}
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-12 mb-20">
-          <h2 className="text-2xl font-bold text-white mb-6">Historial de Envíos (Resend)</h2>
+          <h2 className="text-2xl font-bold text-white mb-6">Historial de Envíos</h2>
           <EmailHistoryCard />
         </motion.div>
 

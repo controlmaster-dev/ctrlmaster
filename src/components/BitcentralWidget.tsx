@@ -22,6 +22,7 @@ export function BitcentralWidget({ users }: { users: any[] }) {
 
     // Fetch overrides
     const fetchOverrides = async () => {
+        if (!weekStart || isNaN(weekStart.getTime())) return
         const end = addDays(weekStart, 7)
         const res = await fetch(`/api/schedule?start=${weekStart.toISOString()}&end=${end.toISOString()}`)
         if (res.ok) {
@@ -35,7 +36,7 @@ export function BitcentralWidget({ users }: { users: any[] }) {
     }, [weekStart])
 
     const handleOverride = async (userId: string) => {
-        if (!selectedDate) return
+        if (!selectedDate || isNaN(selectedDate.getTime())) return
         // setLoading(true)
         const res = await fetch('/api/schedule', {
             method: 'POST',
@@ -84,8 +85,10 @@ export function BitcentralWidget({ users }: { users: any[] }) {
                         const info = getDisplayInfo(date)
                         const isToday = isSameDay(date, today)
 
+                        const toISO = (d: Date) => (isNaN(d.getTime()) ? `invalid-${Math.random()}` : d.toISOString())
+
                         return (
-                            <div key={date.toISOString()}
+                            <div key={toISO(date)}
                                 className={`flex items-center justify-between p-3 ${isToday ? 'bg-blue-50 dark:bg-blue-500/10' : ''} hover:bg-slate-50 dark:hover:bg-white/5 transition-colors cursor-pointer group`}
                                 onClick={() => setSelectedDate(date)}
                             >

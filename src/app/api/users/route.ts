@@ -105,27 +105,82 @@ export async function GET(request: Request) {
 
         const currentWeekStart = requestedWeekStart || getZonedWeekStart()
 
+        // NEW: Fetch Active Special Event for this week
+        // We look for an event that fully covers this week or intersects it significantly.
+        // For simplicity: If an event starts <= currentWeekStart and ends >= currentWeekStart
+        // Actually, let's just find ANY active event that overlaps with the 7 days of this week.
+        const weekEnd = new Date(currentWeekStart)
+        if (isNaN(weekEnd.getTime())) {
+            // Fallback to today's week if requested is invalid
+            weekEnd.setTime(new Date().getTime())
+        }
+        weekEnd.setDate(weekEnd.getDate() + 6)
+        const weekEndStr = isNaN(weekEnd.getTime()) ? new Date().toISOString().split('T')[0] : weekEnd.toISOString().split('T')[0]
+
+        const activeEvent = await prisma.specialEvent.findFirst({
+            where: {
+                isActive: true,
+                startDate: { lte: weekEndStr },
+                endDate: { gte: currentWeekStart }
+            }
+        })
+
+        let eventShifts: any[] = []
+        if (activeEvent) {
+            eventShifts = await prisma.specialEventShift.findMany({
+                where: { eventId: activeEvent.id }
+            })
+        }
+
         const mappedUsers = users.map(user => {
             let isAvailable = false
             let scheduleLabel = 'Sin horario'
             let shifts: Shift[] = []
             let isTempSchedule = false
 
-            // 1. Check for TEMPORARY Schedule first (Override for specific week)
-            if (user.tempSchedule) {
+            // 0. Check for SPECIAL EVENT (Marathon Mode) - Highest Priority
+            // Logic: Is there a Special Event active for the requested week?
+            // For simplicity, we check if the requested weekStart is inside an event.
+            if (activeEvent) {
+                // Find shifts for this user in this event
+                const userEventShifts = eventShifts.filter(s => s.userId === user.id)
+
+                if (userEventShifts.length > 0) {
+                    // Filter shifts that belong to this week
+                    const currentWeekDate = new Date(currentWeekStart + 'T12:00:00')
+
+                    const validShifts = userEventShifts.map(s => {
+                        const shiftDate = new Date(s.date + 'T12:00:00')
+                        const diffTime = shiftDate.getTime() - currentWeekDate.getTime()
+                        const diffDays = Math.round(diffTime / (1000 * 3600 * 24))
+
+                        return { ...s, diffDays }
+                    }).filter(s => s.diffDays >= 0 && s.diffDays <= 6)
+
+                    if (validShifts.length > 0) {
+                        shifts = validShifts.map(s => ({
+                            days: [s.diffDays],
+                            start: s.start,
+                            end: s.end
+                        }))
+                        isTempSchedule = true
+                        scheduleLabel = activeEvent.name
+                    }
+                }
+            }
+
+            // 1. Check for TEMPORARY Schedule (Weekly Override)
+            // Only if no Special Event shifts were found/used
+            if (shifts.length === 0 && user.tempSchedule) {
                 try {
                     const parsed = JSON.parse(user.tempSchedule)
 
                     if (Array.isArray(parsed)) {
-                        // Legacy: treat as current week if we are in current week
+                        // Legacy: treat as current week
                         shifts = parsed as Shift[]
                         isTempSchedule = true
                     } else if (typeof parsed === 'object') {
-                        // New Map structure
                         const weekShifts = parsed[currentWeekStart] as Shift[]
-
-                        // CRITICAL: We check if `weekShifts` is NOT undefined to treat it as an override.
-                        // An empty array [] means "No Shifts" (Vacation/Day Off) for that week.
                         if (Array.isArray(weekShifts)) {
                             shifts = weekShifts
                             isTempSchedule = true
@@ -136,7 +191,7 @@ export async function GET(request: Request) {
                 }
             }
 
-            // 2. If no temp, try Permanent DB Schedule
+            // 2. If no temp/event, try Permanent DB Schedule
             if (!isTempSchedule && shifts.length === 0 && user.schedule) {
                 try {
                     const parsedShifts = JSON.parse(user.schedule) as Shift[]

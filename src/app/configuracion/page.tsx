@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Trash2, UserPlus, Settings, Shield, Crown, Search, Archive, Wrench, MapPin } from "lucide-react"
+import { Trash2, UserPlus, Settings, Shield, Crown, Search, Archive, Wrench, MapPin, CalendarDays } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -21,6 +21,7 @@ import { Calendar as CalendarIcon } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { LoginMap } from "@/components/LoginMap"
 import { ActiveUsersWidget } from "@/components/ActiveUsersWidget"
+import { SpecialEventsManager } from "@/components/SpecialEventsManager"
 
 interface User {
     id: string
@@ -49,7 +50,7 @@ export default function ConfigurationPage() {
     const [reports, setReports] = useState<Report[]>([])
     const [loading, setLoading] = useState(true)
     const [isAdmin, setIsAdmin] = useState(false)
-    const [activeTab, setActiveTab] = useState<'users' | 'reports' | 'schedule'>('users')
+    const [activeTab, setActiveTab] = useState<'users' | 'reports' | 'schedule' | 'events'>('users')
 
     const getInitialWeekStart = () => {
         const now = new Date()
@@ -407,6 +408,9 @@ export default function ConfigurationPage() {
                             <button onClick={() => setActiveTab('schedule')} className={`px-5 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${activeTab === 'schedule' ? 'bg-[#FF0C60]/10 text-[#FF0C60]' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}>
                                 <CalendarIcon className="w-4 h-4" /> Horarios
                             </button>
+                            <button onClick={() => setActiveTab('events')} className={`px-5 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${activeTab === 'events' ? 'bg-[#FF0C60]/10 text-[#FF0C60]' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}>
+                                <CalendarDays className="w-4 h-4" /> Eventos
+                            </button>
                             <button onClick={() => setActiveTab('reports')} className={`px-5 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${activeTab === 'reports' ? 'bg-[#FF0C60]/10 text-[#FF0C60]' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}>
                                 <Archive className="w-4 h-4" /> Reportes
                             </button>
@@ -551,6 +555,16 @@ export default function ConfigurationPage() {
                                         onUpdateSchedule={handleScheduleUpdate}
                                     />
                                 </Card>
+                            </motion.div>
+                        ) : activeTab === 'events' ? (
+                            <motion.div
+                                key="events"
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -20 }}
+                                transition={{ duration: 0.2 }}
+                            >
+                                <SpecialEventsManager />
                             </motion.div>
                         ) : (
                             <motion.div

@@ -1,43 +1,38 @@
 import { NextResponse } from 'next/server'
-import { Resend } from 'resend'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
+    console.log("🔍 API /api/resend/history HIT")
     try {
-        if (!process.env.RESEND_API_KEY) {
-            throw new Error("No RESEND_API_KEY confgiured")
+        const apiKey = process.env.RESEND_API_KEY
+        if (!apiKey) {
+            console.error("❌ No RESEND_API_KEY found in environment")
+            return NextResponse.json({ data: [] })
         }
 
-        const resend = new Resend(process.env.RESEND_API_KEY)
+        console.log("🔑 API Key found (starts with):", apiKey.substring(0, 5) + "...")
 
-        // Not supported? Wait, Resend standard API doesn't expose a "list emails" endpoint 
-        // for general retrieval in the free tier easily via SDK unless using specific methods?
-        // Actually, resend.emails.list()?
-        // Let me check if the method exists. If not, I can just mock it or handle it.
-        // Documentation says GET /emails exists. 
+        // Direct fetch to avoid SDK build issues
+        const res = await fetch('https://api.resend.com/emails', {
+            headers: {
+                'Authorization': `Bearer ${apiKey}`
+            }
+        })
 
-        // Attempting to list from SDK
-        // @ts-ignore - The types might be slightly out of date in my mental model, lets rely on 'any' cast if needed or simple call
-        const response = await resend.emails.list ? await resend.emails.list() : null;
-
-        // If the SDK doesn't support list() yet (it was added recently), we might need direct fetch.
-        if (!response) {
-            // Fallback to direct fetch
-            const res = await fetch('https://api.resend.com/emails', {
-                headers: {
-                    'Authorization': `Bearer ${process.env.RESEND_API_KEY}`
-                }
-            })
-            const data = await res.json()
-            return NextResponse.json(data)
+        if (!res.ok) {
+            const text = await res.text()
+            console.error("❌ Resend API Error:", res.status, text)
+            return NextResponse.json({ data: [] })
         }
 
-        return NextResponse.json(response)
+        const data = await res.json()
+        console.log(`✅ Resend History: Found ${data?.data?.length || 0} emails`)
+
+        return NextResponse.json(data)
 
     } catch (error) {
-        console.error("Error fetching Resend history:", error) // Log full error
-        // Return empty list on error to not break UI
+        console.error("❌ Error fetching Resend history:", error)
         return NextResponse.json({ data: [] })
     }
 }

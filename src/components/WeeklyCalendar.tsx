@@ -39,13 +39,18 @@ export function WeeklyCalendar({ operators, onUpdateSchedule, currentWeekStart, 
 
     // Calculate dates for headers
     const weekDates = useMemo(() => {
-        const start = new Date(currentWeekStart + 'T12:00:00') // Avoid timezone shift
+        if (!currentWeekStart) return []
+        const start = new Date(currentWeekStart.includes('T') ? currentWeekStart : currentWeekStart + 'T12:00:00')
+        if (isNaN(start.getTime())) return []
+
         return DAYS.map((d, i) => {
             const date = new Date(start)
             date.setDate(start.getDate() + i)
+            const dayNum = date.getDate()
+            const monthNum = date.getMonth() + 1
             return {
                 name: d,
-                dateStr: date.getDate(), // Just the number
+                dateStr: `${dayNum}/${monthNum.toString().padStart(2, '0')}`,
                 fullDate: date.toISOString().split('T')[0]
             }
         })
@@ -53,8 +58,9 @@ export function WeeklyCalendar({ operators, onUpdateSchedule, currentWeekStart, 
 
     // Auto-Correct Week Alignment (Fix Saturday drift)
     useEffect(() => {
-        if (!onWeekChange) return
+        if (!onWeekChange || !currentWeekStart) return
         const start = new Date(currentWeekStart + 'T12:00:00')
+        if (isNaN(start.getTime())) return // Extra safety
         if (start.getDay() !== 0) {
             console.log("Auto-correcting Week Start from", currentWeekStart)
             const diff = start.getDay()
@@ -146,6 +152,8 @@ export function WeeklyCalendar({ operators, onUpdateSchedule, currentWeekStart, 
         const start = new Date(vacationStart + 'T12:00:00')
         const end = new Date(vacationEnd + 'T12:00:00')
 
+        if (isNaN(start.getTime()) || isNaN(end.getTime())) return
+
         // Group dates by Week Start to handle "Partial Future Weeks"
         const datesByWeek: Record<string, number[]> = {}
 
@@ -229,54 +237,101 @@ export function WeeklyCalendar({ operators, onUpdateSchedule, currentWeekStart, 
     const saveChanges = () => {
         if (!editingState || !onUpdateSchedule) return
         const { originalOpId, dayIndex, shifts } = editingState
-        const originalOp = operators.find(o => o.id === originalOpId)
-        if (!originalOp) return
 
-        // 1. Clean Original
-        const cleanOriginalShifts: Shift[] = []
-        originalOp.shifts?.forEach(s => {
-            if (s.days.includes(dayIndex)) {
-                const remainingDays = s.days.filter(d => d !== dayIndex)
+        // Group new shifts by Target Operator
+        const shiftsByOp: Record<string, EditingShift[]> = {}
+
+        // Initialize with default/original operator shifts just in case
+        shiftsByOp[originalOpId] = []
+
+        shifts.forEach(s => {
+            if (!shiftsByOp[s.targetOpId]) shiftsByOp[s.targetOpId] = []
+            shiftsByOp[s.targetOpId].push(s)
+        })
+
+        // Identify ALL Ops involved (Original + Any new targets)
+        const opsToUpdate = new Set([...Object.keys(shiftsByOp), originalOpId])
+
+        opsToUpdate.forEach(opId => {
+            const op = operators.find(o => o.id === opId)
+            if (!op) return
+
+            // 1. Determine which days are being "Overwritten" by the new edits FOR THIS OPERATOR
+            // Note: If I move a shift FROM Op A TO Op B, Op A loses it, Op B gains it.
+            // But we need to handle "Clearing" properly.
+
+            // Logic:
+            // For the Original Operator (the one we opened):
+            // We must clear 'dayIndex' (the clicked day) because we are definitely processing it.
+            // PLUS we must clear any days that are claimed by shifts remaining assigned to Original Operator?
+            // AND the user might have UNCHECKED days from a multi-day shift.
+
+            // Simpler "Bulk Apply" Logic:
+            // We collect all days mentioned in the 'shifts' array (regardless of target).
+            // These are the days the user is "Touching".
+            // BUT wait, if I move a shift from A -> B on Monday.
+            // A loses Monday. B gains Monday.
+
+            // What if I only unchecked Monday for A?
+            // Then A loses Monday.
+
+            // Correct Logic per Operator:
+            // "shifts" contains the FINAL DESIRED STATE for the days involved in the edit *originated* from dayIndex.
+
+            // Let's define "Days Affected by Edit Context":
+            // It's the set of days that the user explicitly interacted with? 
+            // No, the user sees a list of shifts.
+            // Implicitly, we are overwriting the schedule for the 'selected days' in those shifts.
+
+            // CRITICAL: We also need to clear 'dayIndex' for the originalOpId, 
+            // because if the user deleted all shifts, 'shifts' is empty, 
+            // so we must ensure dayIndex is cleared.
+
+            // So:
+            // 1. Get original shifts for this Op.
+            // 2. Filter out any shift that overlaps with:
+            //    a) 'dayIndex' (only if opId === originalOpId) -> We are definitely editing this day.
+            //    b) Any day included in the NEW shifts assigned to this opId. (Overwrite logic)
+
+            // Wait, if I assign Mon-Tue to Op A.
+            // I should clear Mon-Tue from Op A's existing schedule, then add the new Mon-Tue shift.
+
+            const daysToClear = new Set<number>()
+
+            if (opId === originalOpId) {
+                daysToClear.add(dayIndex)
+            }
+
+            const myNewShifts = shiftsByOp[opId] || []
+            myNewShifts.forEach(s => s.days.forEach(d => daysToClear.add(d)))
+
+            const cleanOriginalShifts: Shift[] = []
+
+            op.shifts?.forEach(s => {
+                // If this shift overlaps with daysToClear, we allow it BUT shrink it (remove affected days)
+                const remainingDays = s.days.filter(d => !daysToClear.has(d))
+
                 if (remainingDays.length > 0) {
                     cleanOriginalShifts.push({ ...s, days: remainingDays })
                 }
-            } else {
-                cleanOriginalShifts.push(s)
-            }
-        })
-
-        // 2. Add back
-        const shiftsForOriginal = shifts.filter(s => s.targetOpId === originalOpId)
-        shiftsForOriginal.forEach(s => {
-            cleanOriginalShifts.push({
-                days: [dayIndex],
-                start: s.start,
-                end: s.end
             })
-        })
-        onUpdateSchedule(originalOpId, cleanOriginalShifts, currentWeekStart)
 
-        // 3. Handle Swaps
-        const swaps = shifts.filter(s => s.targetOpId !== originalOpId)
-        const shiftsByTarget: Record<string, EditingShift[]> = {}
-        swaps.forEach(s => {
-            if (!shiftsByTarget[s.targetOpId]) shiftsByTarget[s.targetOpId] = []
-            shiftsByTarget[s.targetOpId].push(s)
-        })
-
-        Object.keys(shiftsByTarget).forEach(targetId => {
-            const targetOp = operators.find(o => o.id === targetId)
-            if (!targetOp) return
-            const newShiftsForTarget = [...(targetOp.shifts || [])]
-            shiftsByTarget[targetId].forEach(s => {
-                newShiftsForTarget.push({
-                    days: [dayIndex],
-                    start: s.start,
-                    end: s.end
-                })
+            // 3. Add the New Shifts
+            // We need to merge them? `myNewShifts` are EditingShift objects.
+            const finalShifts = [...cleanOriginalShifts]
+            myNewShifts.forEach(s => {
+                if (s.days.length > 0) {
+                    finalShifts.push({
+                        days: s.days,
+                        start: s.start,
+                        end: s.end
+                    })
+                }
             })
-            onUpdateSchedule(targetId, newShiftsForTarget, currentWeekStart)
+
+            onUpdateSchedule(opId, finalShifts, currentWeekStart)
         })
+
         setEditingState(null)
     }
 
@@ -312,8 +367,10 @@ export function WeeklyCalendar({ operators, onUpdateSchedule, currentWeekStart, 
     }
 
     const adjustWeek = (direction: 'prev' | 'next') => {
-        if (!onWeekChange) return
-        const date = new Date(currentWeekStart + 'T12:00:00') // Force Noon to avoid TZ drift
+        if (!onWeekChange || !currentWeekStart) return
+        const date = new Date(currentWeekStart.includes('T') ? currentWeekStart : currentWeekStart + 'T12:00:00') // Force Noon to avoid TZ drift
+        if (isNaN(date.getTime())) return
+
         date.setDate(date.getDate() + (direction === 'next' ? 7 : -7))
 
         // Safety Snap to Sunday (if drifted)
@@ -411,9 +468,35 @@ export function WeeklyCalendar({ operators, onUpdateSchedule, currentWeekStart, 
                                         )
                                     })}
 
-                                    {isEditingEnabled && col.shifts.length === 0 && (
-                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity pointer-events-none">
-                                            {/* Placeholder */}
+                                    {isEditingEnabled && (
+                                        <div className="pt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="w-full border border-dashed border-white/10 hover:bg-white/5 hover:text-white text-xs"
+                                                onClick={() => {
+                                                    // Start editing "First Operator" (placeholder) but with NO existing shifts
+                                                    if (operators.length > 0) {
+                                                        const defaultOp = operators[0]
+                                                        // We trick the state into thinking we are editing this operator's day, but pass empty shifts to start
+                                                        // Actually, we want to PRESERVE existing shifts if any, so we don't wipe them accidentally?
+                                                        // No, handleEditClick filters shifts for the day.
+                                                        // But if we want to ADD, we should open the modal with the CURRENT shifts of the operator?
+                                                        // If we click the "Column" add button, we probably want to add a shift for *someone*.
+                                                        // Let's explicitly trigger a "New Shift" flow.
+
+                                                        // We'll use the first operator as the "Host" for the modal context, 
+                                                        // but we really just want to open the modal and click "Add Shift".
+                                                        handleEditClick(defaultOp, col.dayIndex)
+
+                                                        // Ideally we would auto-trigger 'addNewShiftToEdit' immediately after opening?
+                                                        // We can do that via a separate useEffect or flag, but for now simple open is OK.
+                                                        // Actually, let's open empty.
+                                                    }
+                                                }}
+                                            >
+                                                <Plus className="w-3 h-3 mr-2" /> Agregar
+                                            </Button>
                                         </div>
                                     )}
                                 </div>
@@ -555,7 +638,38 @@ export function WeeklyCalendar({ operators, onUpdateSchedule, currentWeekStart, 
                             {editingState?.shifts.map((shift) => (
                                 <div key={shift.tempId} className="bg-[#18181b] p-5 rounded-2xl border border-white/5 space-y-5 relative group shadow-lg">
 
-                                    <div className="flex justify-between items-start">
+                                    {/* Days Selector */}
+                                    <div className="space-y-2">
+                                        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Días Aplicables</div>
+                                        <div className="flex gap-1 flex-wrap">
+                                            {['D', 'L', 'M', 'M', 'J', 'V', 'S'].map((dayLabel, index) => {
+                                                const isSelected = shift.days.includes(index)
+                                                return (
+                                                    <button
+                                                        key={index}
+                                                        onClick={() => {
+                                                            const newDays = isSelected
+                                                                ? shift.days.filter(d => d !== index)
+                                                                : [...shift.days, index]
+                                                            updateEditingShift(shift.tempId, 'days', newDays)
+                                                        }}
+                                                        className={`
+                                                            w-8 h-8 rounded-lg text-xs font-bold transition-all border
+                                                            ${isSelected
+                                                                ? 'bg-[#FF0C60] text-white border-[#FF0C60] shadow-[0_0_10px_rgba(255,12,96,0.3)]'
+                                                                : 'bg-black/40 text-slate-500 border-white/10 hover:bg-white/5 hover:border-white/20'
+                                                            }
+                                                        `}
+                                                        title={DAYS[index]}
+                                                    >
+                                                        {dayLabel}
+                                                    </button>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    <div className="flex justify-between items-start gap-4">
                                         <div className="space-y-1.5 flex-1">
                                             <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Horario</div>
                                             <div className="flex items-center gap-2 w-full">
@@ -574,7 +688,7 @@ export function WeeklyCalendar({ operators, onUpdateSchedule, currentWeekStart, 
                                                 </Select>
                                             </div>
                                         </div>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-rose-500 hover:bg-rose-500/10 -mr-2" onClick={() => removeShiftFromEdit(shift.tempId)}>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-rose-500 hover:bg-rose-500/10 -mt-1" onClick={() => removeShiftFromEdit(shift.tempId)}>
                                             <Trash2 className="w-4 h-4" />
                                         </Button>
                                     </div>
