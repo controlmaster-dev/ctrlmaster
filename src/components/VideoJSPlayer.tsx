@@ -8,9 +8,10 @@ interface VideoJSPlayerProps {
     url: string;
     title: string;
     variant?: 'default' | 'program' | 'preview';
+    channelLabel?: string;
 }
 
-export function VideoJSPlayer({ url, title, variant = 'default' }: VideoJSPlayerProps) {
+export function VideoJSPlayer({ url, title, variant = 'default', channelLabel }: VideoJSPlayerProps) {
     const videoRef = useRef<HTMLDivElement>(null);
     const playerRef = useRef<any>(null);
 
@@ -269,14 +270,14 @@ export function VideoJSPlayer({ url, title, variant = 'default' }: VideoJSPlayer
 
             {/* Reality Sync Label: Bottom Centered Pill */}
             <div className="absolute bottom-2 inset-x-0 z-40 flex justify-center pointer-events-none">
-                <div className="bg-black/80 px-4 py-0.5 rounded-full border border-white/10 flex items-center gap-2 shadow-2xl backdrop-blur-sm">
+                <div className="bg-black/80 px-3 py-1 rounded-full border border-white/10 flex items-center gap-2 shadow-2xl backdrop-blur-sm">
                     {(isProgram || isPreview) && (
-                        <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${textColor} border-r border-white/20 pr-2 leading-none`}>
-                            {variant === 'program' ? 'PROGRAMA' : variant === 'preview' ? 'PREVIO' : variant}
+                        <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${textColor} border-r border-white/20 pr-2 leading-none`}>
+                            {variant === 'program' ? 'PROGRAMA' : 'PREVIO'}
                         </span>
                     )}
-                    <span className={`text-[10px] font-bold uppercase tracking-tight ${variant !== 'default' ? textColor : 'text-zinc-400'} leading-none`}>
-                        {title}
+                    <span className={`text-[9px] font-bold uppercase tracking-widest ${variant !== 'default' ? textColor : 'text-zinc-300'} leading-none`}>
+                        {channelLabel || title}
                     </span>
                 </div>
             </div>
