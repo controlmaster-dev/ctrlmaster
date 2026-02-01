@@ -273,7 +273,7 @@ export default function OperatorsPage() {
     }
 
     return (
-        <div className="min-h-screen bg-[#070708] text-white font-sans selection:bg-[#FF0C60] selection:text-white">
+        <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-[#FF0C60] selection:text-white bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]">
 
             {/* Glassmorphism Header */}
             <header className="fixed top-0 left-0 right-0 z-50 px-4 md:px-6 py-4 flex justify-between items-center bg-transparent backdrop-blur-xl border-b border-white/5">
@@ -291,7 +291,7 @@ export default function OperatorsPage() {
                                 <span className="hidden md:inline">Ver Calendario Completo</span>
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-6xl bg-[#0f0f11]/95 backdrop-blur-xl border-white/10 text-white p-0 overflow-hidden shadow-2xl">
+                        <DialogContent className="max-w-6xl bg-[#0f0f11]/95 backdrop-blur-xl border-white/10 text-white p-0 overflow-hidden shadow-2xl flex flex-col h-[85vh]">
                             <div className="p-6 border-b border-white/5 flex justify-between items-center">
                                 <div>
                                     <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">Distribución Semanal</h2>
@@ -344,7 +344,7 @@ export default function OperatorsPage() {
                                     )}
                                 </div>
                             </div>
-                            <div className="p-0 md:p-6 h-[80vh] overflow-hidden">
+                            <div className="p-0 md:p-6 flex-1 flex flex-col overflow-hidden">
                                 <WeeklyCalendar
                                     operators={modalOperators}
                                     currentWeekStart={modalWeekStart}
@@ -378,14 +378,23 @@ export default function OperatorsPage() {
                 </div>
             </header >
 
-            <main className="max-w-7xl mx-auto px-4 md:px-6 pt-16 pb-20 md:py-32 space-y-8">
+            <main className="max-w-7xl mx-auto px-4 md:px-6 pt-24 pb-20 md:py-32 space-y-12">
 
-                <div className="flex flex-col md:flex-row justify-between items-end gap-6">
-                    <div>
-                        <h1 className="text-3xl md:text-5xl font-black tracking-tight mb-2 bg-clip-text text-transparent bg-gradient-to-b from-white to-slate-500">
-                            Estado de Operadores
-                        </h1>
-                        <p className="text-slate-400 text-base md:text-lg">Monitoreo en tiempo real de la semana actual.</p>
+                <div className="relative z-10 flex flex-col items-start gap-8 py-8 md:py-12 border-b border-white/5 bg-black/20 backdrop-blur-sm rounded-3xl p-6 md:p-12 overflow-hidden ring-1 ring-white/5">
+                    {/* Background Fade */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-transparent pointer-events-none" />
+
+                    <div className="relative flex flex-col md:flex-row justify-between items-end w-full gap-8">
+                        <div className="space-y-4 max-w-3xl">
+
+                            <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-white tracking-tighter leading-[0.9] drop-shadow-sm select-none">
+                                Operadores <br /><span className="text-transparent bg-clip-text bg-gradient-to-b from-white to-slate-500">en Turno</span>
+                            </h1>
+
+                            <p className="text-slate-400 text-lg md:text-xl font-light tracking-wide max-w-lg leading-relaxed border-l-2 border-white/10 pl-4">
+                                Gestión y monitoreo del personal operativo en tiempo real.
+                            </p>
+                        </div>
                     </div>
 
                     {/* Predictions Widget */}
@@ -397,7 +406,7 @@ export default function OperatorsPage() {
                                     initial={{ opacity: 0, x: 20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ delay: 0.2 + (idx * 0.1) }}
-                                    className="bg-gradient-to-b from-white/10 to-black/40 backdrop-blur-xl border border-white/10 rounded-2xl p-3 md:p-4 flex items-center gap-3 min-w-[220px]"
+                                    className="bg-[#0A0A0B]/80 backdrop-blur-xl border border-white/5 hover:border-white/10 rounded-2xl p-3 md:p-4 flex items-center gap-3 min-w-[220px] shadow-lg group hover:shadow-[0_0_20px_rgba(59,130,246,0.15)] transition-all"
                                 >
                                     <div className="relative">
                                         <Avatar className="w-8 h-8 md:w-10 md:h-10 border border-white/10">
@@ -431,13 +440,13 @@ export default function OperatorsPage() {
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: idx * 0.05 }}
                             >
-                                <Card className={`border-0 relative overflow-hidden h-full backdrop-blur-xl transition-all duration-300 hover:scale-[1.02] ${op.isAvailable ? 'bg-gradient-to-b from-emerald-500/5 via-black/40 to-black/60 ring-1 ring-emerald-500/40 shadow-[0_0_30px_-10px_rgba(16,185,129,0.2)]' : 'bg-gradient-to-b from-white/5 via-black/5 to-black/40 border border-white/5 hover:border-white/20'}`}>
+                                <Card className={`border-0 relative overflow-hidden h-full backdrop-blur-xl transition-all duration-300 hover:scale-[1.02] ${op.isAvailable ? 'bg-[#050505]/80 ring-1 ring-emerald-500/50 shadow-[0_0_40px_-10px_rgba(16,185,129,0.3)]' : 'bg-[#0A0A0B]/60 border border-white/5 hover:border-white/10 hover:shadow-2xl hover:shadow-black/50'}`}>
                                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-20" />
 
                                     <CardContent className="p-5 md:p-6 flex flex-col gap-5">
                                         <div className="flex items-center gap-4">
                                             <div className="relative">
-                                                <Avatar className={`w-14 h-14 md:w-16 md:h-16 border-2 ${op.isAvailable ? 'border-emerald-500/20' : 'border-white/5'}`}>
+                                                <Avatar className={`w-14 h-14 md:w-16 md:h-16 border-2 ${op.isAvailable ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-[#27272a]'}`}>
                                                     <AvatarImage src={op.image} />
                                                     <AvatarFallback className="bg-slate-800 text-lg font-bold">{op.name.charAt(0)}</AvatarFallback>
                                                 </Avatar>
@@ -447,7 +456,7 @@ export default function OperatorsPage() {
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2 mb-1">
                                                     <h3 className="text-lg md:text-xl font-bold truncate">{op.name}</h3>
-                                                    {op.role === 'BOSS' && <Shield className="w-4 h-4 text-[#FF0C60]" />}
+                                                    {op.role === 'BOSS' && <Shield className="w-4 h-4 text-[#FF0C60] drop-shadow-[0_0_8px_rgba(255,12,96,0.6)]" />}
                                                 </div>
                                                 <div className="inline-flex items-center px-2 py-0.5 rounded-full bg-white/5 text-xs font-medium text-slate-400 border border-white/5">
                                                     {op.isAvailable ? <span className="text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]">En Turno Activo</span> : 'Fuera de Turno'}
@@ -461,7 +470,7 @@ export default function OperatorsPage() {
                                             if (activeStats) {
                                                 const { progress, remaining, label } = activeStats
                                                 return (
-                                                    <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-xl p-4 space-y-2 relative overflow-hidden">
+                                                    <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-4 space-y-2 relative overflow-hidden shadow-[inset_0_0_20px_rgba(16,185,129,0.05)]">
                                                         <div className="absolute top-0 left-0 w-full h-full bg-emerald-500/5 blur-xl"></div>
                                                         <div className="relative z-10">
                                                             <div className="flex justify-between text-xs font-medium text-emerald-400">
@@ -469,7 +478,7 @@ export default function OperatorsPage() {
                                                                 <span className="font-mono">{remaining}</span>
                                                             </div>
                                                             <div className="h-1.5 bg-emerald-900/30 rounded-full overflow-hidden mt-2">
-                                                                <div className="h-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)] transition-all duration-1000" style={{ width: `${progress}%` }} />
+                                                                <div className="h-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,1)] transition-all duration-1000" style={{ width: `${progress}%` }} />
                                                             </div>
                                                             <div className="text-[10px] text-emerald-500/60 text-right mt-1 font-mono">{label}</div>
                                                         </div>

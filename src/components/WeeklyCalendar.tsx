@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Plus, Timer, Edit2, ChevronLeft, ChevronRight, User, Trash2, Plane, CalendarDays } from "lucide-react"
+import { Plus, Timer, ChevronLeft, ChevronRight, User, Trash2, Plane, CalendarDays } from "lucide-react"
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
@@ -23,6 +23,7 @@ interface Operator {
     image?: string
     shifts?: Shift[]
     isTempSchedule?: boolean
+    role?: string
 }
 
 interface WeeklyCalendarProps {
@@ -386,118 +387,106 @@ export function WeeklyCalendar({ operators, onUpdateSchedule, currentWeekStart, 
     }
 
     return (
-        <div className="bg-[#050505]/40 backdrop-blur-[40px] md:rounded-3xl border border-white/[0.03] overflow-hidden flex flex-col h-full md:h-[750px] w-full shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] relative font-light tracking-wide">
-            {/* Noise Texture Overlay - Subtle */}
-            <div className="absolute inset-0 z-0 pointer-events-none opacity-[0.02] mix-blend-overlay" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}></div>
-
-            {/* Week Navigation */}
-            <div className="flex flex-col md:flex-row items-center justify-between p-6 bg-gradient-to-b from-white/[0.02] to-transparent border-b border-white/[0.05] gap-4 z-20 sticky top-0 md:relative">
-                <div className="flex items-center gap-2">
-                    <CalendarDays className="w-5 h-5 text-[#FF0C60]" />
-                    <h2 className="text-lg font-bold text-white tracking-wide">Semana del {currentWeekStart}</h2>
-                    {isCurrentRealWeek && <Badge className="bg-[#FF0C60] text-white border-none shadow-[0_0_15px_#FF0C60]">Semana Actual</Badge>}
+        <div className="bg-[#09090b] md:rounded-3xl border border-white/10 overflow-hidden flex flex-col h-full w-full shadow-2xl relative">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row items-center justify-between p-4 md:p-6 border-b border-white/5 bg-[#09090b]/50 backdrop-blur-xl z-20">
+                <div className="flex items-center gap-3">
+                    <div className="bg-gradient-to-br from-[#FF0C60] to-rose-600 w-10 h-10 rounded-xl flex items-center justify-center shadow-lg shadow-rose-500/20">
+                        <CalendarDays className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-bold text-white tracking-tight">Distribución Semanal</h2>
+                        <div className="flex items-center gap-2 text-sm text-slate-400 font-medium">
+                            <span>Semana del {currentWeekStart}</span>
+                            {isCurrentRealWeek && <Badge className="bg-[#FF0C60] text-white border border-white/10 shadow-[0_0_10px_rgba(255,12,96,0.3)]">Semana Actual</Badge>}
+                        </div>
+                    </div>
                 </div>
                 {onWeekChange && (
-                    <div className="flex gap-2 w-full md:w-auto justify-between md:justify-end">
-                        <Button variant="outline" size="sm" onClick={() => adjustWeek('prev')} className="border-white/10 bg-white/5 hover:bg-white/10 hover:text-white backdrop-blur-md rounded-lg"><ChevronLeft className="w-4 h-4 mr-1" /> Anterior</Button>
-                        <Button variant="outline" size="sm" onClick={() => adjustWeek('next')} className="border-white/10 bg-white/5 hover:bg-white/10 hover:text-white backdrop-blur-md rounded-lg">Siguiente <ChevronRight className="w-4 h-4 ml-1" /></Button>
+                    <div className="flex items-center gap-2 w-full md:w-auto mt-4 md:mt-0 bg-[#121214] p-1 rounded-lg border border-white/5">
+                        <Button variant="ghost" size="sm" onClick={() => adjustWeek('prev')} className="text-slate-400 hover:text-white hover:bg-white/5"><ChevronLeft className="w-4 h-4" /></Button>
+                        <div className="h-4 w-[1px] bg-white/10" />
+                        <span className="text-xs font-bold text-slate-300 px-2">Navegar</span>
+                        <div className="h-4 w-[1px] bg-white/10" />
+                        <Button variant="ghost" size="sm" onClick={() => adjustWeek('next')} className="text-slate-400 hover:text-white hover:bg-white/5"><ChevronRight className="w-4 h-4" /></Button>
                     </div>
                 )}
             </div>
 
-            <ScrollArea className="flex-1 w-full z-10">
-                {/* DESKTOP VIEW: Grid (Hidden on Mobile) */}
-                <div className="hidden md:grid grid-cols-7 divide-x divide-white/5 min-h-[600px] bg-[#070708]/20">
-                    {/* Headers */}
-                    <div className="contents">
-                    </div>
-
+            <ScrollArea className="flex-1 w-full bg-[#050505] z-10">
+                {/* Desktop Grid */}
+                <div className="hidden md:grid grid-cols-7 divide-x divide-white/5 h-full min-w-[1000px]">
                     {dayColumns.map((col, i) => {
                         const isToday = isCurrentRealWeek && new Date().getDay() === i
-
-                        // Current Hour for Highlighting
-                        const now = new Date()
-                        const currentHour = now.getHours()
-
                         return (
-                            <div key={col.dayIndex} className={`flex flex-col border-r border-white/[0.02] last:border-r-0 transition-colors duration-500 ${isToday ? 'bg-white/[0.015]' : 'hover:bg-white/[0.01]'}`}>
-                                <div className={`py-5 text-center text-xs font-medium border-b border-white/[0.02] tracking-[0.2em] uppercase ${isToday ? 'text-[#FF0C60]' : 'text-zinc-500'}`}>
-                                    <span className="capitalize block">{col.dateLabel.split(' ')[0]}</span>
-                                    <span className="text-lg opacity-80">{col.dateLabel.split(' ')[1]}</span>
+                            <div key={col.dayIndex} className={`flex flex-col relative group transition-colors ${isToday ? 'bg-white/[0.02]' : 'hover:bg-white/[0.01]'}`}>
+                                {/* Column Header */}
+                                <div className={`sticky top-0 z-10 py-4 text-center border-b border-white/5 backdrop-blur-md ${isToday ? 'bg-[#FF0C60]/5 border-[#FF0C60]/20' : 'bg-[#09090b]/80'}`}>
+                                    <span className={`block text-xs font-black uppercase tracking-widest mb-1 ${isToday ? 'text-[#FF0C60]' : 'text-slate-500'}`}>{col.dateLabel.split(' ')[0]}</span>
+                                    <span className={`text-xl font-light ${isToday ? 'text-white' : 'text-slate-400'}`}>{col.dateLabel.split(' ')[1]}</span>
                                 </div>
 
-                                <div className="p-2 space-y-2 flex-1 relative min-h-[200px]">
+                                <div className="p-3 space-y-3 flex-1 pb-10">
                                     {col.shifts.map((item, idx) => {
-                                        // Is this shift ACTIVE NOW?
-                                        const isActiveNow = isToday && currentHour >= item.shift.start && currentHour < (item.shift.end === 0 ? 24 : item.shift.end)
-
+                                        const isActiveNow = isToday && new Date().getHours() >= item.shift.start && new Date().getHours() < (item.shift.end === 0 ? 24 : item.shift.end)
                                         return (
                                             <motion.div
-                                                initial={{ opacity: 0, scale: 0.95 }}
+                                                initial={{ opacity: 0, scale: 0.9 }}
                                                 animate={{ opacity: 1, scale: 1 }}
                                                 transition={{ delay: idx * 0.05 }}
                                                 key={`${item.op.id}-${idx}`}
                                                 onClick={() => handleEditClick(item.op, col.dayIndex)}
                                                 className={`
-                                                backdrop-blur-md border rounded-xl p-3 
-                                                hover:border-white/20 hover:bg-white/[0.03] transition-all duration-300 group relative overflow-hidden
-                                                cursor-${isEditingEnabled ? 'pointer' : 'default'} shadow-lg
-                                                ${isActiveNow
-                                                        ? 'bg-emerald-500/10 border-emerald-500/50 ring-1 ring-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.15)]'
-                                                        : 'bg-[#121214]/60 border-white/[0.06]'}
-                                            `}
+                                                    relative overflow-hidden rounded-xl border p-3 cursor-pointer transition-all duration-300
+                                                    hover:scale-[1.02] hover:shadow-xl group/card
+                                                    ${isActiveNow
+                                                        ? 'bg-[#000000] border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.15)]'
+                                                        : 'bg-[#121214] border-white/5 hover:border-white/20 shadow-md'}
+                                                `}
                                             >
-                                                <div className="flex items-center gap-2.5 mb-2">
-                                                    <Avatar className="w-7 h-7 border border-white/10 ring-2 ring-transparent group-hover:ring-[#FF0C60]/20 transition-all">
+                                                {/* Active Pulse */}
+                                                {isActiveNow && <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500" />}
+
+                                                <div className="flex items-center gap-3 mb-3">
+                                                    <Avatar className="w-8 h-8 rounded-lg border border-white/10">
                                                         <AvatarImage src={item.op.image} />
-                                                        <AvatarFallback className="text-[10px] bg-slate-800 text-slate-300 font-bold">{item.op.name.charAt(0)}</AvatarFallback>
+                                                        <AvatarFallback className="rounded-lg bg-[#1a1a1e] text-xs font-bold">{item.op.name.charAt(0)}</AvatarFallback>
                                                     </Avatar>
-                                                    <span className="text-xs font-bold text-slate-200 truncate flex-1">{item.op.name}</span>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="text-xs font-bold text-slate-200 truncate">{item.op.name}</div>
+                                                        <div className="text-[10px] text-slate-500 truncate font-medium">
+                                                            {(item.op.role === 'BOSS' || item.op.role === 'Boss') ? 'Operador M' : 'Operador'}
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-mono bg-black/40 rounded-md px-2 py-1.5 w-fit border border-white/5 group-hover:border-[#FF0C60]/20 group-hover:text-[#FF0C60] transition-colors">
-                                                    <Timer className="w-3 h-3" />
-                                                    {formatTime(item.shift.start)} - {formatTime(item.shift.end)}
+
+                                                <div className={`
+                                                    flex items-center justify-between text-[10px] font-mono p-1.5 rounded-lg
+                                                    ${isActiveNow ? 'bg-emerald-500/10 text-emerald-400' : 'bg-black/40 text-slate-400'}
+                                                `}>
+                                                    <span>{formatTime(item.shift.start)}</span>
+                                                    <div className="h-[1px] w-3 bg-current opacity-20" />
+                                                    <span>{formatTime(item.shift.end)}</span>
                                                 </div>
+
                                                 {item.op.isTempSchedule && (
-                                                    <div className="absolute top-2 right-2 w-1.5 h-1.5 bg-[#FF0C60] rounded-full shadow-[0_0_6px_#FF0C60]" title="Horario Modificado" />
-                                                )}
-                                                {isActiveNow && (
-                                                    <div className="absolute top-2 right-2 w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_10px_#10b981] animate-pulse" title="En Vivo" />
+                                                    <div className="absolute top-2 right-2 w-1.5 h-1.5 bg-[#FF0C60] rounded-full animate-pulse shadow-[0_0_6px_#FF0C60]" />
                                                 )}
                                             </motion.div>
                                         )
                                     })}
 
                                     {isEditingEnabled && (
-                                        <div className="pt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="w-full border border-dashed border-white/10 hover:bg-white/5 hover:text-white text-xs"
-                                                onClick={() => {
-                                                    // Start editing "First Operator" (placeholder) but with NO existing shifts
-                                                    if (operators.length > 0) {
-                                                        const defaultOp = operators[0]
-                                                        // We trick the state into thinking we are editing this operator's day, but pass empty shifts to start
-                                                        // Actually, we want to PRESERVE existing shifts if any, so we don't wipe them accidentally?
-                                                        // No, handleEditClick filters shifts for the day.
-                                                        // But if we want to ADD, we should open the modal with the CURRENT shifts of the operator?
-                                                        // If we click the "Column" add button, we probably want to add a shift for *someone*.
-                                                        // Let's explicitly trigger a "New Shift" flow.
-
-                                                        // We'll use the first operator as the "Host" for the modal context, 
-                                                        // but we really just want to open the modal and click "Add Shift".
-                                                        handleEditClick(defaultOp, col.dayIndex)
-
-                                                        // Ideally we would auto-trigger 'addNewShiftToEdit' immediately after opening?
-                                                        // We can do that via a separate useEffect or flag, but for now simple open is OK.
-                                                        // Actually, let's open empty.
-                                                    }
-                                                }}
-                                            >
-                                                <Plus className="w-3 h-3 mr-2" /> Agregar
-                                            </Button>
-                                        </div>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="w-full mt-2 border border-dashed border-white/10 text-slate-500 hover:text-white hover:bg-white/5 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                                            onClick={() => {
+                                                if (operators.length > 0) handleEditClick(operators[0], col.dayIndex)
+                                            }}
+                                        >
+                                            <Plus className="w-3 h-3 mr-2" /> Agregar
+                                        </Button>
                                     )}
                                 </div>
                             </div>
@@ -505,46 +494,42 @@ export function WeeklyCalendar({ operators, onUpdateSchedule, currentWeekStart, 
                     })}
                 </div>
 
-                {/* MOBILE VIEW: Stack (Visible on Mobile) */}
-                <div className="md:hidden flex flex-col gap-8 p-4 w-full pb-20">
+                {/* Mobile View */}
+                <div className="md:hidden flex flex-col gap-6 p-4 w-full pb-20">
                     {dayColumns.map((col, i) => {
                         const isToday = isCurrentRealWeek && new Date().getDay() === i
                         return (
-                            <div key={col.dayIndex} className="space-y-4">
-                                <div className={`flex items-center justify-between sticky top-0 z-10 p-4 rounded-xl backdrop-blur-2xl border border-white/10 shadow-2xl ${isToday ? 'bg-[#FF0C60]/10 border-[#FF0C60]/30 text-[#FF0C60]' : 'bg-[#121214]/80 text-slate-200'}`}>
-                                    <h3 className="font-black text-xl capitalize flex items-baseline gap-2">
+                            <div key={col.dayIndex} className="space-y-3">
+                                <div className={`flex items-center justify-between sticky top-0 z-10 p-3 rounded-xl backdrop-blur-2xl border ${isToday ? 'bg-[#FF0C60]/10 border-[#FF0C60]/30 text-[#FF0C60]' : 'bg-[#121214]/90 border-white/10 text-slate-200'}`}>
+                                    <h3 className="font-bold text-lg capitalize flex items-baseline gap-2">
                                         {col.dateLabel.split(' ')[0]}
-                                        <span className="text-sm opacity-60 font-medium">{col.dateLabel.split(' ')[1]}</span>
+                                        <span className="text-xs opacity-60 font-medium">{col.dateLabel.split(' ')[1]}</span>
                                     </h3>
                                     {isToday && <Badge className="bg-[#FF0C60] text-white border-none shadow-[0_0_10px_#FF0C60]">Hoy</Badge>}
                                 </div>
-
-                                <div className="grid grid-cols-1 gap-3 pl-3 border-l-2 border-dashed border-white/10 group-hover:border-[#FF0C60]/20 transition-colors">
+                                <div className="space-y-2 pl-2">
                                     {col.shifts.length === 0 ? (
-                                        <div className="text-sm text-slate-600 italic py-4 pl-2 flex items-center gap-2">
-                                            <span className="w-1 h-1 rounded-full bg-slate-700" /> Sin turnos asignados
-                                        </div>
+                                        <div className="text-xs text-slate-600 italic py-2 pl-2">Sin turnos asignados</div>
                                     ) : (
                                         col.shifts.map((item, idx) => (
                                             <div
                                                 key={`${item.op.id}-${idx}`}
                                                 onClick={() => handleEditClick(item.op, col.dayIndex)}
-                                                className="bg-[#18181b] border border-white/5 rounded-xl p-4 flex items-center justify-between active:scale-[0.98] transition-all shadow-md active:bg-[#18181b]/80"
+                                                className="bg-[#18181b] border border-white/5 rounded-xl p-3 flex items-center justify-between active:scale-[0.98] transition-all shadow-md"
                                             >
-                                                <div className="flex items-center gap-4">
-                                                    <Avatar className="w-12 h-12 border-2 border-white/5 shadow-inner">
+                                                <div className="flex items-center gap-3">
+                                                    <Avatar className="w-10 h-10 border border-white/10">
                                                         <AvatarImage src={item.op.image} />
-                                                        <AvatarFallback className="text-sm bg-slate-800 font-bold">{item.op.name.charAt(0)}</AvatarFallback>
+                                                        <AvatarFallback className="text-xs bg-slate-800">{item.op.name.charAt(0)}</AvatarFallback>
                                                     </Avatar>
                                                     <div>
-                                                        <div className="font-bold text-base text-slate-100 mb-1">{item.op.name}</div>
-                                                        <div className="text-xs text-slate-400 flex items-center gap-1.5 font-mono bg-black/30 rounded px-2 py-1 w-fit">
+                                                        <div className="font-bold text-sm text-slate-100">{item.op.name}</div>
+                                                        <div className="text-[10px] text-slate-400 font-mono flex items-center gap-1.5">
                                                             <Timer className="w-3 h-3 text-[#FF0C60]" />
                                                             {formatTime(item.shift.start)} - {formatTime(item.shift.end)}
                                                         </div>
                                                     </div>
                                                 </div>
-                                                {isEditingEnabled && <div className="bg-white/5 rounded-full p-2 text-slate-500"><Edit2 className="w-4 h-4" /></div>}
                                             </div>
                                         ))
                                     )}
