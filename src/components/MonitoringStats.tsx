@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Bar, BarChart, ResponsiveContainer, Cell } from "recharts";
-import { AlertTriangle, Activity, Signal, VolumeX } from "lucide-react";
+import { AlertTriangle, Signal, VolumeX, ShieldCheck, Zap } from "lucide-react";
 
 interface Stats {
     uptime: number;
@@ -12,12 +12,111 @@ interface Stats {
     activeChannels: number;
 }
 
-// Mock data for the sparklines
+// Technical sparkline generator
 const generateSparklineData = (count: number) => {
-    return Array.from({ length: 12 }, (_, i) => ({
+    return Array.from({ length: 15 }, (_, i) => ({
         name: i.toString(),
-        value: Math.floor(Math.random() * (count + 10)) + 2
+        value: i === 14 ? count / 2 : Math.floor(Math.random() * (count + 10)) + 5
     }));
+};
+
+// --- PREMUM COMPONENTS ---
+
+const MetricModule = React.memo(({ title, value, subtext, icon: Icon, color, data, barColor }: any) => (
+    <div className="relative group overflow-hidden bg-black/40 border border-white/5 rounded-0 p-5 transition-all duration-500 hover:bg-white/[0.02] hover:border-white/10">
+        {/* Corner Accents */}
+        <div className="absolute top-0 left-0 w-1 h-1 border-t border-l border-white/20" />
+        <div className="absolute bottom-0 right-0 w-1 h-1 border-b border-r border-white/20" />
+
+        <div className="flex justify-between items-start relative z-10">
+            <div>
+                <div className="flex items-center gap-2 mb-2">
+                    <div className={`w-1 h-3 ${barColor || 'bg-white/20'}`} />
+                    <h4 className="text-[9px] font-black uppercase tracking-[0.3em] text-zinc-500">{title}</h4>
+                </div>
+                <div className="text-4xl font-black tracking-tighter text-white font-mono flex items-baseline gap-1">
+                    {value}
+                </div>
+                <div className="text-[9px] text-zinc-600 mt-2 font-mono uppercase tracking-widest flex items-center gap-1.5">
+                    <span className="w-1 h-1 rounded-full bg-zinc-800" />
+                    {subtext}
+                </div>
+            </div>
+            <div className="p-2 rounded-sm bg-white/[0.03] border border-white/5 shadow-inner">
+                <Icon className={`w-4 h-4 ${color}`} />
+            </div>
+        </div>
+
+        {/* Technical Data Stream Sparkline */}
+        <div className="h-14 mt-6 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent z-10 pointer-events-none" />
+            <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data}>
+                    <Bar dataKey="value" radius={[0, 0, 0, 0]} isAnimationActive={false}>
+                        {data.map((_: any, index: number) => (
+                            <Cell
+                                key={`cell-${index}`}
+                                fill={index === data.length - 1 ? (barColor || "#333") : "#1a1a1a"}
+                                className="transition-all duration-500"
+                            />
+                        ))}
+                    </Bar>
+                </BarChart>
+            </ResponsiveContainer>
+        </div>
+    </div>
+));
+
+MetricModule.displayName = "MetricModule";
+
+const ChannelModule = ({ channel }: any) => {
+    const totalErrors = (channel.blackScreen || 0) + (channel.silence || 0);
+    const isCritical = totalErrors > 50;
+    const isWarning = totalErrors > 10;
+
+    return (
+        <div className="bg-[#050505] border border-white/5 p-4 flex flex-col justify-between relative overflow-hidden group hover:border-white/10 transition-colors">
+            {/* Background scanner line effect */}
+            <div className="absolute inset-x-0 top-0 h-[1px] bg-white/5 group-hover:bg-white/10 transition-colors" />
+
+            <div className="flex justify-between items-start mb-4">
+                <div className="flex flex-col">
+                    <span className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.2em] mb-1">PROTO: HLS-V4</span>
+                    <span className="text-sm font-black text-white uppercase tracking-tight font-mono">{channel.name}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 border rounded-sm ${isCritical ? 'border-red-500/50 text-red-500 bg-red-500/5' :
+                        isWarning ? 'border-amber-500/50 text-amber-500 bg-amber-500/5' :
+                            'border-emerald-500/50 text-emerald-500 bg-emerald-500/5'
+                        }`}>
+                        {isCritical ? 'CRÍTICO' : isWarning ? 'AVISO' : 'ESTABLE'}
+                    </div>
+                    <div className={`w-1.5 h-1.5 rounded-full ${isCritical ? 'bg-red-500 animate-pulse' : isWarning ? 'bg-amber-500' : 'bg-emerald-500'} shadow-[0_0_10px_currentColor]`} />
+                </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+                <div className="bg-white/[0.02] border border-white/5 p-2 rounded-sm text-center">
+                    <div className="text-[14px] font-black text-white font-mono">{(channel.blackScreen || 0).toString().padStart(3, '0')}</div>
+                    <div className="text-[7px] text-zinc-500 uppercase tracking-tighter">VIDEO</div>
+                </div>
+                <div className="bg-white/[0.02] border border-white/5 p-2 rounded-sm text-center">
+                    <div className="text-[14px] font-black text-white font-mono">{(channel.silence || 0).toString().padStart(3, '0')}</div>
+                    <div className="text-[7px] text-zinc-500 uppercase tracking-tighter">AUDIO</div>
+                </div>
+                <div className="bg-white/[0.02] border border-white/5 p-2 rounded-sm text-center">
+                    <div className="text-[14px] font-black text-zinc-400 font-mono">{(totalErrors).toString().padStart(3, '0')}</div>
+                    <div className="text-[7px] text-zinc-600 uppercase tracking-tighter">TOTAL</div>
+                </div>
+            </div>
+
+            {/* Micro Density Bar */}
+            <div className="h-[2px] w-full bg-zinc-900 mt-3 flex rounded-full overflow-hidden">
+                <div className="bg-red-500" style={{ width: `${Math.min((channel.blackScreen / 100) * 100, 100)}%` }} />
+                <div className="bg-amber-500" style={{ width: `${Math.min((channel.silence / 100) * 100, 100)}%` }} />
+            </div>
+        </div>
+    );
 };
 
 export function MonitoringStats() {
@@ -31,11 +130,10 @@ export function MonitoringStats() {
 
     const [channelStats, setChannelStats] = useState<any[]>([]);
 
-    // Stable mock data initialized once
     const [trendData] = useState(() => ({
         active: generateSparklineData(20),
-        videoLoss: generateSparklineData(2),
-        silence: generateSparklineData(5)
+        videoLoss: generateSparklineData(50),
+        silence: generateSparklineData(30)
     }));
 
     useEffect(() => {
@@ -46,177 +144,138 @@ export function MonitoringStats() {
                     const data = await res.json();
                     let blackCtx = 0;
                     let silenceCtx = 0;
-
-                    // Data is already unique per channel from API: { name, errors, blackScreen, silence }
                     data.forEach((d: any) => {
                         blackCtx += d.blackScreen || 0;
                         silenceCtx += d.silence || 0;
                     });
-
                     setStats(prev => ({
                         ...prev,
                         blackScreens: blackCtx,
                         silenceEvents: silenceCtx
                     }));
-
                     setChannelStats(data);
                 }
             } catch (e) {
                 console.error(e);
             }
         };
-
         fetchStats();
         const interval = setInterval(fetchStats, 30000);
         return () => clearInterval(interval);
     }, []);
 
-    const MetricCard = ({ title, value, subtext, icon: Icon, color, data, barColor }: any) => (
-        <div className={`bg-gradient-to-b from-white/5 via-black/5 to-black/40 backdrop-blur-xl border-white/5 shadow-lg transition-all duration-300 group relative overflow-hidden rounded-2xl border hover:-translate-y-1 ring-1 ring-white/5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)] flex flex-col justify-between h-40`}>
-            {/* Glow Effect from StatsCard */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-3xl -mr-10 -mt-10 group-hover:bg-white/10 transition-colors pointer-events-none" />
+    return (
+        <div className="flex flex-col h-[85vh] bg-[#020202] text-white relative overflow-hidden">
+            {/* ATMOSPHERIC BACKGROUND */}
+            <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-[120px] -mr-48 -mt-48 pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-[100px] -ml-24 -mb-24 pointer-events-none" />
+            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none" />
 
-            {/* Header */}
-            <div className="flex justify-between items-start mb-2 p-4 pb-0 z-10 relative">
-                <div>
-                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-1">{title}</h4>
-                    <div className="text-3xl font-black tracking-tight text-white">{value}</div>
-                    <div className="text-[10px] font-medium text-zinc-400 mt-1 flex items-center gap-1.5">
-                        <span className={`w-1.5 h-1.5 rounded-full inline-block group-hover:bg-[#FF0C60] transition-colors shrink-0 ${color.replace('text-', 'bg-')}`} />
-                        {subtext}
+            {/* MASTER HEADER SECTION */}
+            <div className="px-10 py-10 border-b border-white/5 relative z-20">
+                <div className="flex justify-between items-end">
+                    <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-3">
+                            <span className="px-2 py-0.5 bg-emerald-500 text-black text-[9px] font-black uppercase tracking-widest rounded-sm">LIVE</span>
+                            <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-[0.4em]">ENLACE CONTROL MASTER // DIVISION LA</span>
+                        </div>
+                        <h1 className="text-6xl font-black tracking-tighter uppercase italic leading-[0.8]" style={{ fontFamily: 'var(--font-lexend)' }}>
+                            ESTADO DEL <span className="text-zinc-600 font-light not-italic">SISTEMA</span>
+                        </h1>
+                    </div>
+                    <div className="hidden md:flex flex-col items-end gap-1 font-mono text-right">
+                        <span className="text-[10px] text-zinc-500 uppercase tracking-widest text-right">INTEGRIDAD GLOBAL DE RED</span>
+                        <div className="flex items-center gap-2">
+                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                            <span className="text-xl font-bold text-white tracking-widest">99.998<span className="text-zinc-600">%</span></span>
+                        </div>
                     </div>
                 </div>
-                <div className={`p-2 rounded-xl bg-white/5 border border-white/5 shadow-inner group-hover:scale-110 transition-transform duration-300`}>
-                    <Icon className={`w-4 h-4 ${color}`} />
+            </div>
+
+            {/* MAIN CONTENT GRID */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-10 space-y-12 relative z-20">
+                {/* GLOBAL METRIC MODULES */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <MetricModule
+                        title="Integridad de Red"
+                        value={`${stats.uptime}%`}
+                        subtext="Estado del Backbone"
+                        icon={Zap}
+                        color="text-emerald-400"
+                        data={trendData.active}
+                        barColor="#10b981"
+                    />
+                    <MetricModule
+                        title="Señales Activas"
+                        value={`${stats.activeChannels}/${stats.totalChannels}`}
+                        subtext="Nodos Sincronizados"
+                        icon={Signal}
+                        color="text-blue-400"
+                        data={trendData.active}
+                        barColor="#3b82f6"
+                    />
+                    <MetricModule
+                        title="Pérdida de Frame"
+                        value={stats.blackScreens}
+                        subtext="Incidencias (24h)"
+                        icon={AlertTriangle}
+                        color="text-red-400"
+                        data={trendData.videoLoss}
+                        barColor="#ef4444"
+                    />
+                    <MetricModule
+                        title="Eventos Audio"
+                        value={stats.silenceEvents}
+                        subtext="Nivel de Silencio"
+                        icon={VolumeX}
+                        color="text-amber-400"
+                        data={trendData.silence}
+                        barColor="#f59e0b"
+                    />
+                </div>
+
+                {/* TELEMETRY MATRIX BLOCK */}
+                <div className="space-y-6">
+                    <div className="flex justify-between items-center border-b border-white/10 pb-4">
+                        <div className="flex items-center gap-4">
+                            <div className="w-4 h-4 rounded-full border-2 border-zinc-800 flex items-center justify-center">
+                                <div className="w-1 h-1 bg-emerald-500 rounded-full animate-ping" />
+                            </div>
+                            <h2 className="text-xs font-black uppercase tracking-[0.4em] text-zinc-400">Matriz de Telemetría Dinámica</h2>
+                        </div>
+                        <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest italic">Escaneando transpondedores...</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-[1px] bg-white/5 border border-white/5">
+                        {channelStats.length === 0 ? (
+                            Array.from({ length: 8 }).map((_, i) => (
+                                <div key={i} className="bg-black h-32 animate-pulse" />
+                            ))
+                        ) : (
+                            channelStats.map((channel) => (
+                                <ChannelModule key={channel.name} channel={channel} />
+                            ))
+                        )}
+                    </div>
                 </div>
             </div>
 
-            {/* Mini Chart */}
-            <div className={`flex-1 w-full h-full min-h-[40px] opacity-60 px-4 pb-2 z-10 relative`}>
-                <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={data}>
-                        <Bar dataKey="value" radius={[2, 2, 0, 0]} isAnimationActive={false}>
-                            {data.map((_: any, index: any) => (
-                                <Cell key={`cell-${index}`} fill={barColor || (index % 2 === 0 ? "#52525b" : "#3f3f46")} />
-                            ))}
-                        </Bar>
-                    </BarChart>
-                </ResponsiveContainer>
-            </div>
-        </div>
-    );
-
-    return (
-        <div className="space-y-6 w-full">
-            {/* Global Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
-                <MetricCard
-                    title="Estado Global"
-                    value={stats.blackScreens === 0 ? "Normal" : "Alerta"}
-                    subtext="Uptime Promedio"
-                    icon={Activity}
-                    color="text-emerald-500"
-                    data={trendData.active}
-                    barColor="#10b981"
-                />
-                <MetricCard
-                    title="Canales Activos"
-                    value={`${stats.activeChannels}/${stats.totalChannels}`}
-                    subtext="En transmisión"
-                    icon={Signal}
-                    color="text-blue-500"
-                    data={trendData.active}
-                    barColor="#3b82f6"
-                />
-                <MetricCard
-                    title="Pérdida de Video"
-                    value={stats.blackScreens}
-                    subtext="Eventos (24h)"
-                    icon={AlertTriangle}
-                    color="text-red-500"
-                    data={trendData.videoLoss}
-                    barColor="#ef4444"
-                />
-                <MetricCard
-                    title="Alertas Silencio"
-                    value={stats.silenceEvents}
-                    subtext="Eventos (24h)"
-                    icon={VolumeX}
-                    color="text-amber-500"
-                    data={trendData.silence}
-                    barColor="#f59e0b"
-                />
-            </div>
-
-            {/* Detailed Channel List */}
-            <div className="bg-gradient-to-b from-white/5 via-black/5 to-black/40 backdrop-blur-xl border border-white/5 rounded-2xl overflow-hidden shadow-lg ring-1 ring-white/5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)]">
-                <div className="px-6 py-4 border-b border-white/5 flex justify-between items-center">
-                    <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-400">Detalle por Canal</h3>
-                    <div className="text-xs text-zinc-500">Últimas 24 horas</div>
+            {/* TECHNICAL FOOTER */}
+            <div className="px-10 py-4 bg-zinc-950/50 border-t border-white/5 flex justify-between items-center text-[9px] font-mono text-zinc-600 uppercase tracking-[0.3em] relative z-20">
+                <div className="flex items-center gap-6">
+                    <span className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-zinc-800 rounded-full" /> Hardware: Enlace-TX3000</span>
+                    <span className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-zinc-800 rounded-full" /> Kernel v5.10.x</span>
+                    <span className="text-emerald-500/50">ENLACE SEGURO ESTABLECIDO</span>
                 </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm text-zinc-400">
-                        <thead className="text-xs uppercase bg-black/20 text-zinc-500">
-                            <tr>
-                                <th className="px-6 py-3 font-semibold">Canal</th>
-                                <th className="px-6 py-3 font-semibold text-center">Estado</th>
-                                <th className="px-6 py-3 font-semibold text-right">Pérdida de Video</th>
-                                <th className="px-6 py-3 font-semibold text-right">Silencios</th>
-                                <th className="px-6 py-3 font-semibold text-right">Total Eventos</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/5">
-                            {channelStats.length === 0 ? (
-                                <tr>
-                                    <td colSpan={5} className="px-6 py-8 text-center text-zinc-600 italic">
-                                        Esperando datos...
-                                    </td>
-                                </tr>
-                            ) : (
-                                channelStats.map((channel) => {
-                                    const totalErrors = (channel.blackScreen || 0) + (channel.silence || 0);
-                                    let statusColor = "bg-emerald-500";
-                                    let statusText = "Estable";
-
-                                    if (totalErrors > 50) {
-                                        statusColor = "bg-red-500";
-                                        statusText = "Crítico";
-                                    } else if (totalErrors > 10) {
-                                        statusColor = "bg-amber-500";
-                                        statusText = "Advertencia";
-                                    }
-
-                                    return (
-                                        <tr key={channel.name} className="hover:bg-white/5 transition-colors group">
-                                            <td className="px-6 py-4 font-medium text-white flex items-center gap-3">
-                                                <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
-                                                {channel.name}
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide text-white shadow-sm ${statusColor} bg-opacity-20 border border-white/10`}>
-                                                    <span className={`w-1.5 h-1.5 rounded-full ${statusColor}`}></span>
-                                                    {statusText}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <span className={`${channel.blackScreen > 0 ? 'text-red-400 font-bold' : ''}`}>
-                                                    {channel.blackScreen || 0}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <span className={`${channel.silence > 0 ? 'text-amber-400 font-bold' : ''}`}>
-                                                    {channel.silence || 0}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-right font-mono text-white/50 group-hover:text-white transition-colors">
-                                                {totalErrors}
-                                            </td>
-                                        </tr>
-                                    );
-                                })
-                            )}
-                        </tbody>
-                    </table>
+                <div className="flex gap-8">
+                    <div className="flex items-center gap-2">
+                        <span>SINC. UDP:</span>
+                        <span className="text-zinc-400">ACTIVA</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-zinc-400">
+                        <span>{new Date().toISOString()}</span>
+                    </div>
                 </div>
             </div>
         </div>
