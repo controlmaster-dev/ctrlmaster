@@ -32,7 +32,7 @@ export async function POST(req: Request) {
 
         if (report) {
             const commenter = newComment.author.name
-            const reportUrl = `https://enlacemaster.live/reportes?id=${reportId}`
+            const reportUrl = `https://enlacecr.dev/reportes?id=${reportId}`
             const brandColor = "#FF0C60"
             const bgColor = "#09090b"
             const cardColor = "#18181b"

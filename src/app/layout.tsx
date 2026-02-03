@@ -9,7 +9,7 @@ import { MobileInstallPrompt } from "@/components/MobileInstallPrompt";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://enlacemaster.live"),
+  metadataBase: new URL("https://enlacecr.dev"),
   title: {
     default: "Control Master",
     template: "%s | Control Master",
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "es_ES",
-    url: "https://enlacemaster.live",
+    url: "https://enlacecr.dev",
     title: "Control Master",
     description: "Sistema gestión y monitoreo para Enlace Canal 23.",
     siteName: "Control Master",

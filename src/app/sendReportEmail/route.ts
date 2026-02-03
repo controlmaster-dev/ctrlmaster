@@ -178,7 +178,7 @@ export async function POST(req: Request) {
         }
       }
       const data = await resend.emails.send({
-        from: 'Control Master <alertas@enlacemaster.live>',
+        from: 'Control Master <alertas@enlacecr.dev>',
         to: toAddresses,
         subject: `Reporte - #${shortReportId}`,
         html: htmlContent,
