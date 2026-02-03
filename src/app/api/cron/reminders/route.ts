@@ -72,30 +72,38 @@ export async function GET() {
                 html: `
                     <!DOCTYPE html>
                     <html>
-                    <body style="margin: 0; padding: 0; background-color: #f4f4f5; font-family: Arial, sans-serif;">
-                        <div style="max-width: 100%; margin: 0 auto; background-color: #ffffff;">
-                            <div style="background-color: #FF0C60; padding: 20px; text-align: left;">
-                                <h1 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: bold;">Recordatorio de Tarea</h1>
+                    <body style="margin: 0; padding: 0; background-color: #09090b; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #f8fafc;">
+                        <div style="max-width: 600px; margin: 40px auto; background-color: #18181b; border: 1px solid #27272a; border-radius: 16px; overflow: hidden;">
+                            <!-- Accent Bar -->
+                            <div style="height: 4px; background-color: #FF0C60;"></div>
+                            
+                            <!-- Header -->
+                            <div style="padding: 32px 40px; border-bottom: 1px solid #27272a;">
+                                <span style="color: #FF0C60; font-weight: 800; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; display: block; margin-bottom: 8px;">RECORDATORIO</span>
+                                <h1 style="margin: 0; color: #f8fafc; font-size: 20px; font-weight: 700; letter-spacing: -0.5px;">Notificación de Tarea</h1>
                             </div>
-                            <div style="padding: 30px;">
-                                <p style="font-size: 16px; color: #333333; margin-top: 0;">Hola <strong>${task.userName}</strong>,</p>
-                                <p style="font-size: 15px; color: #555555; line-height: 1.5;">
-                                    Esta tarea debería estar lista en menos de <strong>1 minuto</strong> y deberías terminarla pronto.
+
+                            <div style="padding: 40px;">
+                                <p style="font-size: 16px; color: #f8fafc; margin: 0 0 12px 0;">Hola <strong>${task.userName}</strong>,</p>
+                                <p style="font-size: 15px; color: #94a3b8; line-height: 1.6; margin: 0 0 32px 0;">
+                                    Te recordamos que la siguiente tarea tiene un tiempo límite de entrega inminente (menos de 1 minuto).
                                 </p>
                                 
-                                <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 20px; margin: 25px 0;">
-                                    <h2 style="margin: 0 0 10px 0; font-size: 18px; color: #111827;">${task.title}</h2>
-                                    <p style="margin: 0; font-size: 14px; color: #4b5563;">
-                                        Prioridad: <span style="font-weight: 600; color: #111827;">${priorityLabel}</span>
-                                    </p>
+                                <div style="background-color: rgba(255, 255, 255, 0.03); border: 1px solid #27272a; border-radius: 12px; padding: 24px; margin-bottom: 32px;">
+                                    <h2 style="margin: 0 0 12px 0; font-size: 18px; color: #f8fafc; font-weight: 700;">${task.title}</h2>
+                                    <div style="font-size: 13px; color: #94a3b8;">
+                                        Prioridad: <span style="font-weight: 600; color: #FF0C60;">${priorityLabel}</span>
+                                        ${task.deadline ? ` • Hora Límite: <span style="font-weight: 600; color: #f8fafc;">${task.deadline}</span>` : ''}
+                                    </div>
                                 </div>
                                 
-                                <div style="margin-top: 30px;">
-                                    <a href="http://94.72.126.17:3000/tareas?openTask=${task.id}" style="background-color: #000000; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-size: 14px; font-weight: bold;">Ver Tarea</a>
+                                <div style="text-align: center;">
+                                    <a href="https://enlacecr.dev/tareas?openTask=${task.id}" style="background-color: #FF0C60; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 9999px; font-size: 14px; font-weight: 600; display: inline-block; box-shadow: 0 4px 12px rgba(255, 12, 96, 0.2);">Ver Detalles</a>
                                 </div>
                             </div>
-                            <div style="padding: 20px; background-color: #fafafa; border-top: 1px solid #eeeeee;">
-                                <p style="margin: 0; font-size: 12px; color: #999999;">Sistema de Control Master</p>
+
+                            <div style="padding: 32px 40px; background-color: #121214; border-top: 1px solid #27272a; text-align: center;">
+                                <p style="margin: 0; font-size: 12px; color: #94a3b8;">Sistema de Control Master • Enlace</p>
                             </div>
                         </div>
                     </body>

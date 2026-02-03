@@ -42,37 +42,39 @@ export async function POST(req: Request) {
             const emailTemplate = (title: string, message: string, ctaText: string, ctaUrl: string) => `
                 <!DOCTYPE html>
                 <html>
-                <body style="margin: 0; padding: 0; background-color: ${bgColor}; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
-                    <div style="max-width: 600px; margin: 0 auto; background-color: ${cardColor}; border-radius: 16px; overflow: hidden; margin-top: 40px; border: 1px solid #27272a;">
+                <body style="margin: 0; padding: 0; background-color: ${bgColor}; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                    <div style="max-width: 600px; margin: 40px auto; background-color: ${cardColor}; border-radius: 16px; overflow: hidden; border: 1px solid #27272a;">
+                        <!-- Accent Bar -->
+                        <div style="height: 4px; background-color: ${brandColor};"></div>
+                        
                         <!-- Header -->
-                        <div style="background-color: ${bgColor}; padding: 20px; text-align: center; border-bottom: 1px solid #27272a;">
-                            <span style="color: ${brandColor}; font-weight: bold; font-size: 20px; letter-spacing: 1px;">ENLACE</span>
+                        <div style="padding: 32px 40px; border-bottom: 1px solid #27272a;">
+                            <span style="color: ${brandColor}; font-weight: 800; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; display: block; margin-bottom: 8px;">ENLACE</span>
+                            <h1 style="color: ${textColor}; margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.5px;">${title}</h1>
                         </div>
                         
                         <!-- Content -->
-                        <div style="padding: 40px 30px;">
-                            <h1 style="color: ${textColor}; margin: 0 0 20px 0; font-size: 24px; text-align: center;">${title}</h1>
-                            
-                            <p style="color: ${mutedColor}; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">
+                        <div style="padding: 40px;">
+                            <p style="color: ${mutedColor}; font-size: 15px; line-height: 1.6; margin: 0 0 24px 0;">
                                 ${message}
                             </p>
 
-                            <div style="background-color: ${bgColor}; border-left: 4px solid ${brandColor}; padding: 16px; margin-bottom: 32px; border-radius: 4px;">
-                                <p style="margin: 0; color: ${textColor}; font-style: italic;">"${content}"</p>
+                            <div style="background-color: rgba(255, 255, 255, 0.03); border-left: 3px solid ${brandColor}; padding: 20px; margin-bottom: 32px; border-radius: 0 8px 8px 0;">
+                                <p style="margin: 0; color: ${textColor}; font-style: italic; font-size: 15px; line-height: 1.6;">"${content}"</p>
                             </div>
 
                             <div style="text-align: center;">
-                                <a href="${ctaUrl}" style="background-color: ${brandColor}; color: white; padding: 14px 32px; border-radius: 9999px; text-decoration: none; font-weight: 600; display: inline-block;">
+                                <a href="${ctaUrl}" style="background-color: ${brandColor}; color: white; padding: 14px 32px; border-radius: 9999px; text-decoration: none; font-weight: 600; font-size: 14px; display: inline-block; box-shadow: 0 4px 12px rgba(255, 12, 96, 0.2);">
                                     ${ctaText}
                                 </a>
                             </div>
                         </div>
 
                         <!-- Footer -->
-                        <div style="padding: 20px; text-align: center; background-color: ${bgColor}; border-top: 1px solid #27272a;">
+                        <div style="padding: 32px 40px; text-align: center; background-color: #121214; border-top: 1px solid #27272a;">
                             <p style="margin: 0; color: ${mutedColor}; font-size: 12px;">
                                 Sistema de Reportes e Incidencias<br/>
-                                © 2025 Enlace Canal 23
+                                <span style="opacity: 0.7;">© ${new Date().getFullYear()} Enlace - Control Master</span>
                             </p>
                         </div>
                     </div>

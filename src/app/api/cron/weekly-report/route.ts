@@ -234,23 +234,39 @@ async function generateAndSendReport(recipients: string[], mode: 'CURRENT' | 'LA
             to: recipients,
             subject: `Reporte de Rendimiento: ${format(start, "d MMM")} - ${format(end, "d MMM")}`,
             html: `
-                <div style="font-family: 'Helvetica Neue', Arial, sans-serif; color: #333; max-width: 600px;">
-                    <h2 style="color: #333; border-bottom: 2px solid #FF0C60; padding-bottom: 10px;">Reporte Semanal Generado</h2>
-                    <p style="font-size: 14px; line-height: 1.6; color: #555;">
-                        Adjunto encontrará el reporte de rendimiento del equipo de Control Master correspondiente al periodo:
-                    </p>
-                    <p style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; font-weight: bold; color: #333;">
-                        ${format(start, "d 'de' MMMM", { locale: es })} - ${format(end, "d 'de' MMMM", { locale: es })}
-                    </p>
-                    <p style="font-size: 14px; color: #555;">
-                        Este documento contiene el desglose detallado de tareas completadas, pendientes y justificadas por operador.
-                    </p>
-                    <br>
-                    <div style="font-size: 11px; color: #999; border-top: 1px solid #eee; padding-top: 10px;">
-                        Sistema de Control Master - Enlace<br>
-                        Este mensaje fue enviado automáticamente. No responda a este correo.
+                <!DOCTYPE html>
+                <html>
+                <body style="margin:0; padding:0; background-color:#09090b; font-family:'Inter',sans-serif; color:#f8fafc;">
+                    <div style="max-width:600px; margin:40px auto; background-color:#18181b; border:1px solid #27272a; border-radius:16px; overflow:hidden;">
+                        <!-- Accent Bar -->
+                        <div style="height:4px; background-color:#FF0C60;"></div>
+                        
+                        <!-- Header -->
+                        <div style="padding:32px 40px; border-bottom:1px solid #27272a;">
+                            <span style="color:#FF0C60; font-weight:800; font-size:12px; letter-spacing:2px; text-transform:uppercase; display:block; margin-bottom:8px;">ANALITYCS</span>
+                            <h1 style="margin:0; color:#f8fafc; font-size:20px; font-weight:700;">Reporte de Rendimiento Semanal</h1>
+                        </div>
+
+                        <div style="padding:40px;">
+                            <p style="font-size:15px; color:#94a3b8; margin:0 0(24px) 0; line-height:1.6;">
+                                Se ha generado el reporte consolidado de rendimiento correspondiente al periodo:
+                            </p>
+                            
+                            <div style="background-color:rgba(255,255,255,0.03); border:1px solid #27272a; border-radius:12px; padding:20px; margin-bottom:32px; text-align:center;">
+                                <span style="color:#f8fafc; font-weight:600;">${format(start, "d 'de' MMMM", { locale: es })} - ${format(end, "d 'de' MMMM", { locale: es })}</span>
+                            </div>
+
+                            <p style="font-size:14px; color:#94a3b8; line-height:1.6; margin-bottom:32px;">
+                                El documento adjunto contiene el análisis detallado de cumplimiento, tareas completadas y métricas de rendimiento por operador.
+                            </p>
+                        </div>
+
+                        <div style="padding:32px 40px; background-color:#121214; border-top:1px solid #27272a; text-align:center;">
+                            <p style="margin:0; font-size:12px; color:#94a3b8;">Sistema de Control Master • Generado Automáticamente</p>
+                        </div>
                     </div>
-                </div>
+                </body>
+                </html>
             `,
             attachments: [
                 {

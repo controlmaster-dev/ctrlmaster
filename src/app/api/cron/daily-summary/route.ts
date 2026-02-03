@@ -42,14 +42,22 @@ export async function GET() {
         let htmlContent = `
             <!DOCTYPE html>
             <html>
-            <body style="margin: 0; padding: 0; background-color: #f4f4f5; font-family: Arial, sans-serif;">
-                <div style="max-width: 100%; margin: 0 auto; background-color: #ffffff;">
-                    <div style="background-color: #ef4444; padding: 20px; text-align: left;">
-                        <h1 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: bold;">Resumen de Incumplimiento Diario</h1>
+            <body style="margin: 0; padding: 0; background-color: #09090b; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #f8fafc;">
+                <div style="max-width: 600px; margin: 40px auto; background-color: #18181b; border: 1px solid #27272a; border-radius: 16px; overflow: hidden;">
+                    <!-- Accent Bar -->
+                    <div style="height: 4px; background-color: #ef4444;"></div>
+                    
+                    <!-- Header -->
+                    <div style="padding: 32px 40px; border-bottom: 1px solid #27272a;">
+                        <span style="color: #ef4444; font-weight: 800; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; display: block; margin-bottom: 8px;">CONTROL MASTER</span>
+                        <h1 style="margin: 0; color: #f8fafc; font-size: 20px; font-weight: 700; letter-spacing: -0.5px;">Resumen de Incumplimiento Diario</h1>
+                        <p style="margin: 8px 0 0 0; color: #94a3b8; font-size: 14px;">Reporte para el día ${dateStr}</p>
                     </div>
-                    <div style="padding: 30px;">
-                        <p style="font-size: 15px; color: #333333; margin-top: 0;">Las siguientes tareas programadas para hoy <strong>${dateStr}</strong> no fueron marcadas como completadas:</p>
-                        <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 25px 0;">
+
+                    <div style="padding: 40px;">
+                        <p style="font-size: 15px; color: #94a3b8; margin: 0 0 32px 0; line-height: 1.6;">
+                            Las siguientes tareas programadas no fueron marcadas como completadas al cierre de la jornada:
+                        </p>
         `
 
         // Priority Translation Helper
@@ -60,16 +68,16 @@ export async function GET() {
 
         userMap.forEach((tasks, userName) => {
             htmlContent += `
-                <div style="margin-bottom: 30px;">
-                    <h2 style="margin: 0 0 15px 0; color: #111827; font-size: 18px; border-bottom: 2px solid #ef4444; padding-bottom: 8px; display: inline-block;">${userName}</h2>
+                <div style="margin-bottom: 40px;">
+                    <h2 style="margin: 0 0 16px 0; color: #f8fafc; font-size: 16px; font-weight: 700; border-bottom: 1px solid #27272a; padding-bottom: 8px;">${userName}</h2>
                     <table style="width: 100%; border-collapse: collapse;">
                         ${tasks.map(t => `
                             <tr>
-                                <td style="padding: 12px 0; border-bottom: 1px solid #f3f4f6;">
-                                    <div style="font-size: 15px; font-weight: 600; color: #1f2937;">${t.title}</div>
-                                    <div style="font-size: 13px; color: #6b7280; margin-top: 4px;">
-                                        Prioridad: <span style="color: #374151;">${getPriorityLabel(t.priority)}</span>
-                                        ${t.deadline ? ` • Hora: <span style="font-weight: 500;">${t.deadline}</span>` : ''}
+                                <td style="padding: 16px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.03);">
+                                    <div style="font-size: 15px; font-weight: 600; color: #f8fafc;">${t.title}</div>
+                                    <div style="font-size: 13px; color: #94a3b8; margin-top: 6px;">
+                                        Prioridad: <span style="color: #ef4444; font-weight: 500;">${getPriorityLabel(t.priority)}</span>
+                                        ${t.deadline ? ` • Hora: <span style="font-weight: 500; color: #f8fafc;">${t.deadline}</span>` : ''}
                                     </div>
                                 </td>
                             </tr>
@@ -81,8 +89,8 @@ export async function GET() {
 
         htmlContent += `
                     </div>
-                    <div style="padding: 20px; background-color: #fafafa; border-top: 1px solid #eeeeee;">
-                        <p style="margin: 0; font-size: 12px; color: #999999;">Reporte generado automáticamente • Sistema de Control Master</p>
+                    <div style="padding: 32px 40px; background-color: #121214; border-top: 1px solid #27272a; text-align: center;">
+                        <p style="margin: 0; font-size: 12px; color: #94a3b8;">Reporte generado automáticamente • Sistema de Control Master</p>
                     </div>
                 </div>
             </body>

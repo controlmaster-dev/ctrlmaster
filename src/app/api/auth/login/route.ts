@@ -61,46 +61,48 @@ export async function POST(req: Request) {
                 to: 'knunez@enlace.org',
                 subject: '🛡️ Seguridad: Inicio de Sesión Inusual Detectado',
                 html: `
-                    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #09090b; color: #e2e8f0; border-radius: 12px; overflow: hidden; border: 1px solid #27272a;">
-                        <div style="background-color: #f43f5e; padding: 24px; text-align: center;">
-                            <h1 style="margin: 0; color: #fff; font-size: 24px; font-weight: 700;">Alerta de Seguridad</h1>
+                    <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 40px auto; background-color: #09090b; color: #f8fafc; border-radius: 16px; overflow: hidden; border: 1px solid #27272a;">
+                        <!-- Accent Bar (Red for Security) -->
+                        <div style="height: 4px; background-color: #ef4444;"></div>
+
+                        <div style="padding: 32px 40px; border-bottom: 1px solid #27272a;">
+                            <span style="color: #ef4444; font-weight: 800; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; display: block; margin-bottom: 8px;">SEGURIDAD</span>
+                            <h1 style="margin: 0; color: #f8fafc; font-size: 20px; font-weight: 700; letter-spacing: -0.5px;">Inicio de Sesión Inusual</h1>
                         </div>
-                        <div style="padding: 32px;">
-                            <p style="font-size: 16px; margin-bottom: 24px;">Hemos detectado un intento de acceso a tu cuenta administrativa desde una ubicación fuera de lo habitual.</p>
+
+                        <div style="padding: 40px;">
+                            <p style="font-size: 15px; margin: 0 0 24px 0; color: #94a3b8; line-height: 1.6;">Hemos detectado un acceso a tu cuenta administrativa desde una ubicación fuera de lo habitual.</p>
                             
-                            <div style="background-color: #18181b; padding: 20px; border-radius: 8px; border: 1px solid #3f3f46; margin-bottom: 24px;">
+                            <div style="background-color: #18181b; padding: 24px; border-radius: 12px; border: 1px solid #27272a; margin-bottom: 32px;">
                                 <table style="width: 100%; border-collapse: collapse;">
                                     <tr>
-                                        <td style="padding: 8px 0; color: #a1a1aa; width: 100px;">Usuario</td>
-                                        <td style="padding: 8px 0; color: #fff; font-weight: 600;">${user.name}</td>
+                                        <td style="padding: 10px 0; color: #94a3b8; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; width: 110px;">Usuario</td>
+                                        <td style="padding: 10px 0; color: #f8fafc; font-weight: 600; font-size: 14px;">${user.name}</td>
                                     </tr>
                                     <tr>
-                                        <td style="padding: 8px 0; color: #a1a1aa;">Rol</td>
-                                        <td style="padding: 8px 0; color: #fff;">${user.role}</td>
+                                        <td style="padding: 10px 0; color: #94a3b8; font-size: 13px; text-transform: uppercase;">Ubicación</td>
+                                        <td style="padding: 10px 0; color: #ef4444; font-weight: 700; font-size: 14px;">${country}</td>
                                     </tr>
                                     <tr>
-                                        <td style="padding: 8px 0; color: #a1a1aa;">Ubicación</td>
-                                        <td style="padding: 8px 0; color: #f43f5e; font-weight: 700;">${country}</td>
+                                        <td style="padding: 10px 0; color: #94a3b8; font-size: 13px; text-transform: uppercase;">Dirección IP</td>
+                                        <td style="padding: 10px 0; font-family: monospace; color: #f8fafc; font-size: 13px;">${ip}</td>
                                     </tr>
                                     <tr>
-                                        <td style="padding: 8px 0; color: #a1a1aa;">IP Address</td>
-                                        <td style="padding: 8px 0; code; font-family: monospace; color: #e2e8f0;">${ip}</td>
-                                    </tr>
-                                    <tr>
-                                        <td style="padding: 8px 0; color: #a1a1aa;">Fecha</td>
-                                        <td style="padding: 8px 0; color: #fff;">${new Date().toLocaleString('es-CR', { timeZone: 'America/Costa_Rica' })}</td>
+                                        <td style="padding: 10px 0; color: #94a3b8; font-size: 13px; text-transform: uppercase;">Fecha</td>
+                                        <td style="padding: 10px 0; color: #f8fafc; font-size: 14px;">${new Date().toLocaleString('es-CR', { timeZone: 'America/Costa_Rica' })}</td>
                                     </tr>
                                 </table>
                             </div>
 
-                            <p style="font-size: 14px; color: #a1a1aa; margin-bottom: 24px;">Si tú realizaste este inicio de sesión (por ejemplo, usando una VPN), puedes ignorar este mensaje.</p>
+                            <p style="font-size: 14px; color: #71717a; margin-bottom: 32px; font-style: italic;">Si no fuiste tú, por favor contacta al equipo de ingeniería de inmediato.</p>
                             
                             <div style="text-align: center;">
-                                <a href="https://enlacesys.com/security" style="display: inline-block; background-color: #f43f5e; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 14px;">Revisar Actividad</a>
+                                <a href="https://enlacecr.dev/security" style="display: inline-block; background-color: #ef4444; color: white; padding: 14px 32px; border-radius: 9999px; text-decoration: none; font-weight: 600; font-size: 14px; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);">Revisar Actividad</a>
                             </div>
                         </div>
-                        <div style="background-color: #18181b; padding: 16px; text-align: center; font-size: 12px; color: #71717a; border-top: 1px solid #27272a;">
-                            &copy; ${new Date().getFullYear()} Enlace Control Master.
+
+                        <div style="background-color: #121214; padding: 24px; text-align: center; font-size: 12px; color: #71717a; border-top: 1px solid #27272a;">
+                            &copy; ${new Date().getFullYear()} Enlace - Control Master
                         </div>
                     </div>
                  `
