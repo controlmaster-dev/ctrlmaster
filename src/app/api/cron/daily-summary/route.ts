@@ -49,9 +49,9 @@ export async function GET() {
                 <meta name="supported-color-schemes" content="dark only">
                 <style>
                     :root { color-scheme: dark only; supported-color-schemes: dark only; }
-                    body { margin: 0; padding: 0; background-color: #09090b !important; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #f8fafc; -webkit-font-smoothing: antialiased; }
-                    .main-table { background-color: #09090b !important; }
-                    .container { max-width: 600px; margin: 0 auto; background-color: #18181b !important; border-radius: 16px; overflow: hidden; border: 1px solid #27272a; }
+                    body { margin: 0; padding: 0; background-color: #000000 !important; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #f8fafc; -webkit-font-smoothing: antialiased; }
+                    .outer-wrapper { background-color: #000000 !important; }
+                    .container { max-width: 600px; width: 100%; margin: 0 auto; background-color: #18181b !important; border-radius: 16px; overflow: hidden; border: 1px solid #27272a; }
                     .accent-bar { height: 4px; background-color: #ef4444; }
                     .header { padding: 32px 40px; border-bottom: 1px solid #27272a; text-align: left; }
                     .brand { color: #ef4444; font-weight: 800; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; display: block; margin-bottom: 8px; }
@@ -70,27 +70,30 @@ export async function GET() {
                     .footer-text { margin: 0; font-size: 11px; color: #94a3b8; line-height: 1.5; }
                     
                     @media only screen and (max-width: 600px) {
-                        .container { width: 100% !important; max-width: 100% !important; border-radius: 0 !important; border: none !important; }
+                        .outer-padding { padding: 16px !important; }
+                        .container { border-radius: 16px !important; }
                         .content, .header, .footer { padding: 24px !important; }
                     }
                 </style>
             </head>
-            <body bgcolor="#09090b">
-                <table class="main-table" width="100%" border="0" cellspacing="0" cellpadding="0" bgcolor="#09090b" style="table-layout: fixed;">
+            <body bgcolor="#000000">
+                <table class="outer-wrapper" width="100%" border="0" cellspacing="0" cellpadding="0" bgcolor="#000000" style="table-layout: fixed;">
                     <tr>
-                        <td align="center" style="padding: 40px 0;">
-                            <div class="container" bgcolor="#18181b">
-                                <div class="accent-bar"></div>
-                                <div class="header">
-                                    <span class="brand">CONTROL MASTER</span>
-                                    <h1 class="title">Resumen de Incumplimiento Diario</h1>
-                                    <p class="subtitle">Reporte para el día ${dateStr}</p>
-                                </div>
+                        <td align="center" class="outer-padding" style="padding: 40px 10px;">
+                            <table class="container" width="600" border="0" cellspacing="0" cellpadding="0" bgcolor="#18181b" style="max-width: 600px; width: 100%; border-radius: 16px; border: 1px solid #27272a;">
+                                <tr>
+                                    <td>
+                                        <div class="accent-bar"></div>
+                                        <div class="header">
+                                            <span class="brand">CONTROL MASTER</span>
+                                            <h1 class="title">Resumen de Incumplimiento Diario</h1>
+                                            <p class="subtitle">Reporte para el día ${dateStr}</p>
+                                        </div>
 
-                                <div class="content">
-                                    <p class="intro">
-                                        Las siguientes tareas programadas no fueron marcadas como completadas al cierre de la jornada:
-                                    </p>
+                                        <div class="content">
+                                            <p class="intro">
+                                                Las siguientes tareas programadas no fueron marcadas como completadas al cierre de la jornada:
+                                            </p>
         `
 
         // Priority Translation Helper
@@ -121,14 +124,16 @@ export async function GET() {
         })
 
         htmlContent += `
-                                </div>
-                                <div class="footer" bgcolor="#121214">
-                                    <p class="footer-text">
-                                        Reporte generado automáticamente<br/>
-                                        <span style="opacity: 0.6;">© ${new Date().getFullYear()} Enlace - Control Master</span>
-                                    </p>
-                                </div>
-                            </div>
+                                        </div>
+                                        <div class="footer" bgcolor="#121214">
+                                            <p class="footer-text">
+                                                Reporte generado automáticamente<br/>
+                                                <span style="opacity: 0.6;">© ${new Date().getFullYear()} Enlace - Control Master</span>
+                                            </p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
                         </td>
                     </tr>
                 </table>
