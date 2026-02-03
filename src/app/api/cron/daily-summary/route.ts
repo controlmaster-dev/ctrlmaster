@@ -41,23 +41,56 @@ export async function GET() {
 
         let htmlContent = `
             <!DOCTYPE html>
-            <html>
-            <body style="margin: 0; padding: 0; background-color: #09090b; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #f8fafc;">
-                <div style="max-width: 600px; margin: 40px auto; background-color: #18181b; border: 1px solid #27272a; border-radius: 16px; overflow: hidden;">
-                    <!-- Accent Bar -->
-                    <div style="height: 4px; background-color: #ef4444;"></div>
+            <html lang="es">
+            <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <meta name="color-scheme" content="dark only">
+                <meta name="supported-color-schemes" content="dark only">
+                <style>
+                    :root { color-scheme: dark only; supported-color-schemes: dark only; }
+                    body { margin: 0; padding: 0; background-color: #09090b !important; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #f8fafc; -webkit-font-smoothing: antialiased; }
+                    .main-table { background-color: #09090b !important; }
+                    .container { max-width: 600px; margin: 0 auto; background-color: #18181b !important; border-radius: 16px; overflow: hidden; border: 1px solid #27272a; }
+                    .accent-bar { height: 4px; background-color: #ef4444; }
+                    .header { padding: 32px 40px; border-bottom: 1px solid #27272a; text-align: left; }
+                    .brand { color: #ef4444; font-weight: 800; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; display: block; margin-bottom: 8px; }
+                    .title { margin: 0; color: #f8fafc; font-size: 20px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.2; }
+                    .subtitle { margin: 8px 0 0 0; color: #94a3b8; font-size: 13px; font-weight: 400; }
+                    .content { padding: 40px; }
+                    .intro { font-size: 14px; color: #94a3b8; margin: 0 0 32px 0; line-height: 1.6; text-align: left; }
+                    .operator-section { margin-bottom: 40px; }
+                    .operator-name { margin: 0 0 16px 0; color: #f8fafc; font-size: 15px; font-weight: 700; border-bottom: 1px solid #27272a; padding-bottom: 8px; text-align: left; }
+                    .task-table { width: 100%; border-collapse: collapse; }
+                    .task-row td { padding: 16px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.03); }
+                    .task-title { font-size: 14px; font-weight: 600; color: #f8fafc; text-align: left; }
+                    .task-meta { font-size: 12px; color: #94a3b8; margin-top: 6px; text-align: left; }
+                    .priority-tag { color: #ef4444; font-weight: 600; }
+                    .footer { padding: 32px 40px; background-color: #121214; border-top: 1px solid #27272a; text-align: center; }
+                    .footer-text { margin: 0; font-size: 11px; color: #94a3b8; line-height: 1.5; }
                     
-                    <!-- Header -->
-                    <div style="padding: 32px 40px; border-bottom: 1px solid #27272a;">
-                        <span style="color: #ef4444; font-weight: 800; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; display: block; margin-bottom: 8px;">CONTROL MASTER</span>
-                        <h1 style="margin: 0; color: #f8fafc; font-size: 20px; font-weight: 700; letter-spacing: -0.5px;">Resumen de Incumplimiento Diario</h1>
-                        <p style="margin: 8px 0 0 0; color: #94a3b8; font-size: 14px;">Reporte para el día ${dateStr}</p>
-                    </div>
+                    @media only screen and (max-width: 600px) {
+                        .container { width: 100% !important; max-width: 100% !important; border-radius: 0 !important; border: none !important; }
+                        .content, .header, .footer { padding: 24px !important; }
+                    }
+                </style>
+            </head>
+            <body bgcolor="#09090b">
+                <table class="main-table" width="100%" border="0" cellspacing="0" cellpadding="0" bgcolor="#09090b" style="table-layout: fixed;">
+                    <tr>
+                        <td align="center" style="padding: 40px 0;">
+                            <div class="container" bgcolor="#18181b">
+                                <div class="accent-bar"></div>
+                                <div class="header">
+                                    <span class="brand">CONTROL MASTER</span>
+                                    <h1 class="title">Resumen de Incumplimiento Diario</h1>
+                                    <p class="subtitle">Reporte para el día ${dateStr}</p>
+                                </div>
 
-                    <div style="padding: 40px;">
-                        <p style="font-size: 15px; color: #94a3b8; margin: 0 0 32px 0; line-height: 1.6;">
-                            Las siguientes tareas programadas no fueron marcadas como completadas al cierre de la jornada:
-                        </p>
+                                <div class="content">
+                                    <p class="intro">
+                                        Las siguientes tareas programadas no fueron marcadas como completadas al cierre de la jornada:
+                                    </p>
         `
 
         // Priority Translation Helper
@@ -68,16 +101,16 @@ export async function GET() {
 
         userMap.forEach((tasks, userName) => {
             htmlContent += `
-                <div style="margin-bottom: 40px;">
-                    <h2 style="margin: 0 0 16px 0; color: #f8fafc; font-size: 16px; font-weight: 700; border-bottom: 1px solid #27272a; padding-bottom: 8px;">${userName}</h2>
-                    <table style="width: 100%; border-collapse: collapse;">
+                <div class="operator-section">
+                    <h2 class="operator-name">${userName}</h2>
+                    <table class="task-table" width="100%">
                         ${tasks.map(t => `
-                            <tr>
-                                <td style="padding: 16px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.03);">
-                                    <div style="font-size: 15px; font-weight: 600; color: #f8fafc;">${t.title}</div>
-                                    <div style="font-size: 13px; color: #94a3b8; margin-top: 6px;">
-                                        Prioridad: <span style="color: #ef4444; font-weight: 500;">${getPriorityLabel(t.priority)}</span>
-                                        ${t.deadline ? ` • Hora: <span style="font-weight: 500; color: #f8fafc;">${t.deadline}</span>` : ''}
+                            <tr class="task-row">
+                                <td align="left">
+                                    <div class="task-title">${t.title}</div>
+                                    <div class="task-meta">
+                                        Prioridad: <span class="priority-tag">${getPriorityLabel(t.priority)}</span>
+                                        ${t.deadline ? ` • Hora: <span style="color: #f8fafc;">${t.deadline}</span>` : ''}
                                     </div>
                                 </td>
                             </tr>
@@ -88,11 +121,17 @@ export async function GET() {
         })
 
         htmlContent += `
-                    </div>
-                    <div style="padding: 32px 40px; background-color: #121214; border-top: 1px solid #27272a; text-align: center;">
-                        <p style="margin: 0; font-size: 12px; color: #94a3b8;">Reporte generado automáticamente • Sistema de Control Master</p>
-                    </div>
-                </div>
+                                </div>
+                                <div class="footer" bgcolor="#121214">
+                                    <p class="footer-text">
+                                        Reporte generado automáticamente<br/>
+                                        <span style="opacity: 0.6;">© ${new Date().getFullYear()} Enlace - Control Master</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
             </body>
             </html>
         `

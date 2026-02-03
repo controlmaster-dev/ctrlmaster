@@ -68,87 +68,98 @@ export async function POST(req: Request) {
       white: '#FFFFFF'
     };
 
-    // Template HTML Premium Dark
+    // Template HTML Premium Dark (Mobile Optimized)
     const htmlContent = `
       <!DOCTYPE html>
-      <html>
+      <html lang="es">
       <head>
+        <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="color-scheme" content="dark only">
+        <meta name="supported-color-schemes" content="dark only">
         <style>
-          body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: ${COLORS.background}; margin: 0; padding: 0; color: ${COLORS.text}; }
-          .container { max-width: 600px; margin: 40px auto; background: ${COLORS.card}; border: 1px solid ${COLORS.border}; border-radius: 16px; overflow: hidden; }
+          :root { color-scheme: dark only; supported-color-schemes: dark only; }
+          body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: ${COLORS.background} !important; margin: 0; padding: 0; color: ${COLORS.text}; -webkit-font-smoothing: antialiased; }
+          .container { max-width: 600px; margin: 0 auto; background: ${COLORS.card} !important; border: 1px solid ${COLORS.border}; border-radius: 16px; overflow: hidden; }
           .accent-bar { height: 4px; background: ${COLORS.primary}; }
           .header { padding: 32px 40px; text-align: left; border-bottom: 1px solid ${COLORS.border}; }
           .header h1 { margin: 0; font-size: 20px; font-weight: 700; color: ${COLORS.text}; letter-spacing: -0.5px; }
-          .header .brand { color: ${COLORS.primary}; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; block: block; }
+          .header .brand { color: ${COLORS.primary}; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; display: block; }
           .content { padding: 40px; }
           .data-grid { width: 100%; border-collapse: collapse; margin-bottom: 32px; }
           .data-row td { padding: 12px 0; border-bottom: 1px solid ${COLORS.border}; }
-          .label { color: ${COLORS.textMuted}; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; width: 140px; }
-          .value { color: ${COLORS.text}; font-size: 15px; font-weight: 500; }
-          .status-badge { display: inline-block; padding: 4px 12px; border-radius: 9999px; background: rgba(255, 12, 96, 0.1); color: ${COLORS.primary}; border: 1px solid rgba(255, 12, 96, 0.2); font-size: 12px; font-weight: 600; }
+          .label { color: ${COLORS.textMuted}; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; width: 120px; }
+          .value { color: ${COLORS.text}; font-size: 14px; font-weight: 500; }
+          .status-badge { display: inline-block; padding: 4px 12px; border-radius: 9999px; background: rgba(255, 12, 96, 0.1); color: ${COLORS.primary}; border: 1px solid rgba(255, 12, 96, 0.2); font-size: 12px; font-weight: 600; text-transform: capitalize; }
           .footer { padding: 32px 40px; background: #121214; text-align: center; border-top: 1px solid ${COLORS.border}; }
-          .footer p { color: ${COLORS.textMuted}; font-size: 12px; margin: 4px 0; }
+          .footer p { color: ${COLORS.textMuted}; font-size: 11px; margin: 4px 0; }
           .attachment-info { background: rgba(255,255,255,0.03); border: 1px dashed ${COLORS.border}; border-radius: 12px; padding: 20px; text-align: center; margin-top: 24px; }
           
           @media only screen and (max-width: 600px) {
-            .container { margin: 0; border-radius: 0; border: none; }
-            .content, .header, .footer { padding: 24px; }
+            .container { margin: 0 !important; border-radius: 0 !important; border: none !important; width: 100% !important; max-width: 100% !important; }
+            .content, .header, .footer { padding: 24px !important; }
+            .label { width: 100px !important; }
           }
         </style>
       </head>
-      <body>
-        <div class="container">
-          <div class="accent-bar"></div>
-          <div class="header">
-            <span class="brand">Control Master</span>
-            <h1>Reporte de Incidencia</h1>
-          </div>
-          
-          <div class="content">
-            <p style="margin-bottom: 32px; font-size: 15px; line-height: 1.6; color: ${COLORS.textMuted};">
-              Se ha generado un nuevo reporte en el sistema de monitoreo. A continuación los detalles técnicos procesados.
-            </p>
-            
-            <table class="data-grid">
-              <tr class="data-row">
-                <td class="label">ID Reporte</td>
-                <td class="value" style="font-family: monospace;">#${shortReportId}</td>
-              </tr>
-              <tr class="data-row">
-                <td class="label">Operador</td>
-                <td class="value">
-                  ${operatorName}<br>
-                  <span style="font-size: 13px; color: ${COLORS.textMuted}; font-weight: 400;">${operatorEmail}</span>
-                </td>
-              </tr>
-              <tr class="data-row">
-                <td class="label">Categoría</td>
-                <td class="value">${formattedCategories}</td>
-              </tr>
-              <tr class="data-row">
-                <td class="label">Canal</td>
-                <td class="value">${priority}</td>
-              </tr>
-              <tr class="data-row" style="border-bottom: none;">
-                <td class="label" style="padding-top: 20px;">Estado</td>
-                <td class="value" style="padding-top: 20px;">
-                  <span class="status-badge">${formattedStatus}</span>
-                </td>
-              </tr>
-            </table>
-            
-            <div class="attachment-info">
-              <p style="color: ${COLORS.text}; font-size: 13px; margin: 0; font-weight: 500;">Documentación PDF Adjunta</p>
-              <p style="color: ${COLORS.textMuted}; font-size: 12px; margin: 4px 0 0 0;">El reporte completo se encuentra disponible en los archivos adjuntos.</p>
-            </div>
-          </div>
+      <body bgcolor="${COLORS.background}">
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" bgcolor="${COLORS.background}" style="table-layout: fixed;">
+          <tr>
+            <td align="center" style="padding: 40px 0;">
+              <div class="container" bgcolor="${COLORS.card}">
+                <div class="accent-bar"></div>
+                <div class="header">
+                  <span class="brand">Control Master</span>
+                  <h1>Reporte de Incidencia</h1>
+                </div>
+                
+                <div class="content">
+                  <p style="margin-bottom: 32px; font-size: 14px; line-height: 1.6; color: ${COLORS.textMuted}; text-align: left;">
+                    Se ha generado un nuevo reporte en el sistema de monitoreo. A continuación los detalles técnicos procesados.
+                  </p>
+                  
+                  <table class="data-grid" width="100%">
+                    <tr class="data-row">
+                      <td class="label">ID Reporte</td>
+                      <td class="value" style="font-family: monospace;">#${shortReportId}</td>
+                    </tr>
+                    <tr class="data-row">
+                      <td class="label">Operador</td>
+                      <td class="value">
+                        ${operatorName}<br>
+                        <span style="font-size: 12px; color: ${COLORS.textMuted}; font-weight: 400;">${operatorEmail}</span>
+                      </td>
+                    </tr>
+                    <tr class="data-row">
+                      <td class="label">Categoría</td>
+                      <td class="value">${formattedCategories}</td>
+                    </tr>
+                    <tr class="data-row">
+                      <td class="label">Canal</td>
+                      <td class="value">${priority}</td>
+                    </tr>
+                    <tr class="data-row" style="border-bottom: none;">
+                      <td class="label" style="padding-top: 20px;">Estado</td>
+                      <td class="value" style="padding-top: 20px;">
+                        <span class="status-badge">${formattedStatus}</span>
+                      </td>
+                    </tr>
+                  </table>
+                  
+                  <div class="attachment-info" bgcolor="rgba(255,255,255,0.03)">
+                    <p style="color: ${COLORS.text}; font-size: 13px; margin: 0; font-weight: 600;">Documentación PDF Adjunta</p>
+                    <p style="color: ${COLORS.textMuted}; font-size: 12px; margin: 4px 0 0 0;">El reporte completo se encuentra disponible en los archivos adjuntos.</p>
+                  </div>
+                </div>
 
-          <div class="footer">
-            <p>&copy; ${new Date().getFullYear()} Enlace - Control Master</p>
-            <p style="font-size: 11px; opacity: 0.7;">Este es un mensaje automatizado generado por el sistema.</p>
-          </div>
-        </div>
+                <div class="footer" bgcolor="#121214">
+                  <p>&copy; ${new Date().getFullYear()} Enlace - Control Master</p>
+                  <p style="font-size: 10px; opacity: 0.6;">Este es un mensaje automatizado generado por el sistema.</p>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </table>
       </body>
       </html>
     `;

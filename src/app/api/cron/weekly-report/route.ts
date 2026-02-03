@@ -235,36 +235,69 @@ async function generateAndSendReport(recipients: string[], mode: 'CURRENT' | 'LA
             subject: `Reporte de Rendimiento: ${format(start, "d MMM")} - ${format(end, "d MMM")}`,
             html: `
                 <!DOCTYPE html>
-                <html>
-                <body style="margin:0; padding:0; background-color:#09090b; font-family:'Inter',sans-serif; color:#f8fafc;">
-                    <div style="max-width:600px; margin:40px auto; background-color:#18181b; border:1px solid #27272a; border-radius:16px; overflow:hidden;">
-                        <!-- Accent Bar -->
-                        <div style="height:4px; background-color:#FF0C60;"></div>
+                <html lang="es">
+                <head>
+                    <meta charset="utf-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <meta name="color-scheme" content="dark only">
+                    <meta name="supported-color-schemes" content="dark only">
+                    <style>
+                        :root { color-scheme: dark only; supported-color-schemes: dark only; }
+                        body { margin: 0; padding: 0; background-color: #09090b !important; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #f8fafc; -webkit-font-smoothing: antialiased; }
+                        .main-table { background-color: #09090b !important; }
+                        .container { max-width: 600px; margin: 0 auto; background-color: #18181b !important; border-radius: 16px; overflow: hidden; border: 1px solid #27272a; }
+                        .accent-bar { height: 4px; background-color: #FF0C60; }
+                        .header { padding: 32px 40px; border-bottom: 1px solid #27272a; text-align: left; }
+                        .brand { color: #FF0C60; font-weight: 800; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; display: block; margin-bottom: 8px; }
+                        .title { margin: 0; color: #f8fafc; font-size: 20px; font-weight: 700; }
+                        .content { padding: 40px; }
+                        .intro { font-size: 14px; color: #94a3b8; margin: 0 0 24px 0; line-height: 1.6; text-align: left; }
+                        .date-box { background-color: rgba(255, 255, 255, 0.03); border: 1px solid #27272a; border-radius: 12px; padding: 20px; margin-bottom: 32px; text-align: center; }
+                        .date-text { color: #f8fafc; font-weight: 600; font-size: 14px; }
+                        .footer { padding: 32px 40px; background-color: #121214; border-top: 1px solid #27272a; text-align: center; }
+                        .footer-text { margin: 0; font-size: 11px; color: #94a3b8; line-height: 1.5; }
                         
-                        <!-- Header -->
-                        <div style="padding:32px 40px; border-bottom:1px solid #27272a;">
-                            <span style="color:#FF0C60; font-weight:800; font-size:12px; letter-spacing:2px; text-transform:uppercase; display:block; margin-bottom:8px;">ANALITYCS</span>
-                            <h1 style="margin:0; color:#f8fafc; font-size:20px; font-weight:700;">Reporte de Rendimiento Semanal</h1>
-                        </div>
+                        @media only screen and (max-width: 600px) {
+                            .container { width: 100% !important; max-width: 100% !important; border-radius: 0 !important; border: none !important; }
+                            .content, .header, .footer { padding: 24px !important; }
+                        }
+                    </style>
+                </head>
+                <body bgcolor="#09090b">
+                    <table class="main-table" width="100%" border="0" cellspacing="0" cellpadding="0" bgcolor="#09090b" style="table-layout: fixed;">
+                        <tr>
+                            <td align="center" style="padding: 40px 0;">
+                                <div class="container" bgcolor="#18181b">
+                                    <div class="accent-bar"></div>
+                                    <div class="header">
+                                        <span class="brand">ANALYTICS</span>
+                                        <h1 class="title">Reporte de Rendimiento Semanal</h1>
+                                    </div>
 
-                        <div style="padding:40px;">
-                            <p style="font-size:15px; color:#94a3b8; margin:0 0(24px) 0; line-height:1.6;">
-                                Se ha generado el reporte consolidado de rendimiento correspondiente al periodo:
-                            </p>
-                            
-                            <div style="background-color:rgba(255,255,255,0.03); border:1px solid #27272a; border-radius:12px; padding:20px; margin-bottom:32px; text-align:center;">
-                                <span style="color:#f8fafc; font-weight:600;">${format(start, "d 'de' MMMM", { locale: es })} - ${format(end, "d 'de' MMMM", { locale: es })}</span>
-                            </div>
+                                    <div class="content">
+                                        <p class="intro">
+                                            Se ha generado el reporte consolidado de rendimiento correspondiente al periodo:
+                                        </p>
+                                        
+                                        <div class="date-box" bgcolor="rgba(255, 255, 255, 0.03)">
+                                            <span class="date-text">${format(start, "d 'de' MMMM", { locale: es })} - ${format(end, "d 'de' MMMM", { locale: es })}</span>
+                                        </div>
 
-                            <p style="font-size:14px; color:#94a3b8; line-height:1.6; margin-bottom:32px;">
-                                El documento adjunto contiene el análisis detallado de cumplimiento, tareas completadas y métricas de rendimiento por operador.
-                            </p>
-                        </div>
+                                        <p class="intro" style="margin-bottom: 0; font-size: 13px;">
+                                            El documento adjunto contiene el análisis detallado de cumplimiento, tareas completadas y métricas de rendimiento por operador.
+                                        </p>
+                                    </div>
 
-                        <div style="padding:32px 40px; background-color:#121214; border-top:1px solid #27272a; text-align:center;">
-                            <p style="margin:0; font-size:12px; color:#94a3b8;">Sistema de Control Master • Generado Automáticamente</p>
-                        </div>
-                    </div>
+                                    <div class="footer" bgcolor="#121214">
+                                        <p class="footer-text">
+                                            Sistema de Control Master • Generado Automáticamente<br/>
+                                            <span style="opacity: 0.6;">© ${new Date().getFullYear()} Enlace - Control Master</span>
+                                        </p>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
                 </body>
                 </html>
             `,

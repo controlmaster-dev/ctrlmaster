@@ -71,41 +71,79 @@ export async function GET() {
                 subject: `Recordatorio: ${task.title}`,
                 html: `
                     <!DOCTYPE html>
-                    <html>
-                    <body style="margin: 0; padding: 0; background-color: #09090b; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #f8fafc;">
-                        <div style="max-width: 600px; margin: 40px auto; background-color: #18181b; border: 1px solid #27272a; border-radius: 16px; overflow: hidden;">
-                            <!-- Accent Bar -->
-                            <div style="height: 4px; background-color: #FF0C60;"></div>
+                    <html lang="es">
+                    <head>
+                        <meta charset="utf-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <meta name="color-scheme" content="dark only">
+                        <meta name="supported-color-schemes" content="dark only">
+                        <style>
+                            :root { color-scheme: dark only; supported-color-schemes: dark only; }
+                            body { margin: 0; padding: 0; background-color: #09090b !important; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #f8fafc; -webkit-font-smoothing: antialiased; }
+                            .main-table { background-color: #09090b !important; }
+                            .container { max-width: 600px; margin: 0 auto; background-color: #18181b !important; border-radius: 16px; overflow: hidden; border: 1px solid #27272a; }
+                            .accent-bar { height: 4px; background-color: #FF0C60; }
+                            .header { padding: 32px 40px; border-bottom: 1px solid #27272a; text-align: left; }
+                            .brand { color: #FF0C60; font-weight: 800; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; display: block; margin-bottom: 8px; }
+                            .title { margin: 0; color: #f8fafc; font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+                            .content { padding: 40px; }
+                            .greeting { font-size: 15px; color: #f8fafc; margin: 0 0(12px) 0; text-align: left; }
+                            .message { font-size: 14px; color: #94a3b8; line-height: 1.6; margin: 0 0 32px 0; text-align: left; }
+                            .task-card { background-color: rgba(255, 255, 255, 0.03); border: 1px solid #27272a; border-radius: 12px; padding: 24px; margin-bottom: 32px; text-align: left; }
+                            .task-title { margin: 0 0 12px 0; font-size: 16px; color: #f8fafc; font-weight: 700; }
+                            .task-meta { font-size: 12px; color: #94a3b8; }
+                            .priority-tag { font-weight: 600; color: #FF0C60; }
+                            .cta-wrapper { text-align: center; }
+                            .cta-button { background-color: #FF0C60; color: #ffffff !important; padding: 14px 32px; text-decoration: none; border-radius: 9999px; font-size: 14px; font-weight: 600; display: inline-block; box-shadow: 0 4px 12px rgba(255, 12, 96, 0.2); }
+                            .footer { padding: 32px 40px; background-color: #121214; border-top: 1px solid #27272a; text-align: center; }
+                            .footer-text { margin: 0; font-size: 11px; color: #94a3b8; line-height: 1.5; }
                             
-                            <!-- Header -->
-                            <div style="padding: 32px 40px; border-bottom: 1px solid #27272a;">
-                                <span style="color: #FF0C60; font-weight: 800; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; display: block; margin-bottom: 8px;">RECORDATORIO</span>
-                                <h1 style="margin: 0; color: #f8fafc; font-size: 20px; font-weight: 700; letter-spacing: -0.5px;">Notificación de Tarea</h1>
-                            </div>
+                            @media only screen and (max-width: 600px) {
+                                .container { width: 100% !important; max-width: 100% !important; border-radius: 0 !important; border: none !important; }
+                                .content, .header, .footer { padding: 24px !important; }
+                            }
+                        </style>
+                    </head>
+                    <body bgcolor="#09090b">
+                        <table class="main-table" width="100%" border="0" cellspacing="0" cellpadding="0" bgcolor="#09090b" style="table-layout: fixed;">
+                            <tr>
+                                <td align="center" style="padding: 40px 0;">
+                                    <div class="container" bgcolor="#18181b">
+                                        <div class="accent-bar"></div>
+                                        <div class="header">
+                                            <span class="brand">RECORDATORIO</span>
+                                            <h1 class="title">Notificación de Tarea</h1>
+                                        </div>
 
-                            <div style="padding: 40px;">
-                                <p style="font-size: 16px; color: #f8fafc; margin: 0 0 12px 0;">Hola <strong>${task.userName}</strong>,</p>
-                                <p style="font-size: 15px; color: #94a3b8; line-height: 1.6; margin: 0 0 32px 0;">
-                                    Te recordamos que la siguiente tarea tiene un tiempo límite de entrega inminente (menos de 1 minuto).
-                                </p>
-                                
-                                <div style="background-color: rgba(255, 255, 255, 0.03); border: 1px solid #27272a; border-radius: 12px; padding: 24px; margin-bottom: 32px;">
-                                    <h2 style="margin: 0 0 12px 0; font-size: 18px; color: #f8fafc; font-weight: 700;">${task.title}</h2>
-                                    <div style="font-size: 13px; color: #94a3b8;">
-                                        Prioridad: <span style="font-weight: 600; color: #FF0C60;">${priorityLabel}</span>
-                                        ${task.deadline ? ` • Hora Límite: <span style="font-weight: 600; color: #f8fafc;">${task.deadline}</span>` : ''}
+                                        <div class="content">
+                                            <p class="greeting">Hola <strong>${task.userName}</strong>,</p>
+                                            <p class="message">
+                                                Te recordamos que la siguiente tarea tiene un tiempo límite de entrega inminente (menos de 1 minuto).
+                                            </p>
+                                            
+                                            <div class="task-card" bgcolor="rgba(255, 255, 255, 0.03)">
+                                                <h2 class="task-title">${task.title}</h2>
+                                                <div class="task-meta">
+                                                    Prioridad: <span class="priority-tag">${priorityLabel}</span>
+                                                    ${task.deadline ? ` • Hora Límite: <span style="color: #f8fafc; font-weight: 600;">${task.deadline}</span>` : ''}
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="cta-wrapper">
+                                                <a href="https://enlacecr.dev/tareas?openTask=${task.id}" class="cta-button">Ver Detalles</a>
+                                            </div>
+                                        </div>
+
+                                        <div class="footer" bgcolor="#121214">
+                                            <p class="footer-text">
+                                                Sistema de Control Master • Enlace<br/>
+                                                <span style="opacity: 0.6;">© ${new Date().getFullYear()} Enlace - Control Master</span>
+                                            </p>
+                                        </div>
                                     </div>
-                                </div>
-                                
-                                <div style="text-align: center;">
-                                    <a href="https://enlacecr.dev/tareas?openTask=${task.id}" style="background-color: #FF0C60; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 9999px; font-size: 14px; font-weight: 600; display: inline-block; box-shadow: 0 4px 12px rgba(255, 12, 96, 0.2);">Ver Detalles</a>
-                                </div>
-                            </div>
-
-                            <div style="padding: 32px 40px; background-color: #121214; border-top: 1px solid #27272a; text-align: center;">
-                                <p style="margin: 0; font-size: 12px; color: #94a3b8;">Sistema de Control Master • Enlace</p>
-                            </div>
-                        </div>
+                                </td>
+                            </tr>
+                        </table>
                     </body>
                     </html>
                 `
