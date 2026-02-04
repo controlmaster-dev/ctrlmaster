@@ -1,16 +1,18 @@
 "use client"
 
 import { useState } from "react"
-import { Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react"
-import { motion } from "framer-motion"
+import { Eye, EyeOff, Loader2 } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import BackgroundShapes from "./BackgroundShapes"
+
+import { toast } from "sonner"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
-  const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
   // 2FA State
@@ -21,8 +23,15 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!email || !password) {
+      toast.error("Por favor completa todos los campos", {
+        description: "Ingresa tu correo y contraseña para continuar."
+      })
+      return
+    }
+
     setLoading(true)
-    setError("")
 
     try {
       const res = await fetch('/api/auth/login', {
@@ -48,197 +57,194 @@ export default function LoginPage() {
       setLoading(false)
 
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al iniciar sesión")
+      toast.error("Error de autenticación", {
+        description: err instanceof Error ? err.message : "Error al iniciar sesión"
+      })
       setLoading(false)
     }
   }
 
   const handlePinSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (pin.length < 4) {
+      toast.error("PIN Incompleto", {
+        description: "Por favor ingresa el código de 4 dígitos."
+      })
+      return
+    }
+
     setLoading(true)
-    setError("")
 
     if (pin === "1111") {
       // Success!
       localStorage.setItem("enlace-user", JSON.stringify(tempUserData))
       window.location.href = "/"
     } else {
-      setError("PIN incorrecto. Inténtalo de nuevo.")
+      toast.error("Código Incorrecto", {
+        description: "El PIN ingresado no es válido."
+      })
       setPin("")
       setLoading(false)
-      // Focus logic isn't strictly needed if we clear input, but good UX would be to focus it back.
     }
   }
 
   return (
-    <div className="min-h-screen w-full flex bg-[#050505] selection:bg-[#FF0C60] selection:text-white">
+    <div className="min-h-screen w-full flex bg-[#050505] selection:bg-[#FF0C60] selection:text-white relative overflow-hidden font-sans">
 
-      {/* --- Left Panel: Visual/Creative --- */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-[#0A0A0A]">
-        {/* Animated Aurora Background */}
-        <div className="absolute inset-0">
-          <div className="absolute top-[-20%] left-[-20%] w-[80%] h-[80%] bg-blue-600/30 rounded-full blur-[120px] mix-blend-screen animate-pulse" style={{ animationDuration: '4000ms' }} />
-          <div className="absolute bottom-[-20%] right-[-20%] w-[80%] h-[80%] bg-[#FF0C60]/20 rounded-full blur-[120px] mix-blend-screen animate-pulse" style={{ animationDuration: '7000ms' }} />
-          <div className="absolute top-[40%] left-[30%] w-[40%] h-[40%] bg-purple-600/20 rounded-full blur-[100px] mix-blend-screen animate-pulse" style={{ animationDuration: '5000ms' }} />
-        </div>
+      {/* Shared Background */}
+      <BackgroundShapes />
 
-        {/* Noise overlay texture */}
-        <div className="absolute inset-0 opacity-[0.05] bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
-
-        {/* Content */}
-        <div className="relative z-10 p-20 flex flex-col justify-between h-full w-full">
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/10"
-          >
-            <img src="https://res.cloudinary.com/dtgpm5idm/image/upload/v1760034292/cropped-logo-3D-preview-192x192_c8yd8r.png" alt="Logo" className="w-10 h-10 object-contain" />
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            <h1 className="text-6xl font-bold text-white leading-tight tracking-tight mb-6">
-              Control <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-[#FF0C60]">Máster.</span>
-            </h1>
-            <p className="text-xl text-slate-400 max-w-md leading-relaxed">
-              Sistema integral de gestión de operaciones, monitoreo y reportes para Enlace Canal 23.
-            </p>
-          </motion.div>
-
-          <div className="text-slate-500 text-sm font-medium">
-            &copy; 2025 Enlace Internacional
+      {/* --- Desktop Left Panel: Brand --- */}
+      <div className="hidden lg:flex lg:w-1/2 relative z-10 p-24 flex-col justify-center h-full min-h-screen border-r border-white/[0.05] bg-black/20 backdrop-blur-sm">
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="relative"
+        >
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-white/[0.03] border border-white/[0.08] mb-12 shadow-2xl backdrop-blur-md">
+            <img src="https://res.cloudinary.com/dtgpm5idm/image/upload/v1760034292/cropped-logo-3D-preview-192x192_c8yd8r.png" alt="Logo" className="w-12 h-12 object-contain" />
           </div>
-        </div>
+
+          <h1 className="text-8xl font-bold text-white tracking-tighter mb-8 leading-[0.9]">
+            Control <br />
+            <span className="text-[#FF0C60]">Máster.</span>
+          </h1>
+          <p className="text-xl text-slate-400 max-w-lg leading-relaxed font-light tracking-wide">
+            Suite de operaciones de próxima generación para Enlace Canal 23.
+          </p>
+        </motion.div>
       </div>
 
-      {/* --- Right Panel: Form/Functional --- */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 lg:p-24 relative">
+      {/* --- Right Panel: Login Form --- */}
+      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-6 sm:p-12 relative z-20">
+
         <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6 }}
-          className="w-full max-w-md space-y-10"
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="w-full max-w-[400px] flex flex-col gap-8"
         >
-          <div className="lg:hidden mb-10 text-center">
-            <img src="https://res.cloudinary.com/dtgpm5idm/image/upload/v1760034292/cropped-logo-3D-preview-192x192_c8yd8r.png" alt="Logo" className="w-16 h-16 object-contain mx-auto mb-4" />
-            <h1 className="text-3xl font-bold text-white">Control Máster</h1>
+          {/* Mobile Logo Integrated in Flow */}
+          <div className="lg:hidden flex flex-col items-center gap-6 mb-2">
+            <div className="w-20 h-20 rounded-3xl bg-[#ffffff05] border border-white/10 flex items-center justify-center backdrop-blur-xl shadow-2xl">
+              <img src="https://res.cloudinary.com/dtgpm5idm/image/upload/v1760034292/cropped-logo-3D-preview-192x192_c8yd8r.png" alt="Logo" className="w-12 h-12 object-contain" />
+            </div>
+            <div className="text-center">
+              <h1 className="text-3xl font-bold text-white tracking-tighter">
+                Control <span className="text-[#FF0C60]">Máster</span>
+              </h1>
+            </div>
           </div>
 
-          <div>
+          <div className="text-center lg:text-left space-y-2">
             <h2 className="text-3xl font-bold text-white tracking-tight">
-              {loginStep === 'credentials' ? 'Bienvenido de nuevo' : 'Verificación requerida'}
+              {loginStep === 'credentials' ? 'Bienvenido' : 'Seguridad'}
             </h2>
-            <p className="text-slate-400 mt-2">
-              {loginStep === 'credentials'
-                ? 'Ingresa tus credenciales para acceder al panel.'
-                : 'Ingresa el PIN de seguridad para continuar.'}
+            <p className="text-slate-500 text-sm font-medium">
+              {loginStep === 'credentials' ? 'Ingresa a la plataforma.' : 'Confirma tu identidad.'}
             </p>
           </div>
 
           <form onSubmit={loginStep === 'credentials' ? handleLogin : handlePinSubmit} className="space-y-6">
-            {error && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="bg-red-500/10 border-l-4 border-red-500 text-red-200 p-4 rounded-r text-sm font-medium">
-                {error}
-              </motion.div>
-            )}
 
-            {loginStep === 'credentials' ? (
-              <motion.div
-                key="credentials-form"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                className="space-y-6"
-              >
-                <div className="space-y-2 group">
-                  <label className="text-sm font-medium text-slate-300 group-focus-within:text-blue-400 transition-colors">Correo Electrónico</label>
-                  <Input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="h-14 bg-[#101012] border-white/10 rounded-xl text-lg px-4 focus-visible:ring-blue-500/20 focus-visible:border-blue-500 transition-all text-white placeholder:text-slate-600"
-                    placeholder="nombre@enlace.org"
-                    required
-                  />
-                </div>
+            <div className="space-y-5">
+              <AnimatePresence mode="wait">
+                {loginStep === 'credentials' ? (
+                  <motion.div
+                    key="credentials"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ duration: 0.2 }}
+                    className="space-y-5"
+                  >
+                    <div className="space-y-2">
+                      <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest ml-1">Correo de Enlace</label>
+                      <Input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="h-14 bg-[#121214] border-white/5 rounded-xl px-5 text-base focus-visible:ring-2 focus-visible:ring-[#FF0C60]/50 border-transparent transition-all text-white placeholder:text-slate-700 shadow-inner"
+                        placeholder="usuario@enlace.org"
+                      />
+                    </div>
 
-                <div className="space-y-2 group">
-                  <div className="flex justify-between">
-                    <label className="text-sm font-medium text-slate-300 group-focus-within:text-blue-400 transition-colors">Contraseña</label>
-                  </div>
-                  <div className="relative">
+                    <div className="space-y-2">
+                      <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest ml-1">Contraseña</label>
+                      <div className="relative">
+                        <Input
+                          type={showPassword ? "text" : "password"}
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="h-14 bg-[#121214] border-white/5 rounded-xl px-5 text-base focus-visible:ring-2 focus-visible:ring-[#FF0C60]/50 border-transparent transition-all text-white placeholder:text-slate-700 pr-12 shadow-inner"
+                          placeholder="••••••••"
+                        />
+                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-600 hover:text-white transition-colors p-2">
+                          {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="pin"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.2 }}
+                    className="space-y-4"
+                  >
+                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest block text-center mb-4">Código de Acceso</label>
                     <Input
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="h-14 bg-[#101012] border-white/10 rounded-xl text-lg px-4 focus-visible:ring-blue-500/20 focus-visible:border-blue-500 transition-all text-white pr-12 placeholder:text-slate-600"
-                      placeholder="••••••••"
-                      required
+                      type="password"
+                      value={pin}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (/^\d*$/.test(val) && val.length <= 4) setPin(val);
+                      }}
+                      className="h-20 bg-[#121214] border-white/5 rounded-2xl text-4xl text-center tracking-[0.5em] text-white focus-visible:ring-2 focus-visible:ring-[#FF0C60]/50 transition-all placeholder:text-slate-800 shadow-inner"
+                      placeholder="••••"
+                      autoFocus
                     />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white p-1">
-                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="pin-form"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="space-y-6"
-              >
-                <div className="space-y-2 group">
-                  <label className="text-sm font-medium text-slate-300 group-focus-within:text-blue-400 transition-colors">Código PIN</label>
-                  <Input
-                    type="password"
-                    value={pin}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (/^\d*$/.test(val) && val.length <= 4) {
-                        setPin(val);
-                      }
-                    }}
-                    className="h-14 bg-[#101012] border-white/10 rounded-xl text-lg px-4 focus-visible:ring-blue-500/20 focus-visible:border-blue-500 transition-all text-white placeholder:text-slate-600 text-center tracking-[1em]"
-                    placeholder="••••"
-                    required
-                    autoFocus
-                  />
-                </div>
-              </motion.div>
-            )}
+                    <div className="flex justify-center gap-2">
+                      <p className="text-xs text-slate-600 font-medium">Ingresa los 4 dígitos de tu PIN.</p>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full h-14 bg-white text-black hover:bg-slate-200 rounded-xl text-lg font-bold shadow-lg shadow-white/5 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2"
-            >
-              {loading ? <Loader2 className="animate-spin w-5 h-5" /> : <>
-                {loginStep === 'credentials' ? 'Continuar' : 'Verificar'}
-                <ArrowRight className="w-5 h-5" />
-              </>}
-            </Button>
-
-            {loginStep === 'pin' && (
-              <button
-                type="button"
-                onClick={() => {
-                  setLoginStep('credentials')
-                  setPin("")
-                  setError("")
-                }}
-                className="w-full text-slate-500 hover:text-white text-sm transition-colors"
+            <div className="pt-4">
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full h-14 bg-gradient-to-r from-[#FF0C60] to-[#C90045] hover:brightness-110 text-white rounded-xl text-sm font-bold uppercase tracking-widest shadow-[0_0_30px_-5px_rgba(255,12,96,0.5)] hover:shadow-[0_0_40px_-5px_rgba(255,12,96,0.6)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 border-none"
               >
-                Volver al inicio de sesión
-              </button>
-            )}
+                {loading ? <Loader2 className="animate-spin w-5 h-5" /> : (
+                  loginStep === 'credentials' ? 'Iniciar Sesión' : 'Verificar'
+                )}
+              </Button>
+
+              {loginStep === 'pin' && (
+                <button
+                  type="button"
+                  onClick={() => { setLoginStep('credentials'); setPin(""); }}
+                  className="w-full mt-4 text-slate-600 hover:text-white text-xs font-bold uppercase tracking-widest transition-colors py-2"
+                >
+                  Cancelar
+                </button>
+              )}
+            </div>
           </form>
         </motion.div>
+
+        <div className="absolute bottom-6 w-full text-center lg:hidden">
+          <p className="text-slate-800 text-[10px] font-bold tracking-[0.3em] uppercase">
+            Enlace Internacional &copy; 1988 - 2026
+          </p>
+        </div>
       </div>
     </div>
   )

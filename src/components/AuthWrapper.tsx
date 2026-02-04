@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { useEffect } from "react"
 import { Navbar } from "@/components/Navbar"
 import LoginPage from "@/app/login/page"
+import BackgroundShapes from "@/app/login/BackgroundShapes"
 
 export function AuthWrapper({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth()
@@ -32,24 +33,22 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <div
-        className="min-h-screen relative flex items-center justify-center overflow-hidden bg-background"
-      >
-        {/* Bolas flotantes */}
-        <div className="absolute -top-32 -left-32 w-96 h-96 bg-[#FF0C60]/10 rounded-full blur-3xl animate-float"></div>
-        <div className="absolute top-1/4 right-20 w-80 h-80 bg-[#90cccf]/10 rounded-full blur-3xl animate-float delay-500"></div>
-        <div className="absolute bottom-20 left-1/3 w-72 h-72 bg-[#FF0C60]/10 rounded-full blur-3xl animate-float delay-1000"></div>
-        <div className="absolute bottom-10 right-10 w-96 h-96 bg-[#90cccf]/10 rounded-full blur-3xl animate-float delay-1500"></div>
+      <div className="min-h-screen w-full flex items-center justify-center bg-[#050505] relative overflow-hidden">
+        {/* Usamos el mismo background que el login para consistencia */}
+        <BackgroundShapes />
 
-        {/* Logo y loader */}
-        <div className="relative z-10 flex flex-col items-center space-y-6">
-          <img
-            src="https://res.cloudinary.com/dtgpm5idm/image/upload/v1760034292/cropped-logo-3D-preview-192x192_c8yd8r.png"
-            alt="Enlace Canal 23"
-            className="w-24 h-24 object-contain drop-shadow-lg animate-bounce"
-          />
-          <div className="w-12 h-12 border-4 border-white/20 border-t-[#FF0C60] rounded-full animate-spin"></div>
-          <p className="text-white text-lg font-medium animate-pulse">Cargando...</p>
+        <div className="relative z-10 flex flex-col items-center gap-8">
+          <div className="relative">
+            <div className="absolute inset-0 bg-[#FF0C60]/20 blur-2xl rounded-full animate-pulse"></div>
+            <img
+              src="https://res.cloudinary.com/dtgpm5idm/image/upload/v1760034292/cropped-logo-3D-preview-192x192_c8yd8r.png"
+              alt="Logo"
+              className="w-24 h-24 object-contain relative z-10"
+            />
+          </div>
+
+          {/* Spinner sutil y elegante */}
+          <div className="w-8 h-8 border-2 border-white/10 border-t-[#FF0C60] rounded-full animate-spin" />
         </div>
       </div>
     )

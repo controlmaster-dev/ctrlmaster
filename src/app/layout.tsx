@@ -5,6 +5,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { AuthWrapper } from "@/components/AuthWrapper";
 import { ThemeProvider } from "@/components/theme-provider"
 import { MobileInstallPrompt } from "@/components/MobileInstallPrompt";
+import { Toaster } from "@/components/ui/sonner"
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -75,6 +76,7 @@ export default function RootLayout({
             <AuthWrapper>
               {children}
               <MobileInstallPrompt />
+              <Toaster />
             </AuthWrapper>
           </AuthProvider>
         </ThemeProvider>
