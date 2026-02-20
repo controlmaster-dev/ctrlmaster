@@ -1,0 +1,232 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x", "linux-musl-openssl-3.0.x", "debian-openssl-1.1.x", "rhel-openssl-1.0.x", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id                 String              @id @default(uuid())
+  name               String
+  email              String              @unique
+  username           String?             @unique
+  password           String
+  role               String              @default("OPERATOR")
+  lastLogin          DateTime?
+  lastLoginIP        String?
+  lastLoginCountry   String?
+  currentPath        String?
+  lastActive         DateTime?
+  image              String?
+  birthday           String?
+  schedule           String?
+  tempSchedule       String?
+  createdAt          DateTime            @default(now())
+  comments           Comment[]
+  commentReactions   CommentReaction[]
+  reactions          Reaction[]
+  reports            Report[]
+  reportViews        ReportView[]
+  specialEventShifts SpecialEventShift[]
+  tasks              Task[]
+  workSchedules      WorkSchedule[]
+  weeklySchedules    WeeklySchedule[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model Report {
+  id                 String       @id @default(uuid())
+  operatorId         String
+  operatorName       String
+  operatorEmail      String
+  problemDescription String
+  category           String
+  priority           String
+  status             String
+  dateStarted        DateTime
+  dateResolved       DateTime?
+  emailStatus        String       @default("none") // none, pending, sent, error
+  emailRecipients    String?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  attachments        Attachment[]
+  comments           Comment[]
+  reactions          Reaction[]
+  operator           User         @relation(fields: [operatorId], references: [id])
+  views              ReportView[]
+
+  @@index([operatorId])
+  @@index([status])
+  @@index([priority])
+  @@index([createdAt])
+}
+
+model ReportView {
+  id       String   @id @default(uuid())
+  userId   String
+  reportId String
+  viewedAt DateTime @default(now())
+  report   Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, reportId])
+  @@index([reportId])
+  @@index([userId])
+}
+
+model Comment {
+  id        String            @id @default(uuid())
+  content   String
+  authorId  String
+  reportId  String
+  parentId  String?
+  createdAt DateTime          @default(now())
+  author    User              @relation(fields: [authorId], references: [id])
+  parent    Comment?          @relation("CommentReplies", fields: [parentId], references: [id])
+  replies   Comment[]         @relation("CommentReplies")
+  report    Report            @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  reactions CommentReaction[]
+
+  @@index([reportId])
+  @@index([authorId])
+  @@index([parentId])
+}
+
+model CommentReaction {
+  id        String   @id @default(uuid())
+  emoji     String
+  authorId  String
+  commentId String
+  createdAt DateTime @default(now())
+  author    User     @relation(fields: [authorId], references: [id])
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([authorId, commentId, emoji])
+  @@index([commentId])
+  @@index([authorId])
+}
+
+model Reaction {
+  id        String   @id @default(uuid())
+  emoji     String
+  authorId  String
+  reportId  String
+  createdAt DateTime @default(now())
+  author    User     @relation(fields: [authorId], references: [id])
+  report    Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@unique([authorId, reportId, emoji])
+  @@index([reportId])
+  @@index([authorId])
+}
+
+model Attachment {
+  id        String   @id @default(uuid())
+  url       String
+  type      String
+  data      String?  @db.Text // Base64 content for small files
+  reportId  String
+  createdAt DateTime @default(now())
+  report    Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@index([reportId])
+}
+
+model Task {
+  id            String    @id @default(uuid())
+  title         String
+  description   String?
+  userId        String
+  priority      String    @default("MEDIUM")
+  deadline      String?
+  scheduledDate String
+  status        String    @default("PENDING")
+  reminderSent  Boolean   @default(false)
+  comment       String?
+  completedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  user          User      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([scheduledDate])
+}
+
+model WorkSchedule {
+  id         String   @id @default(uuid())
+  date       DateTime @unique
+  userId     String
+  isOverride Boolean  @default(false)
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([date])
+}
+
+model StreamMetric {
+  id        String   @id @default(uuid())
+  channel   String
+  type      String
+  value     Float?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([channel])
+  @@index([type])
+}
+
+model ValidProgram {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  createdAt DateTime @default(now())
+}
+
+model SpecialEvent {
+  id        String              @id @default(uuid())
+  name      String
+  startDate String
+  endDate   String
+  isActive  Boolean             @default(true)
+  createdAt DateTime            @default(now())
+  shifts    SpecialEventShift[]
+}
+
+model SpecialEventShift {
+  id      String       @id @default(uuid())
+  eventId String
+  userId  String
+  date    String
+  start   Int
+  end     Int
+  event   SpecialEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([date])
+}
+
+model WeeklySchedule {
+  id        String   @id @default(uuid())
+  dayOfWeek Int      @unique // 0=Sunday, 1=Monday, etc.
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  
+  @@index([dayOfWeek])
+}
+
+model Credential {
+  id        String   @id @default(uuid())
+  service   String
+  category  String
+  username  String
+  password  String
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

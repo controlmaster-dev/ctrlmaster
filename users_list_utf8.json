@@ -1,0 +1,58 @@
+﻿[
+  {
+    "id": "ddfb2fba-0064-4b5c-9440-0ce91f68acfa",
+    "name": "Ingenier├¡a",
+    "email": "ingenieria@enlace.org",
+    "username": "ingenieria",
+    "role": "ENGINEER"
+  },
+  {
+    "id": "bf6e9da4-decd-495e-9f1a-3488ac0b7805",
+    "name": "Josu├⌐ Jimenez",
+    "email": "jjimenez@enlace.org",
+    "username": "jjimenez",
+    "role": "OPERATOR"
+  },
+  {
+    "id": "7ef76abf-c8f3-4ae6-9b12-ba847e44f480",
+    "name": "Ronald Jimenez",
+    "email": "rjimenez@enlace.org",
+    "username": "rjimenez",
+    "role": "BOSS"
+  },
+  {
+    "id": "b6255615-f468-4f0d-a41a-660fed1ffb7c",
+    "name": "Diego Bola├▒os",
+    "email": "dbolanos@enlace.org",
+    "username": "dbolanos",
+    "role": "OPERATOR"
+  },
+  {
+    "id": "84bee2fd-9e56-4bec-ba9f-fa7f3cd4e08c",
+    "name": "Jeremy Alvarado",
+    "email": "jalvarado@enlace.org",
+    "username": "jalvarado",
+    "role": "OPERATOR"
+  },
+  {
+    "id": "e534b8e1-ead4-4198-ae85-851cee2daa1a",
+    "name": "Gabriel N├║├▒ez",
+    "email": "knunez@enlace.org",
+    "username": "knunez",
+    "role": "OPERATOR"
+  },
+  {
+    "id": "f9920970-7eb1-4f93-b9a9-338a81df1d35",
+    "name": "Andr├⌐s Corea",
+    "email": "acorea@enlace.org",
+    "username": "acorea",
+    "role": "OPERATOR"
+  },
+  {
+    "id": "37d2b3ca-7897-4408-9608-33747e96c89c",
+    "name": "Alex Blanco",
+    "email": "ablanco@enlace.org",
+    "username": "ablanco",
+    "role": "OPERATOR"
+  }
+]

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Label Alignment Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 p-8">
+    <h1 class="text-white text-2xl mb-4">Label Alignment Test</h1>
+    
+    <!-- Test Case 1: VideoJSPlayer Label Structure -->
+    <div class="mb-8">
+        <h2 class="text-white mb-2">VideoJSPlayer Label (Default)</h2>
+        <div class="relative w-full h-64 bg-black border-2 border-gray-700">
+            <!-- Reality Sync Label: Bottom Centered Pill -->
+            <div class="absolute bottom-2 inset-x-0 z-40 flex justify-center pointer-events-none">
+                <div class="bg-black/80 px-3 py-1 rounded-full border border-white/10 flex items-center gap-2 shadow-2xl backdrop-blur-sm">
+                    <span class="text-[9px] font-bold uppercase tracking-widest text-zinc-300 leading-none">
+                        CAM 01
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Test Case 2: VideoJSPlayer Label with Variant -->
+    <div class="mb-8">
+        <h2 class="text-white mb-2">VideoJSPlayer Label (Program)</h2>
+        <div class="relative w-full h-64 bg-black border-2 border-red-500">
+            <div class="absolute bottom-2 inset-x-0 z-40 flex justify-center pointer-events-none">
+                <div class="bg-black/80 px-3 py-1 rounded-full border border-white/10 flex items-center gap-2 shadow-2xl backdrop-blur-sm">
+                    <span class="text-[9px] font-black uppercase tracking-[0.2em] text-red-500 border-r border-white/20 pr-2 leading-none">
+                        PROGRAMA
+                    </span>
+                    <span class="text-[9px] font-bold uppercase tracking-widest text-red-500 leading-none">
+                        CAM 02
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Test Case 3: SocialPlayer Label -->
+    <div class="mb-8">
+        <h2 class="text-white mb-2">SocialPlayer Label (YouTube)</h2>
+        <div class="relative w-full h-64 bg-black border-2 border-red-500/50">
+            <div class="absolute bottom-2 inset-x-0 z-40 flex justify-center pointer-events-none">
+                <div class="bg-black/80 px-3 py-1 rounded-full border border-white/10 flex items-center gap-2 shadow-2xl backdrop-blur-sm">
+                    <span class="text-[9px] font-black uppercase tracking-[0.2em] text-red-500 border-r border-white/20 pr-2 leading-none flex items-center gap-1">
+                        YOUTUBE LIVE
+                    </span>
+                    <span class="text-[9px] font-bold uppercase tracking-widest text-zinc-300 leading-none">
+                        Enlace TV
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-white mt-8">
+        <p>✓ Todas las etiquetas deberían estar centradas horizontalmente</p>
+        <p>✓ Las etiquetas deberían estar a 0.5rem (8px) del borde inferior</p>
+        <p>✓ El contenedor usa <code class="bg-gray-700 px-1">inset-x-0</code> y <code class="bg-gray-700 px-1">justify-center</code></p>
+    </div>
+</body>
+</html>
