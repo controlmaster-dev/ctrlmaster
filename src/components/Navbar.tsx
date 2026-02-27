@@ -67,7 +67,7 @@ export function Navbar() {
 
 
         _jsxs("div", {
-          className: "hidden md:flex sticky top-0 left-0 right-0 z-[100] bg-background/80 backdrop-blur-2xl border-b border-border h-[60px] px-6 items-center justify-between shadow-sm pointer-events-auto", children: [
+          className: "hidden md:flex sticky top-0 left-0 right-0 z-[100] bg-background/80 backdrop-blur-2xl border-b border-border h-[60px] px-6 items-center justify-center gap-2 lg:gap-8 shadow-sm pointer-events-auto", children: [
 
 
             _jsxs(motion.div, {
@@ -123,12 +123,12 @@ export function Navbar() {
 
 
             _jsxs(motion.div, {
-              className: "relative pointer-events-auto flex-1 max-w-xl mx-4",
+              className: "relative pointer-events-auto",
               initial: { y: -20, opacity: 0 },
               animate: {
                 y: 0,
                 opacity: 1,
-                width: openPalette ? "100%" : "auto"
+                width: openPalette ? 580 : 420
               },
               transition: { type: "spring", stiffness: 400, damping: 30, delay: 0.1 }, children: [
 
