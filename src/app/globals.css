@@ -112,15 +112,15 @@
     pointer-events: none;
     z-index: 0;
     background-image:
-      linear-gradient(to right, hsl(var(--foreground) / 0.02) 1px, transparent 1px),
-      linear-gradient(to bottom, hsl(var(--foreground) / 0.02) 1px, transparent 1px);
+      linear-gradient(to right, hsl(var(--foreground) / 0.01) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--foreground) / 0.01) 1px, transparent 1px);
     background-size: 24px 24px;
   }
 
   .dark .grid-background {
     background-image:
-      linear-gradient(to right, hsl(var(--foreground) / 0.02) 1px, transparent 1px),
-      linear-gradient(to bottom, hsl(var(--foreground) / 0.02) 1px, transparent 1px);
+      linear-gradient(to right, hsl(var(--foreground) / 0.01) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--foreground) / 0.01) 1px, transparent 1px);
   }
 }
 
