@@ -11,27 +11,17 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
-  Table,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from
-  "@/components/ui/table";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger
-} from
-  "@/components/ui/dropdown-menu";
+} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle
-} from
-  "@/components/ui/dialog"; import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+} from "@/components/ui/dialog";
 
 const CategoryIcons = {
   'Producción': Monitor,
@@ -42,17 +32,6 @@ const CategoryIcons = {
   'Mac': Laptop,
   'Windows': Monitor,
   'Web': Globe
-};
-
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1
-    }
-  }
 };
 
 const itemVariants = {
@@ -68,20 +47,15 @@ export default function CredentialsPage() {
   const [loadingData, setLoadingData] = useState(true);
   const [showPassword, setShowPassword] = useState({});
 
-
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newCredential, setNewCredential] = useState({ service: '', category: '', username: '', password: '', notes: '' });
-
 
   useEffect(() => {
     if (!isLoading && !user) router.replace('/login');
   }, [user, isLoading, router]);
 
-
   const fetchCredentials = async () => {
     try {
-
-
       const res = await fetch('/api/credentials');
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
@@ -96,7 +70,6 @@ export default function CredentialsPage() {
   useEffect(() => {
     if (user) fetchCredentials();
   }, [user]);
-
 
   const handleCreate = async () => {
     if (!newCredential.service || !newCredential.username || !newCredential.password) {
@@ -122,8 +95,7 @@ export default function CredentialsPage() {
     }
   };
 
-  const handleDelete = async (id) => {
-
+  const handleDelete = async (id: string) => {
     try {
       const res = await fetch(`/api/credentials?id=${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete');
@@ -134,15 +106,14 @@ export default function CredentialsPage() {
     }
   };
 
-  const copyToClipboard = (text) => {
+  const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast.message("Copiado al portapapeles", {
-      icon: _jsx(CheckCircle, { className: "w-4 h-4 text-emerald-500" })
+      icon: <CheckCircle className="w-4 h-4 text-emerald-500" />
     });
   };
 
-
-  const filteredCredentials = credentials.filter((c) =>
+  const filteredCredentials = credentials.filter((c: any) =>
     c.service.toLowerCase().includes(searchQuery.toLowerCase()) ||
     c.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
     c.category.toLowerCase().includes(searchQuery.toLowerCase())
@@ -151,394 +122,241 @@ export default function CredentialsPage() {
   if (isLoading || !user) return null;
 
   return (
-    _jsxs("div", {
-      className: "min-h-screen bg-background w-full", children: [
+    <div className="min-h-[1400px] h-full bg-background w-full font-sans selection:bg-[#FF0C60] selection:text-white pb-32">
 
-        _jsx("div", {
-          className: "sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border/40 pb-4 pt-24 md:pt-32 px-6 md:px-12", children:
-            _jsxs("div", {
-              className: "w-full max-w-[95%] mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-6", children: [
-                _jsxs(motion.div, {
-                  initial: { opacity: 0, x: -20 },
-                  animate: { opacity: 1, x: 0 },
-                  transition: { duration: 0.5 }, children: [
+      {/* HEADER SECTION */}
+      <div className="w-full max-w-[1500px] mx-auto pt-16 pb-12 px-6 md:px-12 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center justify-center">
+              <Shield className="w-9 h-9 text-[#FF0C60] stroke-[2.5px]" />
+            </div>
+            <h1 className="text-[36px] font-[900] tracking-tighter text-foreground leading-none mt-1">Bóveda de Claves</h1>
+          </div>
+          <p className="text-muted-foreground font-[800] text-[15px] tracking-wide mt-2 ml-[52px]">
+            {credentials.length} credenciales seguras
+          </p>
+        </div>
 
-                    _jsxs("h1", {
-                      className: "text-3xl font-bold tracking-tight flex items-center gap-3", children: [
-                        _jsx(Shield, { className: "w-8 h-8 text-[#FF0C60]" }), "B\xF3veda de Claves"]
-                    }
+        <div className="flex items-center gap-4 w-full md:w-auto mt-4 md:mt-0">
+          <div className="relative w-full md:w-[320px]">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-muted-foreground/70" />
+            <Input
+              className="pl-11 h-[50px] bg-card border border-border/80 hover:border-border focus:border-[#FF0C60] rounded-xl text-[14px] text-foreground shadow-sm transition-all focus-visible:ring-0 placeholder:text-muted-foreground/60 font-medium"
+              placeholder="Buscar..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <Button
+            className="bg-[#FF0C60] hover:bg-[#E00A54] text-white rounded-xl h-[50px] px-8 font-[800] tracking-wide text-[14px] shadow-[0_4px_14px_0_rgba(255,12,96,0.39)] transition-all"
+            onClick={() => setIsCreateOpen(true)}
+          >
+            <Plus className="w-[20px] h-[20px] mr-2 stroke-[3px]" /> NUEVA
+          </Button>
+        </div>
+      </div>
 
-                    ),
-                    _jsxs("p", {
-                      className: "text-muted-foreground mt-1 font-medium", children: [
-                        credentials.length, " credenciales seguras"]
-                    }
-                    )]
-                }
-                ),
+      {/* TABLE SECTION */}
+      <main className="w-full max-w-[1500px] mx-auto px-6 md:px-12">
+        <div className="border border-border/80 rounded-[16px] bg-card shadow-sm overflow-hidden mb-32">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-muted/10 border-b border-border/60">
+                <th className="py-6 pl-10 text-[12px] font-[900] text-muted-foreground/70 uppercase tracking-widest w-[35%]">Servicio</th>
+                <th className="py-6 text-[12px] font-[900] text-muted-foreground/70 uppercase tracking-widest w-[25%]">Usuario</th>
+                <th className="py-6 text-[12px] font-[900] text-muted-foreground/70 uppercase tracking-widest w-[30%]">Contraseña</th>
+                <th className="py-6 text-[12px] font-[900] text-muted-foreground/70 uppercase tracking-widest w-[10%]">Notas</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loadingData ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i} className="border-b border-border/40">
+                    <td className="pl-10 py-6">
+                      <div className="flex items-center gap-5">
+                        <Skeleton className="w-[48px] h-[48px] rounded-xl" />
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-32" />
+                          <Skeleton className="h-3 w-16" />
+                        </div>
+                      </div>
+                    </td>
+                    <td><Skeleton className="h-4 w-24" /></td>
+                    <td><Skeleton className="h-4 w-32" /></td>
+                    <td><Skeleton className="h-4 w-10" /></td>
+                  </tr>
+                ))
+              ) : filteredCredentials.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="h-32 text-center text-muted-foreground font-medium">No se encontraron resultados.</td>
+                </tr>
+              ) : (
+                <AnimatePresence mode="popLayout">
+                  {filteredCredentials.map((cred: any) => (
+                    <CredentialRow
+                      key={cred.id}
+                      cred={cred}
+                      showPassword={showPassword[cred.id as keyof typeof showPassword]}
+                      togglePassword={() => setShowPassword((p) => ({ ...p, [cred.id]: !p[cred.id as keyof typeof showPassword] }))}
+                      copyToClipboard={copyToClipboard}
+                      onDelete={() => handleDelete(cred.id)}
+                    />
+                  ))}
+                </AnimatePresence>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </main>
 
-                _jsxs(motion.div, {
-                  initial: { opacity: 0, x: 20 },
-                  animate: { opacity: 1, x: 0 },
-                  transition: { duration: 0.5, delay: 0.1 },
-                  className: "flex items-center gap-3 w-full md:w-auto", children: [
-
-                    _jsxs("div", {
-                      className: "relative w-full md:w-80 group", children: [
-                        _jsx(Search, { className: "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-[#FF0C60] transition-colors" }),
-                        _jsx(Input, {
-                          className: "pl-10 bg-muted/30 border-border/50 focus:border-[#FF0C60]/50 focus:ring-1 focus:ring-[#FF0C60]/20 transition-all",
-                          placeholder: "Buscar...",
-                          value: searchQuery,
-                          onChange: (e) => setSearchQuery(e.target.value)
-                        }
-                        )]
-                    }
-                    ),
-                    _jsxs(Button, {
-                      onClick: () => setIsCreateOpen(true),
-                      className: "bg-[#FF0C60] hover:bg-[#D40050] text-white shadow-lg shadow-[#FF0C60]/20 font-bold tracking-wide", children: [
-
-                        _jsx(Plus, { className: "w-4 h-4 mr-2" }), "NUEVA"]
-                    }
-
-                    )]
-                }
-                )]
-            }
-            )
-        }
-        ),
-
-
-        _jsx("main", {
-          className: "w-full max-w-[95%] mx-auto px-0 py-8 pb-32", children:
-            _jsx("div", {
-              className: "rounded-xl border border-border/40 bg-card/30 overflow-hidden backdrop-blur-sm shadow-sm", children:
-                _jsxs(Table, {
-                  children: [
-                    _jsx(TableHeader, {
-                      className: "bg-muted/30", children:
-                        _jsxs(TableRow, {
-                          className: "hover:bg-transparent border-border/40", children: [
-                            _jsx(TableHead, { className: "w-[300px] text-xs font-bold uppercase tracking-wider text-muted-foreground pl-6", children: "Servicio" }),
-                            _jsx(TableHead, { className: "text-xs font-bold uppercase tracking-wider text-muted-foreground", children: "Usuario" }),
-                            _jsx(TableHead, { className: "text-xs font-bold uppercase tracking-wider text-muted-foreground", children: "Contrase\xF1a" }),
-                            _jsx(TableHead, { className: "hidden md:table-cell text-xs font-bold uppercase tracking-wider text-muted-foreground", children: "Notas" }),
-                            _jsx(TableHead, { className: "w-[50px]" })]
-                        }
-                        )
-                    }
-                    ),
-
-
-                    _jsx(motion.tbody, {
-                      variants: containerVariants,
-                      initial: "hidden",
-                      animate: "visible",
-                      className: "[&_tr:last-child]:border-0", children:
-
-                        loadingData ?
-
-                          Array.from({ length: 5 }).map((_, i) =>
-                            _jsxs(motion.tr, {
-                              variants: itemVariants, className: "border-b border-border/40", children: [
-                                _jsx(TableCell, {
-                                  className: "pl-6 py-4", children:
-                                    _jsxs("div", {
-                                      className: "flex items-center gap-4", children: [
-                                        _jsx(Skeleton, { className: "w-10 h-10 rounded-lg" }),
-                                        _jsxs("div", {
-                                          className: "space-y-2", children: [
-                                            _jsx(Skeleton, { className: "h-4 w-32" }),
-                                            _jsx(Skeleton, { className: "h-3 w-16" })]
-                                        }
-                                        )]
-                                    }
-                                    )
-                                }
-                                ),
-                                _jsx(TableCell, { children: _jsx(Skeleton, { className: "h-4 w-24" }) }),
-                                _jsx(TableCell, { children: _jsx(Skeleton, { className: "h-4 w-32" }) }),
-                                _jsx(TableCell, { className: "hidden md:table-cell", children: _jsx(Skeleton, { className: "h-4 w-40" }) }),
-                                _jsx(TableCell, { children: _jsx(Skeleton, { className: "h-8 w-8 rounded-full" }) })]
-                            }, i
-                            )
-                          ) :
-                          filteredCredentials.length === 0 ?
-                            _jsx(TableRow, {
-                              children:
-                                _jsx(TableCell, { colSpan: 5, className: "h-32 text-center text-muted-foreground", children: "No se encontraron resultados." }
-
-                                )
-                            }
-                            ) :
-
-                            _jsx(AnimatePresence, {
-                              mode: "popLayout", children:
-                                filteredCredentials.map((cred) =>
-                                  _jsx(CredentialRow, {
-
-                                    cred: cred,
-                                    showPassword: showPassword[cred.id],
-                                    togglePassword: () => setShowPassword((p) => ({ ...p, [cred.id]: !p[cred.id] })),
-                                    copyToClipboard: copyToClipboard,
-                                    onDelete: () => handleDelete(cred.id)
-                                  }, cred.id
-                                  )
-                                )
-                            }
-                            )
-                    }
-
-                    )]
-                }
-                )
-            }
-            )
-        }
-        ),
-
-
-        _jsx(Dialog, {
-          open: isCreateOpen, onOpenChange: setIsCreateOpen, children:
-            _jsxs(DialogContent, {
-              className: "max-w-md bg-card/95 backdrop-blur-xl border border-border/50 shadow-2xl", children: [
-                _jsx(DialogHeader, {
-                  children:
-                    _jsxs(DialogTitle, {
-                      className: "text-xl font-bold flex items-center gap-2", children: [
-                        _jsx(Shield, { className: "w-5 h-5 text-[#FF0C60]" }), "Nueva Credencial"]
-                    }
-
-                    )
-                }
-                ),
-                _jsxs("div", {
-                  className: "space-y-4 pt-4", children: [
-                    _jsxs("div", {
-                      className: "grid gap-4", children: [
-                        _jsxs("div", {
-                          className: "space-y-2", children: [
-                            _jsx("label", { className: "text-xs font-bold uppercase text-muted-foreground", children: "Servicio" }),
-                            _jsx(Input, {
-                              placeholder: "Ej. Adobe Creative Cloud",
-                              value: newCredential.service,
-                              onChange: (e) => setNewCredential({ ...newCredential, service: e.target.value })
-                            }
-                            )]
-                        }
-                        ),
-                        _jsxs("div", {
-                          className: "grid grid-cols-2 gap-4", children: [
-                            _jsxs("div", {
-                              className: "space-y-2", children: [
-                                _jsx("label", { className: "text-xs font-bold uppercase text-muted-foreground", children: "Categor\xEDa" }),
-                                _jsx(Input, {
-                                  placeholder: "Ej. Dise\xF1o",
-                                  value: newCredential.category,
-                                  onChange: (e) => setNewCredential({ ...newCredential, category: e.target.value })
-                                }
-                                )]
-                            }
-                            ),
-                            _jsxs("div", {
-                              className: "space-y-2", children: [
-                                _jsx("label", { className: "text-xs font-bold uppercase text-muted-foreground", children: "Usuario" }),
-                                _jsx(Input, {
-                                  placeholder: "user@example.com",
-                                  value: newCredential.username,
-                                  onChange: (e) => setNewCredential({ ...newCredential, username: e.target.value })
-                                }
-                                )]
-                            }
-                            )]
-                        }
-                        ),
-                        _jsxs("div", {
-                          className: "space-y-2", children: [
-                            _jsx("label", { className: "text-xs font-bold uppercase text-muted-foreground", children: "Contrase\xF1a" }),
-                            _jsxs("div", {
-                              className: "relative", children: [
-                                _jsx(Input, {
-                                  type: "text",
-                                  className: "font-mono",
-                                  placeholder: "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022",
-                                  value: newCredential.password,
-                                  onChange: (e) => setNewCredential({ ...newCredential, password: e.target.value })
-                                }
-                                ),
-                                _jsx("div", {
-                                  className: "absolute right-3 top-1/2 -translate-y-1/2", children:
-                                    _jsx(Lock, { className: "w-4 h-4 text-muted-foreground" })
-                                }
-                                )]
-                            }
-                            )]
-                        }
-                        ),
-                        _jsxs("div", {
-                          className: "space-y-2", children: [
-                            _jsx("label", { className: "text-xs font-bold uppercase text-muted-foreground", children: "Notas (Opcional)" }),
-                            _jsx(Input, {
-                              placeholder: "Detalles adicionales...",
-                              value: newCredential.notes,
-                              onChange: (e) => setNewCredential({ ...newCredential, notes: e.target.value })
-                            }
-                            )]
-                        }
-                        )]
-                    }
-                    ),
-                    _jsxs("div", {
-                      className: "flex justify-end gap-2 mt-4", children: [
-                        _jsx(Button, { variant: "ghost", onClick: () => setIsCreateOpen(false), children: "Cancelar" }),
-                        _jsx(Button, { onClick: handleCreate, className: "bg-[#FF0C60] hover:bg-[#D40050] text-white font-bold", children: "Guardar Credencial" }
-
-                        )]
-                    }
-                    )]
-                }
-                )]
-            }
-            )
-        }
-        )]
-    }
-    ));
-
+      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <DialogContent className="max-w-md bg-card border border-border/80 shadow-2xl rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-[900] flex items-center gap-2 text-foreground tracking-tight">
+              <Shield className="w-5 h-5 text-[#FF0C60]" /> Nueva Credencial
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="grid gap-4">
+              <div className="space-y-2">
+                <label className="text-[11px] font-[800] uppercase text-muted-foreground tracking-widest">Servicio</label>
+                <Input
+                  placeholder="Ej. Adobe Creative Cloud"
+                  className="focus:border-[#FF0C60] rounded-lg border-border/60 bg-transparent"
+                  value={newCredential.service}
+                  onChange={(e) => setNewCredential({ ...newCredential, service: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[11px] font-[800] uppercase text-muted-foreground tracking-widest">Categoría</label>
+                  <Input
+                    placeholder="Ej. Diseño"
+                    className="focus:border-[#FF0C60] rounded-lg border-border/60 bg-transparent"
+                    value={newCredential.category}
+                    onChange={(e) => setNewCredential({ ...newCredential, category: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[11px] font-[800] uppercase text-muted-foreground tracking-widest">Usuario</label>
+                  <Input
+                    placeholder="user@example.com"
+                    className="focus:border-[#FF0C60] rounded-lg border-border/60 bg-transparent"
+                    value={newCredential.username}
+                    onChange={(e) => setNewCredential({ ...newCredential, username: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[11px] font-[800] uppercase text-muted-foreground tracking-widest">Contraseña</label>
+                <div className="relative">
+                  <Input
+                    type="text"
+                    className="font-mono focus:border-[#FF0C60] rounded-lg border-border/60 bg-transparent"
+                    placeholder="••••••••••••"
+                    value={newCredential.password}
+                    onChange={(e) => setNewCredential({ ...newCredential, password: e.target.value })}
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <Lock className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[11px] font-[800] uppercase text-muted-foreground tracking-widest">Notas (Opcional)</label>
+                <Input
+                  placeholder="Detalles adicionales..."
+                  className="focus:border-[#FF0C60] rounded-lg border-border/60 bg-transparent"
+                  value={newCredential.notes}
+                  onChange={(e) => setNewCredential({ ...newCredential, notes: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-4 pt-2">
+              <Button variant="ghost" className="text-muted-foreground hover:text-foreground font-bold" onClick={() => setIsCreateOpen(false)}>Cancelar</Button>
+              <Button onClick={handleCreate} className="bg-[#FF0C60] hover:bg-[#D40050] text-white font-[800]">Guardar</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
 }
 
-function CredentialRow({ cred, showPassword, togglePassword, copyToClipboard, onDelete }) {
-  const Icon = CategoryIcons[cred.category];
+function CredentialRow({ cred, showPassword, togglePassword, copyToClipboard, onDelete }: any) {
+  const Icon = CategoryIcons[cred.category as keyof typeof CategoryIcons];
   const firstLetter = cred.service.charAt(0).toUpperCase();
 
-
   return (
-    _jsxs(motion.tr, {
-      variants: itemVariants,
-      layout: true,
-      initial: "hidden",
-      animate: "visible",
-      exit: { opacity: 0, x: -20 },
-      className: "group border-b border-border/40 hover:bg-muted/20 transition-colors data-[state=selected]:bg-muted", children: [
+    <motion.tr
+      variants={itemVariants}
+      layout
+      initial="hidden"
+      animate="visible"
+      exit={{ opacity: 0, x: -20 }}
+      className="group border-b border-border/40 hover:bg-muted/30 transition-colors bg-transparent relative"
+    >
+      <td className="py-6 pl-10" style={{ width: '35%' }}>
+        <div className="flex items-center gap-6">
+          <div className="w-[46px] h-[46px] rounded-[14px] bg-muted/40 border border-border/60 flex items-center justify-center flex-shrink-0 shadow-sm">
+            {Icon ? (
+              <Icon className="w-[22px] h-[22px] text-foreground/80" strokeWidth={2.5} />
+            ) : (
+              <span className="text-xl font-[900] text-[#FF0C60]">{firstLetter}</span>
+            )}
+          </div>
+          <div className="flex flex-col items-start pt-1">
+            <span className="text-[15px] font-[900] text-foreground tracking-tight leading-none mb-[7px]">{cred.service}</span>
+            <Badge variant="outline" className="h-[20px] px-2 bg-muted/30 border-transparent text-muted-foreground text-[9.5px] font-[800] uppercase tracking-widest leading-none rounded-md shadow-none hover:bg-muted/50">
+              {cred.category}
+            </Badge>
+          </div>
+        </div>
+      </td>
 
+      <td className="py-6" style={{ width: '25%' }}>
+        <span className="font-mono text-[14px] text-muted-foreground/80 font-medium tracking-tight">
+          {cred.username}
+        </span>
+      </td>
 
-        _jsx(TableCell, {
-          className: "pl-6 py-4", children:
-            _jsxs("div", {
-              className: "flex items-center gap-4", children: [
-                _jsx("div", {
-                  className: "w-10 h-10 rounded-lg bg-muted/40 flex items-center justify-center border border-border/50 group-hover:border-[#FF0C60]/30 transition-colors", children:
-                    Icon ?
-                      _jsx(Icon, { className: "w-5 h-5 text-foreground/80 group-hover:text-[#FF0C60]" }) :
+      <td className="py-6" style={{ width: '30%' }}>
+        <div className="flex items-center gap-4">
+          <span className={`font-mono text-[18px] tracking-[0.25em] font-medium leading-none mt-1 ${showPassword ? 'text-foreground' : 'text-muted-foreground/40'}`}>
+            {showPassword ? cred.password : "••••••••••••"}
+          </span>
+          <div className="flex opacity-0 group-hover:opacity-100 transition-opacity gap-1">
+            <button onClick={togglePassword} className="p-2 text-muted-foreground/70 hover:text-foreground transition-colors rounded-xl hover:bg-muted">
+              {showPassword ? <EyeOff className="w-[18px] h-[18px]" /> : <Eye className="w-[18px] h-[18px]" />}
+            </button>
+            <button onClick={() => copyToClipboard(cred.password)} className="p-2 text-muted-foreground/70 hover:text-foreground transition-colors rounded-xl hover:bg-muted">
+              <Copy className="w-[18px] h-[18px]" />
+            </button>
+          </div>
+        </div>
+      </td>
 
-                      _jsx("span", { className: "text-lg font-bold text-[#FF0C60]", children: firstLetter })
-                }
+      <td className="py-6 pr-6 relative" style={{ width: '10%' }}>
+        <div className="flex items-center justify-between w-full h-full">
+          <span className="font-mono text-[15px] text-muted-foreground/50 font-medium">{cred.notes || "—"}</span>
 
-                ),
-                _jsxs("div", {
-                  children: [
-                    _jsx("div", { className: "font-bold text-sm text-foreground", children: cred.service }),
-                    _jsx(Badge, {
-                      variant: "outline", className: "mt-1 text-[10px] font-bold text-muted-foreground border-border/50 bg-transparent", children:
-                        cred.category
-                    }
-                    )]
-                }
-                )]
-            }
-            )
-        }
-        ),
-
-
-        _jsx(TableCell, {
-          children:
-            _jsxs("div", {
-              className: "flex items-center gap-2 cursor-pointer hover:text-foreground transition-colors group/user",
-              onClick: () => copyToClipboard(cred.username), children: [
-
-                _jsx("code", {
-                  className: "bg-muted/30 px-2 py-1 rounded text-xs font-mono text-muted-foreground group-hover/user:text-[#FF0C60] transition-colors", children:
-                    cred.username
-                }
-                ),
-                _jsx(Copy, { className: "w-3 h-3 opacity-100 md:opacity-0 md:group-hover/user:opacity-100 transition-opacity text-muted-foreground" })]
-            }
-            )
-        }
-        ),
-
-
-        _jsx(TableCell, {
-          children:
-            _jsxs("div", {
-              className: "flex items-center gap-2", children: [
-                _jsx("code", {
-                  className: `font-mono text-xs transition-all ${showPassword ? 'text-[#FF0C60] bg-[#FF0C60]/10' : 'text-muted-foreground tracking-widest'}`, children:
-                    showPassword ? cred.password : "••••••••••••"
-                }
-                ),
-                _jsxs("div", {
-                  className: "flex opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity ml-2", children: [
-                    _jsx(Button, {
-                      variant: "ghost", size: "icon", className: "h-6 w-6", onClick: togglePassword, children:
-                        showPassword ? _jsx(EyeOff, { className: "w-3 h-3" }) : _jsx(Eye, { className: "w-3 h-3" })
-                    }
-                    ),
-                    _jsx(Button, {
-                      variant: "ghost", size: "icon", className: "h-6 w-6", onClick: () => copyToClipboard(cred.password), children:
-                        _jsx(Copy, { className: "w-3 h-3" })
-                    }
-                    )]
-                }
-                )]
-            }
-            )
-        }
-        ),
-
-
-        _jsx(TableCell, {
-          className: "hidden md:table-cell max-w-[200px]", children:
-            _jsx("p", {
-              className: "text-xs text-muted-foreground truncate", title: cred.notes, children:
-                cred.notes || "-"
-            }
-            )
-        }
-        ),
-
-
-        _jsx(TableCell, {
-          children:
-            _jsxs(DropdownMenu, {
-              children: [
-                _jsx(DropdownMenuTrigger, {
-                  asChild: true, children:
-                    _jsx(Button, {
-                      variant: "ghost", size: "icon", className: "h-8 w-8 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity", children:
-                        _jsx(MoreHorizontal, { className: "w-4 h-4" })
-                    }
-                    )
-                }
-                ),
-                _jsx(DropdownMenuContent, {
-                  align: "end", className: "bg-card backdrop-blur-xl border-border/50", children:
-                    _jsxs(DropdownMenuItem, {
-                      onClick: onDelete, className: "text-rose-500 focus:text-rose-500 cursor-pointer", children: [
-                        _jsx(Trash2, { className: "w-4 h-4 mr-2" }), "Eliminar"]
-                    }
-
-                    )
-                }
-                )]
-            }
-            )
-        }
-        )]
-    }
-    ));
-
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute right-10 top-1/2 -translate-y-1/2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="p-2 text-muted-foreground/70 hover:text-foreground transition-colors rounded-xl hover:bg-muted">
+                  <MoreHorizontal className="w-6 h-6" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-card border-border shadow-xl rounded-xl">
+                <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer text-[14px] font-bold py-2 px-3">
+                  <Trash2 className="w-[18px] h-[18px] mr-2" /> Eliminar
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      </td>
+    </motion.tr>
+  );
 }
