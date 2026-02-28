@@ -770,7 +770,7 @@ export default function ConfigurationPage() {
             ),
 
             _jsxs("div", {
-              className: "max-w-[1600px] mx-auto p-4 md:p-10 pt-20 md:pt-32 space-y-8", children: [
+              className: "max-w-[1600px] mx-auto p-4 md:p-10 pt-20 md:pt-6 space-y-8", children: [
                 _jsxs("div", {
                   className: "flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6", children: [
                     _jsxs("div", {
@@ -1029,15 +1029,15 @@ export default function ConfigurationPage() {
                                               securityCodes.map((c) =>
                                                 _jsxs("div", {
                                                   className: `relative bg-card/60 border rounded-xl p-5 space-y-4 transition-all duration-300 ${c.status === 'available' ? 'border-emerald-500/20 hover:border-emerald-500/40 shadow-sm hover:shadow-emerald-500/5' :
-                                                      c.status === 'used' ? 'border-border opacity-50' :
-                                                        'border-amber-500/20 opacity-60'
+                                                    c.status === 'used' ? 'border-border opacity-50' :
+                                                      'border-amber-500/20 opacity-60'
                                                     }`, children: [
                                                       _jsxs("div", {
                                                         className: "flex items-center justify-between", children: [
                                                           _jsxs("div", {
                                                             className: `inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[9px] font-bold uppercase tracking-widest ${c.status === 'available' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' :
-                                                                c.status === 'used' ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20' :
-                                                                  'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                                                              c.status === 'used' ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20' :
+                                                                'bg-amber-500/10 text-amber-500 border border-amber-500/20'
                                                               }`, children: [
                                                                 c.status === 'available' ? _jsx(CheckCircle2, { className: "w-3 h-3" }) :
                                                                   c.status === 'used' ? _jsx(Shield, { className: "w-3 h-3" }) :

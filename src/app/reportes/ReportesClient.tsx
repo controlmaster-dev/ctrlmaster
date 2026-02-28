@@ -164,7 +164,7 @@ export function ReportesClient() {
 
   if (loading) return (
     _jsxs("div", {
-      className: "min-h-screen bg-background pb-20 pt-32 px-6 md:px-12 max-w-[1600px] mx-auto space-y-12", children: [
+      className: "min-h-screen bg-background pb-20 pt-20 md:pt-6 px-6 md:px-12 max-w-[1600px] mx-auto space-y-12", children: [
         _jsxs("div", {
           className: "flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12", children: [
             _jsxs("div", {
@@ -201,7 +201,7 @@ export function ReportesClient() {
         _jsx(EmailSendModal, { isOpen: emailModal.isOpen, onClose: () => setEmailModal((prev) => ({ ...prev, isOpen: false })), onConfirm: handleEmailConfirm, reportId: emailModal.report?.id || "", title: emailModal.type === 'both' ? "Enviar y Descargar" : "Enviar Reporte" }),
 
         _jsxs("div", {
-          className: "relative z-10 pt-20 pb-6 md:pt-32 md:pb-12 px-4 md:px-12 max-w-[1600px] mx-auto", children: [
+          className: "relative z-10 pt-20 pb-6 md:pt-6 md:pb-12 px-4 md:px-12 max-w-[1600px] mx-auto", children: [
             _jsxs("div", {
               className: "flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8 md:mb-12", children: [
                 _jsxs(motion.div, {

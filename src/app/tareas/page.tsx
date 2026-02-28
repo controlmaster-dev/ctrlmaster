@@ -54,7 +54,7 @@ export default function TasksPage() {
           ),
 
           _jsxs("div", {
-            className: "p-4 md:p-8 pt-24 md:pt-32 max-w-[1600px] mx-auto relative z-10", children: [
+            className: "p-4 md:p-8 pt-20 md:pt-6 max-w-[1600px] mx-auto relative z-10", children: [
               _jsxs("div", {
                 className: "flex items-center justify-between mb-8", children: [
                   _jsx("h1", {
@@ -134,7 +134,7 @@ export default function TasksPage() {
         }
         ),
         _jsx("div", {
-          className: "p-4 md:p-8 pt-24 md:pt-32 relative z-10", children:
+          className: "p-4 md:p-8 pt-20 md:pt-6 relative z-10", children:
             _jsx(OperatorView, { user: user })
         }
         )]

@@ -294,7 +294,7 @@ export function CrearReporteClient() {
         _jsx("div", {
           className: "flex-1 overflow-y-auto relative flex items-center justify-center min-h-screen", children:
             _jsxs("div", {
-              className: "max-w-4xl w-full p-8 md:p-16 pt-24 pb-32", children: [
+              className: "max-w-4xl w-full p-8 md:p-16 pt-20 md:pt-6 pb-32", children: [
                 _jsxs(AnimatePresence, {
                   mode: "wait", children: [
                     step === 0 &&

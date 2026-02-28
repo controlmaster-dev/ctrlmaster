@@ -480,7 +480,7 @@ export default function OperatorsPage() {
         ),
 
         _jsxs("main", {
-          className: "w-full max-w-[1600px] mx-auto px-4 md:px-8 pt-32 pb-20 md:py-32 space-y-12", children: [
+          className: "w-full max-w-[1600px] mx-auto px-4 md:px-8 pt-20 pb-20 md:pt-6 md:pb-12 space-y-12", children: [
 
             _jsxs("div", {
               className: "relative z-10 flex flex-col items-start gap-8 py-8 md:py-12 border-b border-border bg-card/50 backdrop-blur-sm rounded-md p-6 md:p-12 overflow-hidden ring-1 ring-border", children: [
