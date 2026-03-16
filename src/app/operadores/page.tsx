@@ -341,7 +341,7 @@ export default function OperatorsPage() {
                     }
                     ),
                     _jsxs(DialogContent, {
-                      className: "w-full h-full md:h-[90vh] md:max-w-screen-2xl bg-card backdrop-blur-xl border-border text-card-foreground p-0 overflow-hidden shadow-none ring-1 ring-border flex flex-col rounded-none md:rounded-lg duration-500 data-[state=open]:duration-500 data-[state=closed]:duration-500 data-[state=closed]:zoom-out-100 data-[state=open]:zoom-in-100", children: [
+                      className: "w-full h-full md:h-[95vh] md:max-w-[98vw] bg-card backdrop-blur-xl border-border text-card-foreground p-0 overflow-hidden shadow-none ring-1 ring-border flex flex-col rounded-none md:rounded-xl duration-500 data-[state=open]:duration-500 data-[state=closed]:duration-500 data-[state=closed]:zoom-out-100 data-[state=open]:zoom-in-100", children: [
                         _jsxs("div", {
                           className: "p-6 border-b border-border flex justify-between items-center", children: [
                             _jsxs("div", {
