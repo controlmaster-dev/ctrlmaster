@@ -1,0 +1,89 @@
+{
+  "users": [
+    {
+      "id": "007",
+      "name": "Gabriel Núñez",
+      "email": "knunez@enlace.org",
+      "password": "GzNr0908",
+      "role": "Operador Control Master",
+      "department": "General",
+      "shift": "Mañana (6:00 AM - 3:00 PM)",
+      "avatar": "https://res.cloudinary.com/dtgpm5idm/image/upload/v1760033720/Gabriel_vc02i8.jpg",
+      "active": true,
+      "joinDate": "2024-12-23"
+    },
+       {
+      "id": "002",
+      "name": "Alex Blanco",
+      "email": "ablanco@enlace.org",
+      "password": "apcr25",
+      "role": "Operador Control Master",
+      "department": "General",
+      "shift": "Mañana (6:00 AM - 3:00 PM)",
+      "avatar": "https://res.cloudinary.com/dtgpm5idm/image/upload/v1760033720/Alex_y8aw4v.jpg",
+      "active": true,
+      "joinDate": "2021-03-15"
+    },
+    
+       {
+      "id": "003",
+      "name": "Andrés Corea",
+      "email": "acorea@enlace.org",
+      "password": "Diosmenenice1220",
+      "role": "Operador Control Master",
+      "department": "General",
+      "shift": "Mañana (9:00 AM - 6:00 PM)",
+      "avatar": "https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=150&h=150&fit=crop&crop=face",
+      "active": true,
+      "joinDate": "2025-10-15"
+    },
+           {
+      "id": "004",
+      "name": "Diego Bolaños",
+      "email": "dbolanos@enlace.org",
+      "password": "Orlando2025!",
+      "role": "Operador Control Master",
+      "department": "General",
+      "shift": "Mixto (6:00 PM - 12:00 AM)",
+      "avatar": "https://res.cloudinary.com/dtgpm5idm/image/upload/v1760033720/Diego_ddtllo.jpg",
+      "active": true,
+      "joinDate": "2025-07-15"
+    },
+               {
+      "id": "005",
+      "name": "Josué Jimenez",
+      "email": "jjimenez@enlace.org",
+      "password": "joji25",
+      "role": "Operador Control Master",
+      "department": "General",
+      "shift": "Nocturno (12:00 AM - 6:00 AM)",
+      "avatar": "https://res.cloudinary.com/dtgpm5idm/image/upload/v1760033720/Josue_buteev.jpg",
+      "active": true,
+      "joinDate": "2024-01-12"
+    },
+                   {
+      "id": "006",
+      "name": "Itsary Gomez",
+      "email": "igomez@enlace.org",
+      "password": "igom25",
+      "role": "Operador Control Master",
+      "department": "General",
+      "shift": "Nocturno (6:00 PM - 12:00 AM)",
+      "avatar": "https://res.cloudinary.com/dtgpm5idm/image/upload/v1760033720/Itsary_wyt1qz.jpg",
+      "active": true,
+      "joinDate": "2023-01-12"
+    },
+     {
+      "id": "001",
+      "name": "Ronald Jimenez",
+      "email": "rjimenez@enlace.org",
+      "password": "ronaldctrl",
+      "role": "Administrador de Control Master",
+      "department": "Administrador",
+      "shift": "Mañana (7:00 AM - 3:00 PM)",
+      "avatar": "https://res.cloudinary.com/dtgpm5idm/image/upload/v1760033720/Ronald_ddkbbl.jpg",
+      "active": true,
+      "joinDate": "2023-01-12"
+    }
+  ]
+}
