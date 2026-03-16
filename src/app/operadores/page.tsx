@@ -10,7 +10,7 @@ import { LogIn, Shield, Calendar, Info, Download, Home, Calendar as CalIcon } fr
 import Link from "next/link";
 import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { WeeklyCalendar } from "@/components/WeeklyCalendar";
-import { BitcentralWidget } from "@/components/BitcentralWidget";
+import { AllDayWidget } from "@/components/AllDayWidget";
 import { useAuth } from "@/contexts/AuthContext";
 import { ThemeToggle } from "@/components/ThemeToggle"; import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 
@@ -548,7 +548,7 @@ export default function OperatorsPage() {
               className: "grid grid-cols-1 lg:grid-cols-4 gap-8 items-start relative z-10", children: [
                 _jsx("div", {
                   className: "lg:col-span-1 lg:sticky lg:top-24 z-20", children:
-                    _jsx(BitcentralWidget, { users: allUsers, isReadOnly: true })
+                    _jsx(AllDayWidget, { operators: operators, specialEvents: specialEvents })
                 }),
                 _jsxs("div", {
                   className: "lg:col-span-3 space-y-8", children: [
