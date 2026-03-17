@@ -407,7 +407,7 @@ export function WeeklyCalendar({ operators, onUpdateSchedule, currentWeekStart, 
                         ),
 
                         _jsxs("div", {
-                          className: "p-2 space-y-2 flex-1 pb-10", children: [
+                          className: "p-1 space-y-1 flex-1 pb-10", children: [
                             col.shifts.map((item, idx) => {
                               const isActiveNow = isToday && new Date().getHours() >= item.shift.start && new Date().getHours() < (item.shift.end === 0 ? 24 : item.shift.end);
                               return (
@@ -418,7 +418,7 @@ export function WeeklyCalendar({ operators, onUpdateSchedule, currentWeekStart, 
 
                                   onClick: () => handleEditClick(item.op, col.dayIndex),
                                   className: `
-                                                    relative overflow-hidden rounded-md border p-2 cursor-pointer transition-all duration-200
+                                                    relative overflow-hidden rounded-md border p-1.5 cursor-pointer transition-all duration-200
                                                     hover:shadow-md hover:border-[#FF0C60]/40 group/card
                                                     ${isActiveNow ?
                                       'bg-card border-[#FF0C60] shadow-sm ring-1 ring-[#FF0C60]/20' :
@@ -429,18 +429,18 @@ export function WeeklyCalendar({ operators, onUpdateSchedule, currentWeekStart, 
                                     isActiveNow && _jsx("div", { className: "absolute top-0 right-0 w-2 h-2 m-1.5 bg-[#FF0C60] rounded-full animate-pulse" }),
 
                                     _jsxs("div", {
-                                      className: "flex items-center gap-2 mb-2", children: [
+                                      className: "flex items-center gap-1.5 mb-1.5", children: [
                                         _jsxs(Avatar, {
-                                          className: "w-6 h-6 rounded-md border border-border", children: [
+                                          className: "w-5 h-5 rounded-md border border-border", children: [
                                             _jsx(AvatarImage, { src: item.op.image }),
-                                            _jsx(AvatarFallback, { className: "rounded-md bg-muted text-[9px] font-bold text-muted-foreground", children: item.op.name.charAt(0) })]
+                                            _jsx(AvatarFallback, { className: "rounded-md bg-muted text-[8px] font-bold text-muted-foreground", children: item.op.name.charAt(0) })]
                                         }
                                         ),
                                         _jsxs("div", {
-                                          className: "flex-1 min-w-0", children: [
-                                            _jsx("div", { className: "text-[11px] font-bold text-foreground truncate leading-tight", children: item.op.name }),
+                                          className: "flex-1 min-w-0 flex flex-col justify-center", children: [
+                                            _jsx("div", { className: "text-[10px] font-bold text-foreground truncate leading-tight", children: item.op.name }),
                                             _jsx("div", {
-                                              className: "text-[9px] text-muted-foreground truncate font-medium", children:
+                                              className: "text-[8px] text-muted-foreground truncate font-medium mt-[1px] leading-none", children:
                                                 item.op.role === 'BOSS' || item.op.role === 'Boss' ? 'Admin' : 'Operador'
                                             }
                                             )]
@@ -451,7 +451,7 @@ export function WeeklyCalendar({ operators, onUpdateSchedule, currentWeekStart, 
 
                                     _jsxs("div", {
                                       className: `
-                                                    flex items-center justify-between text-[10px] font-mono px-1.5 py-1 rounded
+                                                    flex items-center justify-between text-[9px] font-mono px-1 py-0.5 rounded
                                                     ${isActiveNow ? 'bg-[#FF0C60]/10 text-[#FF0C60] font-bold' : 'bg-muted/50 text-muted-foreground'}
                                                 `, children: [
                                         _jsx("span", { children: formatTime(item.shift.start) }),
