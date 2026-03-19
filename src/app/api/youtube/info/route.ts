@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { YtdlCore } from '@ybd-project/ytdl-core';
+// @ts-ignore - Resolution issue in some environments, but works at runtime in Next.js
+import { YtdlCore } from '@ybd-project/ytdl-core/serverless';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const info = await ytdl.getBasicInfo(url, {
-      clients: ['web', 'webCreator', 'android', 'ios', 'mweb'], // Multiple clients increase chance of success
+      clients: ['tv', 'ios', 'android', 'mweb'], // Prioritize non-web clients for serverless
     });
 
     const { videoDetails } = info;

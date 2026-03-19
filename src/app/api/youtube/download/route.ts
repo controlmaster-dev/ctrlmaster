@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { YtdlCore } from '@ybd-project/ytdl-core';
+// @ts-ignore - Resolution issue in some environments, but works at runtime in Next.js
+import { YtdlCore } from '@ybd-project/ytdl-core/serverless';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
   try {
     console.log(`[YouTube] Downloading ${type}: ${url}`);
     const info = await ytdl.getBasicInfo(url, {
-      clients: ['web', 'webCreator', 'android', 'ios', 'mweb', 'tv'],
+      clients: ['tv', 'ios', 'android', 'mweb'],
     });
     const isVideo = type === 'video';
     const title = info.videoDetails.title.replace(/[^\w\s-]/gi, '').trim() || (isVideo ? 'video' : 'audio');
@@ -33,7 +34,7 @@ export async function GET(request: NextRequest) {
     const stream = await ytdl.download(url, {
       filter: isVideo ? 'audioandvideo' : 'audioonly',
       quality: isVideo ? 'highest' : 'highestaudio',
-      clients: ['web', 'webCreator', 'android', 'ios', 'mweb', 'tv'],
+      clients: ['tv', 'ios', 'android', 'mweb'],
     });
 
     console.log(`[YouTube] Stream started for: ${filename}`);
