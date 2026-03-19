@@ -133,11 +133,17 @@ export function YoutubeDownloader() {
               >
                 <div className="flex flex-col md:flex-row gap-6 items-start">
                   <div className="w-full md:w-64 aspect-video rounded-xl overflow-hidden bg-muted border border-border shadow-lg shrink-0 relative group">
-                    <img 
-                      src={videoInfo.thumbnails[videoInfo.thumbnails.length - 1].url} 
-                      alt={videoInfo.title}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    />
+                    {videoInfo.thumbnails && videoInfo.thumbnails.length > 0 ? (
+                      <img 
+                        src={videoInfo.thumbnails[videoInfo.thumbnails.length - 1].url} 
+                        alt={videoInfo.title}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-muted">
+                        <Music className="w-12 h-12 text-muted-foreground/20" />
+                      </div>
+                    )}
                     <div className="absolute bottom-2 right-2 px-2 py-1 bg-black/70 backdrop-blur-md rounded text-[10px] font-bold text-white flex items-center gap-1">
                       <Clock className="w-3 h-3" /> {formatDuration(videoInfo.duration)}
                     </div>
