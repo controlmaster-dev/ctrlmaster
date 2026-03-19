@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { YtdlCore } from '@ybd-project/ytdl-core';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -9,46 +10,42 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'URL is required' }, { status: 400 });
   }
 
+  const ytdl = new YtdlCore({
+    fetcher: fetch,
+  });
+
   try {
-    console.log(`[YouTube] Downloading via Cobalt (${type}): ${url}`);
+    console.log(`[YouTube] Direct download attempt (${type}): ${url}`);
     
-    const cobaltRes = await fetch('https://api.cobalt.tools/api/json', {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        url: url,
-        downloadMode: type === 'video' ? 'video' : 'audio',
-        videoQuality: '720', // Best for Vercel/speed
-        audioFormat: 'm4a',
-        filenamePattern: 'basic'
-      })
+    const options: any = {
+      clients: ['ios', 'android'],
+      disableDefaultClients: true,
+      hl: 'es-419',
+      gl: 'MX',
+    };
+
+    const info = await ytdl.getBasicInfo(url, options);
+    const isVideo = type === 'video';
+    const title = info.videoDetails.title.replace(/[^\w\s-]/gi, '').trim() || (isVideo ? 'video' : 'audio');
+    const filename = `${title}.${isVideo ? 'mp4' : 'm4a'}`;
+
+    // Get the stream
+    const stream = await ytdl.download(url, {
+      ...options,
+      filter: isVideo ? 'audioandvideo' : 'audioonly',
+      quality: isVideo ? 'highest' : 'highestaudio',
     });
 
-    const data = await cobaltRes.json();
-
-    if (data.status === 'error') {
-      throw new Error(data.text || 'Error from Cobalt API');
-    }
-
-    if (data.url) {
-      console.log(`[YouTube] Cobalt URL obtained: ${data.url}`);
-      // Redirecting to the direct download link is the most reliable way on Vercel
-      // to avoid timeouts and memory limits
-      return NextResponse.redirect(data.url);
-    }
-
-    if (data.status === 'stream') {
-        return NextResponse.redirect(data.url);
-    }
-
-    throw new Error('No download URL returned from API');
+    return new Response(stream, {
+      headers: {
+        'Content-Type': isVideo ? 'video/mp4' : 'audio/mp4',
+        'Content-Disposition': `attachment; filename="${encodeURIComponent(filename)}"`,
+      },
+    });
   } catch (error) {
     console.error(`[YouTube ERROR] Download failed:`, error);
     return NextResponse.json({ 
-      error: `Error al procesar la descarga. YouTube está bloqueando servidores de Vercel.`,
+      error: `YouTube está bloqueando este servidor. Intenta con otro video o inténtalo más tarde.`,
       details: error instanceof Error ? error.message : String(error)
     }, { status: 500 });
   }
