@@ -57,3 +57,31 @@ export async function DELETE(req) {
     return NextResponse.json({ error: 'Error deleting credential' }, { status: 500 });
   }
 }
+
+export async function PUT(req) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+    const body = await req.json();
+    const { service, category, username, password, notes } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID required' }, { status: 400 });
+    }
+
+    const updated = await prisma.credential.update({
+      where: { id },
+      data: {
+        service,
+        category: category || 'General',
+        username,
+        password,
+        notes
+      }
+    });
+
+    return NextResponse.json(updated);
+  } catch (error) {
+    return NextResponse.json({ error: 'Error updating credential' }, { status: 500 });
+  }
+}
