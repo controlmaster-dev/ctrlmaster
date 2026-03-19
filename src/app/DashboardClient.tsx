@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CheckCircle, Clock, Plus, Activity, ArrowUpRight, FileText } from "lucide-react";
+import { CheckCircle, Clock, Plus, Activity, ArrowUpRight, FileText, Youtube } from "lucide-react";
 
 import Link from "next/link";
 import { ProcessingModal } from "@/components/ProcessingModal";
@@ -249,6 +249,14 @@ export function DashboardClient() {
                         <Button variant="outline" className="w-full h-12 md:px-6 border-border bg-card text-muted-foreground hover:text-violet-400 rounded-md gap-2 md:gap-3 backdrop-blur-md transition-all group-hover:border-violet-500/30 group-hover:scale-105 active:scale-95">
                           <UsersIcon className="w-4 h-4 md:w-5 md:h-5" />
                           <span className="font-semibold text-sm md:text-base tracking-tight">Horarios</span>
+                        </Button>
+                      </Link>
+
+                      <Link href="/youtube" className="relative group">
+                        <div className="absolute inset-0 bg-red-500/20 rounded-md blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                        <Button variant="outline" className="w-full h-12 md:px-6 border-border bg-card text-muted-foreground hover:text-red-400 rounded-md gap-2 md:gap-3 backdrop-blur-md transition-all group-hover:border-red-500/30 group-hover:scale-105 active:scale-95">
+                          <Youtube className="w-4 h-4 md:w-5 md:h-5" />
+                          <span className="font-semibold text-sm md:text-base tracking-tight">YouTube</span>
                         </Button>
                       </Link>
                     </div>

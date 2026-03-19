@@ -62,7 +62,7 @@ export function DetailsStep({ formData, handleInputChange }: DetailsStepProps) {
             >
               Tiempo Real
               <br />
-              <span className="text-[9px] opacity-70 font-normal font-mono">Auto-sync</span>
+              <span className="text-[9px] opacity-70 font-normal font-mono">Sincronizado con la hora del servidor.</span>
             </button>
             <button
               onClick={() => handleInputChange('isManualDate', true)}
@@ -75,7 +75,7 @@ export function DetailsStep({ formData, handleInputChange }: DetailsStepProps) {
             >
               Entrada Manual
               <br />
-              <span className="text-[9px] opacity-70 font-normal font-mono">Set specific time</span>
+              <span className="text-[9px] opacity-70 font-normal font-mono">Selecciona un tiempo especifico.</span>
             </button>
           </div>
           
