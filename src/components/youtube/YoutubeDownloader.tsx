@@ -57,23 +57,38 @@ export function YoutubeDownloader() {
     
     try {
       const downloadUrl = `/api/youtube/download?url=${encodeURIComponent(url)}&type=${type}`;
+      
+      // We fetch the header first to see if it's successful before triggering browser download
+      const response = await fetch(downloadUrl);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Error al descargar el ${type}`);
+      }
+
+      // If it's OK, we can trigger the actual download
+      // Since it's a stream, we can use the same URL for a real browser download
+      // or we can use the blob approach, but blob might fail for large videos due to memory.
+      // The best way for large files is a hidden link, but we already know it's OK now.
       const link = document.createElement('a');
       link.href = downloadUrl;
       const extension = type === 'audio' ? 'm4a' : 'mp4';
-      link.setAttribute('download', `${videoInfo.title}.${extension}`);
+      // Sanitize title for filename
+      const safeTitle = videoInfo.title.replace(/[^\w\s-]/gi, '').trim() || 'video';
+      link.setAttribute('download', `${safeTitle}.${extension}`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       
-      toast.success(`Descarga de ${type === 'audio' ? 'audio' : 'video'} iniciada`);
-    } catch (error) {
+      toast.success(`La descarga de ${type === 'audio' ? 'audio' : 'video'} debería comenzar en breve`);
+    } catch (error: any) {
       console.error(error);
-      toast.error(`Error al intentar descargar el ${type}.`);
+      toast.error(error.message || `Error al intentar descargar el ${type}. Es posible que el video sea muy largo.`);
     } finally {
       setTimeout(() => {
         if (type === 'audio') setDownloadingAudio(false);
         else setDownloadingVideo(false);
-      }, 2000);
+      }, 3000);
     }
   };
 

@@ -19,27 +19,30 @@ export async function GET(request: NextRequest) {
   });
 
   try {
-    const info = await ytdl.getFullInfo(url);
-    const title = info.videoDetails.title.replace(/[^\w\s-]/gi, '').trim();
+    const info = await ytdl.getBasicInfo(url, {
+      clients: ['web', 'webCreator', 'android', 'ios', 'mweb'],
+    });
     const isVideo = type === 'video';
-    const filename = `${title || (isVideo ? 'video' : 'audio')}.${isVideo ? 'mp4' : 'm4a'}`;
+    const title = info.videoDetails.title.replace(/[^\w\s-]/gi, '').trim() || (isVideo ? 'video' : 'audio');
+    const filename = `${title}.${isVideo ? 'mp4' : 'm4a'}`;
 
-    // Get the stream (it returns a Web ReadableStream directly)
+    // Get the stream
     const stream = await ytdl.download(url, {
       filter: isVideo ? 'audioandvideo' : 'audioonly',
       quality: isVideo ? 'highest' : 'highestaudio',
+      clients: ['web', 'webCreator', 'android', 'ios', 'mweb'],
     });
 
     return new Response(stream, {
       headers: {
         'Content-Type': isVideo ? 'video/mp4' : 'audio/mp4',
-        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Content-Disposition': `attachment; filename="${encodeURIComponent(filename)}"`,
       },
     });
   } catch (error) {
     console.error(`Error downloading YouTube ${type}:`, error);
     return NextResponse.json({ 
-      error: `Failed to download ${type}. YouTube might be blocking the request.`,
+      error: `Failed to download ${type}. URL might be restricted or video too long.`,
       details: String(error)
     }, { status: 500 });
   }
