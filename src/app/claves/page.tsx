@@ -253,7 +253,7 @@ export default function CredentialsPage() {
               </div>
               <div>
                 <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white leading-none">Bóveda</h1>
-                <p className="text-muted-foreground font-bold text-sm tracking-[0.2em] uppercase mt-2">Vaulted Security</p>
+                <p className="text-muted-foreground font-bold text-sm tracking-[0.2em] uppercase mt-2">Seguridad de Credenciales</p>
               </div>
             </div>
           </div>
@@ -292,7 +292,7 @@ export default function CredentialsPage() {
             </button>
           ))}
           <div className="ml-auto text-[11px] font-bold text-muted-foreground/40 uppercase tracking-[0.2em] pr-4">
-            {filteredCredentials.length} Items encontrados
+            {filteredCredentials.length} Credenciales encontradas
           </div>
         </div>
       </div>
