@@ -19,19 +19,24 @@ export async function GET(request: NextRequest) {
   });
 
   try {
+    console.log(`[YouTube] Downloading ${type}: ${url}`);
     const info = await ytdl.getBasicInfo(url, {
-      clients: ['web', 'webCreator', 'android', 'ios', 'mweb'],
+      clients: ['web', 'webCreator', 'android', 'ios', 'mweb', 'tv'],
     });
     const isVideo = type === 'video';
     const title = info.videoDetails.title.replace(/[^\w\s-]/gi, '').trim() || (isVideo ? 'video' : 'audio');
     const filename = `${title}.${isVideo ? 'mp4' : 'm4a'}`;
 
+    console.log(`[YouTube] Info fetched: ${title}`);
+
     // Get the stream
     const stream = await ytdl.download(url, {
       filter: isVideo ? 'audioandvideo' : 'audioonly',
       quality: isVideo ? 'highest' : 'highestaudio',
-      clients: ['web', 'webCreator', 'android', 'ios', 'mweb'],
+      clients: ['web', 'webCreator', 'android', 'ios', 'mweb', 'tv'],
     });
+
+    console.log(`[YouTube] Stream started for: ${filename}`);
 
     return new Response(stream, {
       headers: {
@@ -40,10 +45,10 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error(`Error downloading YouTube ${type}:`, error);
+    console.error(`[YouTube ERROR] ${type} download failed:`, error);
     return NextResponse.json({ 
       error: `Failed to download ${type}. URL might be restricted or video too long.`,
-      details: String(error)
+      details: error instanceof Error ? error.message : String(error)
     }, { status: 500 });
   }
 }
