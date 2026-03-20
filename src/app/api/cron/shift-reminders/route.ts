@@ -80,12 +80,12 @@ export async function GET(req: Request) {
       where: { name: info.name }
     });
 
-    if (!user || (!user.email && !isTest)) {
-      console.warn(`[Shift Reminders] User ${info.name} not found or no email setup.`);
-      return NextResponse.json({ message: `No email found for operator ${info.name}` });
+    if (!user || (!user.email && !user.phone && !isTest)) {
+      console.warn(`[Shift Reminders] User ${info.name} not found or no contact info setup.`);
+      return NextResponse.json({ message: `No contact info found for operator ${info.name}` });
     }
 
-    const operatorEmail = user.email;
+    const operatorEmail = user.email || "";
     const recipient = isTest && testEmail ? testEmail : operatorEmail;
 
     // Fecha formateada (ej. Lunes 15 de Octubre)
@@ -135,7 +135,49 @@ export async function GET(req: Request) {
 
     const subject = `Recordatorio: Turno de Pauta Mañana (${formattedDate})`;
 
-    // 4. Enviar usando Resend SDK con Fallback
+    // 4. Enviar mensaje de WhatsApp (Si tiene número configurado)
+    let whatsappStatus = "Not attempted";
+    // Nota: Quitamos la restricción temporal de isTest para poder probar la API
+    if (user.phone) {
+      try {
+        console.log(`[Shift Reminders] Intentando enviar WhatsApp a ${user.phone}...`);
+        const whatsappMessage = 
+`Hola ${info.name.split(' ')[0]}, te recordamos que tienes turno de Pauta Bitcentral:
+Fecha: *${formattedDate}*
+Modalidad: ${tipoDeTurno}
+
+Por favor, asegúrate de segmentar los programas con tiempo.`;
+        
+        const waApiUrl = process.env.WHATSAPP_API_URL || 'http://localhost:3001';
+        const waRes = await fetch(`${waApiUrl}/api/send-message`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: user.phone, message: whatsappMessage })
+        });
+        
+        if (waRes.ok) {
+          console.log('[OK] WhatsApp de recordatorio enviado con EXITO');
+          whatsappStatus = "Sent";
+        } else {
+          console.warn('[WARN] Fallo de API WhatsApp. Status:', waRes.status);
+          whatsappStatus = `Error: ${waRes.status}`;
+        }
+      } catch (err) {
+        console.error('[ERROR] Error al enviar WhatsApp:', err);
+        whatsappStatus = "Exception";
+      }
+    }
+
+    // Si no hay correo al que enviar, devolvemos éxito temprano
+    if (!recipient) {
+       return NextResponse.json({ 
+         success: true, 
+         operator: info.name, 
+         whatsappParams: { sent: whatsappStatus, phone: user.phone }
+       });
+    }
+
+    // 5. Enviar usando Resend SDK con Fallback
     try {
       console.log(`[Shift Reminders] Intentando enviar vía Resend a ${recipient}...`);
       const { Resend } = await import('resend');
