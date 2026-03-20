@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { FUNCTIONS_CONFIG_MANIFEST } from 'next/dist/shared/lib/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,7 +33,6 @@ export async function POST(req) {
         notes
       }
     });
-
     return NextResponse.json(newCredential);
   } catch (error) {
     return NextResponse.json({ error: 'Error creating credential' }, { status: 500 });

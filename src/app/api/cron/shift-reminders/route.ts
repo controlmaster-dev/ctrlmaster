@@ -7,6 +7,8 @@ import { getBitcentralUser } from '@/lib/schedule';
 
 export const dynamic = 'force-dynamic';
 
+// Force Vercel rebuild to pick up new vercel.json cron schedule 
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
