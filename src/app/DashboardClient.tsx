@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CheckCircle, Clock, Plus, Activity, ArrowUpRight, FileText } from "lucide-react";
+import { CheckCircle, Clock, Plus, Activity, ArrowUpRight, FileText, Users as UsersIcon, MonitorPlay } from "lucide-react";
 
 import Link from "next/link";
 import { ProcessingModal } from "@/components/ProcessingModal";
@@ -13,7 +13,6 @@ import { SuccessModal } from "@/components/SuccessModal";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users as UsersIcon, MonitorPlay } from "lucide-react";
 import { toast } from "sonner";
 import {
   Tooltip,
@@ -196,8 +195,16 @@ export function DashboardClient() {
     );
   };
 
+  const firstName = currentUser?.name?.trim()?.split(/\s+/)[0];
+  const isEngineer = currentUser?.role === "ENGINEER";
+
   return (
     <div className="min-h-screen relative overflow-hidden text-foreground selection:bg-[#FF0C60] selection:text-white pb-20">
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-8%] right-[-5%] w-[35%] h-[35%] bg-[#FF0C60]/8 blur-[100px] rounded-full" />
+        <div className="absolute bottom-[0%] left-[-8%] w-[32%] h-[32%] bg-violet-600/8 blur-[90px] rounded-full" />
+      </div>
+
       <ProcessingModal isOpen={processing.isOpen} title={processing.title} message={processing.message} />
       <SuccessModal isOpen={modal.isOpen} onClose={() => setModal({ ...modal, isOpen: false })} type={modal.type as any} title={modal.type === 'success' ? 'Operación Exitosa' : 'Error'} message={modal.message} />
 
@@ -217,19 +224,25 @@ export function DashboardClient() {
               transition={{ duration: 0.5, ease: "easeOut" }}
               className="space-y-10"
             >
-              <div className="relative z-10 flex flex-col items-start gap-6 md:gap-8 py-6 md:py-12 border-b border-border bg-card/50 backdrop-blur-sm rounded-md p-6 md:p-12 overflow-hidden ring-1 ring-border">
-                <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent pointer-events-none" />
+              <div className="relative z-10 flex flex-col items-start gap-6 md:gap-8 py-6 md:py-10 border border-border/50 bg-card/40 backdrop-blur-xl rounded-2xl p-6 md:p-10 overflow-hidden shadow-[0_24px_80px_-32px_rgba(0,0,0,0.55)]">
+                <div className="absolute inset-0 bg-gradient-to-br from-[#FF0C60]/5 via-transparent to-violet-600/5 pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent pointer-events-none" />
 
                 <div className="relative flex flex-col md:flex-row justify-between items-start md:items-end w-full gap-6 md:gap-8">
                   <div className="space-y-3 md:space-y-4 max-w-3xl w-full">
-                    <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground tracking-tight leading-tight">
-                      {currentUser?.role === 'ENGINEER' ? (
-                        <>Ingeniería <span className="text-purple-500 font-bold tracking-tighter">Master</span></>
+                    {firstName && (
+                      <p className="text-sm font-medium text-muted-foreground/90 tracking-wide">
+                        Hola, <span className="text-foreground/90">{firstName}</span>
+                      </p>
+                    )}
+                    <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-foreground tracking-tight leading-[1.08]">
+                      {isEngineer ? (
+                        <>Ingeniería <span className="text-purple-400 font-semibold tracking-tight">Master</span></>
                       ) : (
-                        <>Control <span className="text-[#FF0C60] font-bold tracking-tighter">Master</span></>
+                        <>Control <span className="text-[#FF0C60] font-semibold tracking-tight">Master</span></>
                       )}
                     </h1>
-                    <p className="text-muted-foreground text-sm md:text-base font-medium max-w-lg leading-relaxed border-l-2 border-[#FF0C60]/20 pl-4">
+                    <p className="text-muted-foreground text-sm md:text-base font-medium max-w-lg leading-relaxed border-l-2 border-[#FF0C60]/25 pl-4">
                       Panel de operadores y monitoreo en tiempo real.
                     </p>
                   </div>
@@ -237,16 +250,16 @@ export function DashboardClient() {
                   <div className="flex flex-col items-stretch md:items-end gap-4 w-full md:w-auto">
                     <div className="grid grid-cols-2 md:flex gap-3 md:gap-4">
                       <Link href="/operadores/monitoreo" className="relative group">
-                        <div className="absolute inset-0 bg-cyan-500/20 rounded-md blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                        <Button variant="outline" className="w-full h-12 md:px-6 border-border bg-card text-muted-foreground hover:text-cyan-400 rounded-md gap-2 md:gap-3 backdrop-blur-md transition-all group-hover:border-cyan-500/30 group-hover:scale-105 active:scale-95">
+                        <div className="absolute inset-0 bg-cyan-500/20 rounded-xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                        <Button variant="outline" className="w-full h-12 md:px-6 border-border/60 bg-card/60 text-muted-foreground hover:text-cyan-400 rounded-xl gap-2 md:gap-3 backdrop-blur-md transition-all group-hover:border-cyan-500/35 group-hover:scale-[1.02] active:scale-[0.98]">
                           <MonitorPlay className="w-4 h-4 md:w-5 md:h-5" />
                           <span className="font-semibold text-sm md:text-base tracking-tight">Monitorear</span>
                         </Button>
                       </Link>
 
                       <Link href="/operadores" className="relative group">
-                        <div className="absolute inset-0 bg-violet-500/20 rounded-md blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                        <Button variant="outline" className="w-full h-12 md:px-6 border-border bg-card text-muted-foreground hover:text-violet-400 rounded-md gap-2 md:gap-3 backdrop-blur-md transition-all group-hover:border-violet-500/30 group-hover:scale-105 active:scale-95">
+                        <div className="absolute inset-0 bg-violet-500/20 rounded-xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                        <Button variant="outline" className="w-full h-12 md:px-6 border-border/60 bg-card/60 text-muted-foreground hover:text-violet-400 rounded-xl gap-2 md:gap-3 backdrop-blur-md transition-all group-hover:border-violet-500/35 group-hover:scale-[1.02] active:scale-[0.98]">
                           <UsersIcon className="w-4 h-4 md:w-5 md:h-5" />
                           <span className="font-semibold text-sm md:text-base tracking-tight">Horarios</span>
                         </Button>
@@ -255,10 +268,10 @@ export function DashboardClient() {
 
                     <div className="flex items-center gap-3 w-full">
                       <Link href="/crear-reporte" className="flex-1 relative group">
-                        <div className="absolute inset-0 bg-gradient-to-r from-[#FF0C60] to-[#FF0080] rounded-md blur-xl opacity-20 group-hover:opacity-40 transition-opacity duration-500" />
-                        <Button className="w-full h-12 md:h-14 px-8 bg-gradient-to-r from-[#FF0C60] to-[#FF0080] hover:from-[#FF2E75] hover:to-[#FF1A8C] text-white rounded-md border-0 shadow-lg shadow-rose-500/20 gap-3 text-base md:text-lg font-bold tracking-tight transition-all hover:scale-[1.02] active:scale-95">
-                          <Plus className="w-5 h-5 md:w-6 md:h-6 stroke-[4]" />
-                          <span>Nuevo Reporte</span>
+                        <div className="absolute inset-0 bg-gradient-to-r from-[#FF0C60] to-[#FF0080] rounded-xl blur-xl opacity-20 group-hover:opacity-40 transition-opacity duration-500" />
+                        <Button className="w-full h-12 md:h-14 px-8 bg-gradient-to-r from-[#FF0C60] to-[#FF0080] hover:from-[#FF2E75] hover:to-[#FF1A8C] text-white rounded-xl border-0 shadow-lg shadow-rose-500/25 gap-3 text-base md:text-lg font-semibold tracking-tight transition-all hover:scale-[1.02] active:scale-[0.98]">
+                          <Plus className="w-5 h-5 md:w-6 md:h-6 stroke-[2px]" />
+                          <span>Nuevo reporte</span>
                         </Button>
                       </Link>
 
@@ -272,8 +285,8 @@ export function DashboardClient() {
                               initial="initial"
                               whileHover="hover"
                             >
-                              <div className="absolute inset-0 bg-cyan-500/20 rounded-md blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                              <Button variant="outline" asChild className="h-12 md:h-14 border-border bg-card text-muted-foreground hover:text-cyan-400 rounded-md backdrop-blur-md transition-all group-hover:border-cyan-500/30 overflow-hidden px-3 md:px-4">
+                              <div className="absolute inset-0 bg-cyan-500/20 rounded-xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                              <Button variant="outline" asChild className="h-12 md:h-14 border-border/60 bg-card/60 text-muted-foreground hover:text-cyan-400 rounded-xl backdrop-blur-md transition-all group-hover:border-cyan-500/35 overflow-hidden px-3 md:px-4">
                                 <motion.div className="flex items-center">
                                   <FileText className="w-5 h-5 md:w-6 md:h-6 shrink-0" />
                                   <motion.span
@@ -282,7 +295,7 @@ export function DashboardClient() {
                                       hover: { width: "auto", opacity: 1, marginLeft: 10 }
                                     }}
                                     transition={{ duration: 0.3, ease: "easeOut" }}
-                                    className="font-bold text-[10px] tracking-tight whitespace-nowrap overflow-hidden"
+                                    className="font-medium text-[10px] tracking-wide whitespace-nowrap overflow-hidden"
                                   >
                                     Manual
                                   </motion.span>
@@ -290,7 +303,7 @@ export function DashboardClient() {
                               </Button>
                             </motion.a>
                           </TooltipTrigger>
-                          <TooltipContent side="top" className="bg-cyan-500 border-cyan-400 text-[#0f172a] font-bold">
+                          <TooltipContent side="top" className="bg-cyan-500 border-cyan-400 text-[#0f172a] font-medium">
                             <p>Descargar PDF</p>
                           </TooltipContent>
                         </Tooltip>
@@ -370,10 +383,10 @@ export function DashboardClient() {
 
               {currentUser?.role === 'ENGINEER' && (
                 <div className="w-full">
-                  <Card className="bg-card backdrop-blur-md md:backdrop-blur-xl border border-border shadow-sm overflow-hidden rounded-md ring-1 ring-border">
+                  <Card className="bg-card/50 backdrop-blur-xl border border-border/50 shadow-sm overflow-hidden rounded-2xl ring-0">
                     <CardHeader>
-                      <CardTitle className="text-xl text-foreground flex items-center gap-2 font-bold tracking-tight">
-                        <Activity className="w-5 h-5 text-purple-500" /> Tendencia Semanal
+                      <CardTitle className="text-xl text-foreground flex items-center gap-2 font-semibold tracking-tight">
+                        <Activity className="w-5 h-5 text-purple-400" /> Tendencia semanal
                       </CardTitle>
                       <CardDescription className="text-muted-foreground font-medium text-xs">Reportes generados en los últimos 7 días</CardDescription>
                     </CardHeader>
@@ -389,15 +402,15 @@ export function DashboardClient() {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
                 <div className="lg:col-span-2 space-y-10">
                   <div>
-                    <Card className="bg-card backdrop-blur-md md:backdrop-blur-xl border border-border shadow-sm overflow-hidden rounded-md group ring-1 ring-border">
-                      <CardHeader className="border-b border-border flex flex-row items-center justify-between p-6 relative">
-                        <div>
-                          <CardTitle className="text-xl text-foreground font-bold tracking-tight">Últimos Reportes</CardTitle>
+                    <Card className="bg-card/50 backdrop-blur-xl border border-border/50 shadow-sm overflow-hidden rounded-2xl group ring-0">
+                      <CardHeader className="border-b border-border/60 flex flex-row items-center justify-between p-6 relative gap-4">
+                        <div className="min-w-0">
+                          <CardTitle className="text-xl text-foreground font-semibold tracking-tight">Últimos reportes</CardTitle>
                           <CardDescription className="text-muted-foreground mt-1 font-medium text-xs">Incidencias recientes registradas</CardDescription>
                         </div>
-                        <Link href="/reportes">
-                          <Button variant="ghost" className="text-[#FF0C60] hover:text-[#FF0C60] hover:bg-[#FF0C60]/10 rounded-md px-4 text-xs font-bold h-8 transition-all">
-                            Ver Todos <ArrowUpRight className="ml-2 w-3 h-3" />
+                        <Link href="/reportes" className="shrink-0">
+                          <Button variant="ghost" className="text-[#FF0C60] hover:text-[#FF0C60] hover:bg-[#FF0C60]/10 rounded-xl px-4 text-xs font-semibold h-9 transition-all">
+                            Ver todos <ArrowUpRight className="ml-1.5 w-3.5 h-3.5" />
                           </Button>
                         </Link>
                       </CardHeader>
@@ -443,12 +456,12 @@ export function DashboardClient() {
                                         </div>
                                         <div className="flex items-center gap-3">
                                           <div className="flex items-center gap-2">
-                                            <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center text-[9px] font-bold text-muted-foreground border border-border">
+                                            <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center text-[9px] font-semibold text-muted-foreground border border-border">
                                               {report.operatorName.split(' ').map((n: string) => n[0]).join('').substring(0, 2)}
                                             </div>
                                             <span className="text-[11px] font-semibold text-muted-foreground tracking-tight">{report.operatorName.split(' ')[0]}</span>
                                           </div>
-                                          <Badge variant="outline" className={`text-[9px] px-2 py-0 border rounded-full font-bold tracking-tight ${report.priority === 'Enlace' ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' : report.priority === 'EJTV' ? 'bg-[#FF0C60]/10 text-[#FF0C60] border-[#FF0C60]/20' : 'bg-muted text-muted-foreground border-border'}`}>
+                                          <Badge variant="outline" className={`text-[9px] px-2 py-0 border rounded-full font-medium tracking-tight ${report.priority === 'Enlace' ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' : report.priority === 'EJTV' ? 'bg-[#FF0C60]/10 text-[#FF0C60] border-[#FF0C60]/20' : 'bg-muted text-muted-foreground border-border'}`}>
                                             {report.priority}
                                           </Badge>
                                         </div>
@@ -460,9 +473,9 @@ export function DashboardClient() {
                                       </div>
                                     </TableCell>
                                     <TableCell className="pr-6 py-4 text-right">
-                                      <div className="flex justify-end items-center gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity">
+                                      <div className="flex justify-end items-center gap-1 opacity-100 md:opacity-0 md:group-hover/row:opacity-100 transition-opacity">
                                         {report.status !== 'resolved' && (
-                                          <Button size="icon" variant="ghost" onClick={(e) => handleResolve(report.id, e)} className="h-8 w-8 text-emerald-500 hover:text-white hover:bg-emerald-500 rounded-full transition-all shadow-lg hover:shadow-emerald-500/20" title="Resolver">
+                                          <Button size="icon" variant="ghost" onClick={(e) => handleResolve(report.id, e)} className="h-8 w-8 text-emerald-500 hover:text-white hover:bg-emerald-500 rounded-full transition-all shadow-md hover:shadow-emerald-500/25 focus-visible:opacity-100" title="Marcar como resuelto" aria-label="Marcar como resuelto">
                                             <CheckCircle className="w-4 h-4" />
                                           </Button>
                                         )}
@@ -474,9 +487,15 @@ export function DashboardClient() {
                             </Table>
                           </div>
                         ) : (
-                          <div className="py-16 text-center text-muted-foreground font-medium">
-                            <Activity className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                            <p>No hay reportes recientes.</p>
+                          <div className="py-16 px-6 text-center">
+                            <Activity className="w-12 h-12 mx-auto mb-4 text-muted-foreground/25" />
+                            <p className="text-foreground/80 font-semibold">No hay reportes recientes</p>
+                            <p className="text-sm text-muted-foreground mt-2 max-w-sm mx-auto">
+                              Cuando se registren incidencias, aparecerán aquí. También puedes ver el historial completo en Reportes.
+                            </p>
+                            <Button asChild className="mt-6 rounded-xl bg-[#FF0C60] hover:bg-[#E00A54] text-white font-semibold shadow-lg shadow-rose-500/20">
+                              <Link href="/crear-reporte">Crear reporte</Link>
+                            </Button>
                           </div>
                         )}
                       </CardContent>
@@ -486,7 +505,7 @@ export function DashboardClient() {
                 <div className="lg:col-span-1">
                   <div>
                     {loadingUsers ? (
-                      <Card className="bg-card backdrop-blur-xl border-border shadow-sm overflow-hidden ring-1 ring-border h-[600px] flex flex-col">
+                      <Card className="bg-card/50 backdrop-blur-xl border-border/50 shadow-sm overflow-hidden rounded-2xl ring-0 h-[600px] flex flex-col">
                         <CardHeader className="p-4 border-b border-border flex flex-row items-center justify-between space-y-0 shrink-0">
                           <div className="flex items-center gap-3">
                             <Skeleton className="h-8 w-8 rounded-md bg-muted" />
