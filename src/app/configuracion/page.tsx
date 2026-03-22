@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Trash2, UserPlus, Settings, Shield, Crown, Search, Archive, Wrench, MapPin, CalendarDays, KeyRound, Copy, Clock, CheckCircle2, Loader2 } from "lucide-react";
+import { Trash2, UserPlus, Settings, Shield, Crown, Search, Archive, Wrench, MapPin, CalendarDays, Calendar as CalendarIcon, KeyRound, Copy, Clock, CheckCircle2, Loader2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 import { ConfirmModal } from "@/components/ConfirmModal";
@@ -15,7 +15,6 @@ import { ScheduleEditor } from "@/components/ScheduleEditor";
 import { motion, AnimatePresence } from "framer-motion";
 import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { WeeklyCalendar } from "@/components/WeeklyCalendar";
-import { Calendar as CalendarIcon } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LoginMap } from "@/components/LoginMap";
 import { ActiveUsersWidget } from "@/components/ActiveUsersWidget";
@@ -320,7 +319,7 @@ export default function ConfigurationPage() {
                   icon
               }
               ),
-              _jsx("h3", { className: "text-[10px] font-bold text-muted-foreground tracking-tight", children: title })]
+              _jsx("h3", { className: "text-[10px] font-medium text-muted-foreground tracking-wide uppercase", children: title })]
           }
           ),
 
@@ -328,7 +327,7 @@ export default function ConfigurationPage() {
             className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4", children:
               filteredUsers.map((u) =>
                 _jsxs("div", {
-                  className: "group relative bg-card/40 hover:bg-card/60 backdrop-blur-md border border-border hover:border-[#FF0C60]/30 rounded-xl overflow-hidden transition-all duration-300 shadow-sm hover:shadow-[0_8px_30px_-12px_rgba(255,12,96,0.2)]", children: [
+                  className: "group relative bg-card border border-border hover:border-primary/30 rounded-xl overflow-hidden transition-all duration-300 shadow-sm hover:shadow-md", children: [
                     _jsxs("div", {
                       className: "p-5 flex flex-col gap-4", children: [
                         _jsxs("div", {
@@ -340,7 +339,7 @@ export default function ConfigurationPage() {
                                     _jsxs(Avatar, {
                                       className: "w-12 h-12 border border-border rounded-lg shadow-sm", children: [
                                         _jsx(AvatarImage, { src: u.image, className: "rounded-lg object-cover" }),
-                                        _jsx(AvatarFallback, { className: "bg-muted text-muted-foreground font-bold text-sm rounded-lg", children: u.name.substring(0, 2).toUpperCase() })]
+                                        _jsx(AvatarFallback, { className: "bg-muted text-muted-foreground font-semibold text-sm rounded-lg", children: u.name.substring(0, 2).toUpperCase() })]
                                     }
                                     ),
                                     _jsx("div", { className: "absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-background", style: { backgroundColor: u.lastLogin ? '#10b981' : '#6b7280' } })]
@@ -348,7 +347,7 @@ export default function ConfigurationPage() {
                                 ),
                                 _jsxs("div", {
                                   children: [
-                                    _jsx("h4", { className: "text-sm font-bold text-foreground tracking-tight leading-none", children: u.name }),
+                                    _jsx("h4", { className: "text-sm font-semibold text-foreground tracking-tight leading-none", children: u.name }),
                                     _jsxs("span", { className: "text-[10px] text-muted-foreground font-mono font-medium opacity-60", children: ["#", u.id.slice(0, 8)] })]
                                 }
                                 )]
@@ -356,10 +355,10 @@ export default function ConfigurationPage() {
                             ),
 
                             u.role === 'BOSS' ?
-                              _jsxs("div", { className: "inline-flex items-center px-2 py-1 rounded-md bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[9px] font-bold tracking-tight uppercase", children: [_jsx(Crown, { className: "w-3 h-3 mr-1" }), " Coord"] }) :
+                              _jsxs("div", { className: "inline-flex items-center px-2 py-1 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-[9px] font-semibold tracking-wide uppercase", children: [_jsx(Crown, { className: "w-3 h-3 mr-1" }), " Coord"] }) :
                               u.role === 'ENGINEER' ?
-                                _jsxs("div", { className: "inline-flex items-center px-2 py-1 rounded-md bg-purple-500/10 text-purple-500 border border-purple-500/20 text-[9px] font-bold tracking-tight uppercase", children: [_jsx(Wrench, { className: "w-3 h-3 mr-1" }), " Ing"] }) :
-                                _jsx("div", { className: "inline-flex items-center px-2 py-1 rounded-md bg-muted text-muted-foreground border border-border text-[9px] font-bold tracking-tight uppercase", children: "Operador" })]
+                                _jsxs("div", { className: "inline-flex items-center px-2 py-1 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 text-[9px] font-semibold tracking-wide uppercase", children: [_jsx(Wrench, { className: "w-3 h-3 mr-1" }), " Ing"] }) :
+                                _jsx("div", { className: "inline-flex items-center px-2 py-1 rounded-md bg-muted text-muted-foreground border border-border text-[9px] font-semibold tracking-wide uppercase", children: "Operador" })]
                         }
 
                         ),
@@ -425,13 +424,13 @@ export default function ConfigurationPage() {
                                         _jsxs(Avatar, {
                                           className: "w-20 h-20 border border-border rounded-xl shadow-sm", children: [
                                             _jsx(AvatarImage, { src: u.image, className: "rounded-xl object-cover" }),
-                                            _jsx(AvatarFallback, { className: "bg-background text-muted-foreground text-2xl font-bold rounded-xl", children: u.name.substring(0, 2).toUpperCase() })]
+                                            _jsx(AvatarFallback, { className: "bg-background text-muted-foreground text-2xl font-semibold rounded-xl", children: u.name.substring(0, 2).toUpperCase() })]
                                         }
                                         ),
                                         _jsxs("div", {
                                           children: [
-                                            _jsx("div", { className: "text-[#FF0C60] font-semibold text-[10px] uppercase tracking-widest mb-2", children: u.role }),
-                                            _jsx("h3", { className: "text-3xl font-bold tracking-tighter text-foreground leading-none", children: u.name }),
+                                            _jsx("div", { className: "text-primary font-medium text-[10px] uppercase tracking-wide mb-2", children: u.role }),
+                                            _jsx("h3", { className: "text-3xl font-semibold tracking-tight text-foreground leading-none", children: u.name }),
                                             _jsx("p", { className: "text-muted-foreground text-xs font-medium mt-2 tracking-tight", children: u.email })]
                                         }
                                         )]
@@ -472,7 +471,7 @@ export default function ConfigurationPage() {
                         _jsxs("div", {
                           className: "flex gap-1.5", children: [
                             _jsx(Button, {
-                              variant: "ghost", size: "icon", onClick: () => handleEditUser(u), className: "h-8 w-8 rounded-md text-muted-foreground hover:text-[#FF0C60] hover:bg-[#FF0C60]/10 transition-colors", children:
+                              variant: "ghost", size: "icon", onClick: () => handleEditUser(u), className: "h-8 w-8 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors", children:
                                 _jsx(Settings, { className: "w-3.5 h-3.5" })
                             }
                             ),
@@ -499,7 +498,7 @@ export default function ConfigurationPage() {
 
   return (
     _jsx("div", {
-      className: "min-h-screen relative overflow-hidden text-foreground selection:bg-[#FF0C60] selection:text-white pb-20", children:
+      className: "min-h-screen relative overflow-hidden bg-background text-foreground selection:bg-primary/25 selection:text-foreground pb-20", children:
 
 
 
@@ -511,17 +510,17 @@ export default function ConfigurationPage() {
             _jsx(Dialog, {
               open: isUserModalOpen, onOpenChange: setIsUserModalOpen, children:
                 _jsx(DialogContent, {
-                  className: "max-w-2xl bg-card border-border text-foreground p-0 overflow-hidden shadow-[0_0_50px_-12px_rgba(255,12,96,0.15)] ring-1 ring-border rounded-xl", children:
+                  className: "max-w-2xl bg-card border-border text-foreground p-0 overflow-hidden shadow-lg rounded-xl", children:
                     _jsxs("div", {
                       className: "relative", children: [
 
-                        _jsx("div", { className: "absolute inset-0 h-32 bg-gradient-to-br from-[#FF0C60]/10 via-transparent to-transparent pointer-events-none" }),
+                        _jsx("div", { className: "absolute inset-0 h-32 bg-gradient-to-br from-primary/10 via-transparent to-transparent pointer-events-none" }),
 
                         _jsxs("div", {
                           className: "relative bg-muted/30 border-b border-border p-8 flex items-center gap-6", children: [
                             _jsx("div", {
-                              className: "w-14 h-14 bg-gradient-to-br from-[#FF0C60] to-[#FF0C60]/80 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(255,12,96,0.3)] ring-1 ring-white/20", children:
-                                isEditing ? _jsx(Settings, { className: "w-7 h-7 text-white" }) : _jsx(UserPlus, { className: "w-7 h-7 text-white" })
+                              className: "w-14 h-14 bg-primary text-primary-foreground rounded-xl flex items-center justify-center shadow-md ring-1 ring-primary-foreground/20", children:
+                                isEditing ? _jsx(Settings, { className: "w-7 h-7" }) : _jsx(UserPlus, { className: "w-7 h-7" })
                             }
                             ),
                             _jsxs("div", {
@@ -532,8 +531,8 @@ export default function ConfigurationPage() {
                                 }
                                 ),
                                 _jsxs(DialogDescription, {
-                                  className: "text-[10px] font-semibold text-[#FF0C60] uppercase tracking-[0.2em] flex items-center gap-2", children: [
-                                    _jsx("div", { className: "w-1 h-1 bg-[#FF0C60] rounded-full animate-pulse" }), "Gesti\xF3n de credenciales y turnos fijos"]
+                                  className: "text-[10px] font-medium text-primary uppercase tracking-wide flex items-center gap-2", children: [
+                                    _jsx("div", { className: "w-1 h-1 bg-primary rounded-full animate-pulse" }), "Gesti\xF3n de credenciales y turnos fijos"]
                                 }
 
                                 )]
@@ -550,9 +549,9 @@ export default function ConfigurationPage() {
                                 _jsxs(motion.div, {
                                   initial: { opacity: 0, y: -10 },
                                   animate: { opacity: 1, y: 0 },
-                                  className: "p-4 bg-rose-500/10 border border-rose-500/20 rounded-lg text-xs text-rose-500 font-bold tracking-tight flex items-center gap-3", children: [
+                                  className: "p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-xs text-destructive font-medium tracking-tight flex items-center gap-3", children: [
 
-                                    _jsx("div", { className: "w-1.5 h-1.5 bg-rose-500 rounded-full" }),
+                                    _jsx("div", { className: "w-1.5 h-1.5 bg-destructive rounded-full" }),
                                     error]
                                 }
                                 ),
@@ -563,8 +562,8 @@ export default function ConfigurationPage() {
                                   className: "space-y-6", children: [
                                     _jsxs("div", {
                                       className: "flex items-center gap-2 mb-2", children: [
-                                        _jsx("div", { className: "w-1.5 h-4 bg-[#FF0C60] rounded-full" }),
-                                        _jsx("h4", { className: "text-[10px] font-bold uppercase tracking-widest text-muted-foreground", children: "Datos Personales" })]
+                                        _jsx("div", { className: "w-1.5 h-4 bg-primary rounded-full" }),
+                                        _jsx("h4", { className: "text-[10px] font-medium uppercase tracking-wide text-muted-foreground", children: "Datos Personales" })]
                                     }
                                     ),
                                     _jsxs("div", {
@@ -576,7 +575,7 @@ export default function ConfigurationPage() {
                                               className: "relative group", children:
                                                 _jsx(Input, {
                                                   value: newUser.name, onChange: (e) => setNewUser({ ...newUser, name: e.target.value }),
-                                                  className: "bg-background border-input text-foreground focus:border-[#FF0C60]/50 placeholder:text-muted-foreground h-12 text-sm font-medium uppercase rounded-lg transition-all ring-offset-background focus-visible:ring-1 focus-visible:ring-[#FF0C60]/30",
+                                                  className: "bg-background border-input text-foreground placeholder:text-muted-foreground h-12 text-sm font-medium uppercase rounded-lg transition-all ring-offset-background focus-visible:ring-2 focus-visible:ring-ring",
                                                   required: true, placeholder: "EJ. JUAN P\xC9REZ"
                                                 }
                                                 )
@@ -589,7 +588,7 @@ export default function ConfigurationPage() {
                                             _jsx(Label, { className: "text-[10px] font-semibold text-muted-foreground tracking-tight opacity-70 ml-1", children: "CORREO CORPORATIVO" }),
                                             _jsx(Input, {
                                               type: "email", value: newUser.email, onChange: (e) => setNewUser({ ...newUser, email: e.target.value }),
-                                              className: "bg-background border-input text-foreground focus:border-[#FF0C60]/50 placeholder:text-muted-foreground h-12 text-sm font-medium rounded-lg transition-all ring-offset-background focus-visible:ring-1 focus-visible:ring-[#FF0C60]/30",
+                                              className: "bg-background border-input text-foreground placeholder:text-muted-foreground h-12 text-sm font-medium rounded-lg transition-all ring-offset-background focus-visible:ring-2 focus-visible:ring-ring",
                                               required: true, placeholder: "usuario@enlace.org"
                                             }
                                             )]
@@ -605,8 +604,8 @@ export default function ConfigurationPage() {
                                   className: "space-y-6", children: [
                                     _jsxs("div", {
                                       className: "flex items-center gap-2 mb-2", children: [
-                                        _jsx("div", { className: "w-1.5 h-4 bg-[#FF0C60] rounded-full" }),
-                                        _jsx("h4", { className: "text-[10px] font-bold uppercase tracking-widest text-muted-foreground", children: "Seguridad y Rango" })]
+                                        _jsx("div", { className: "w-1.5 h-4 bg-primary rounded-full" }),
+                                        _jsx("h4", { className: "text-[10px] font-medium uppercase tracking-wide text-muted-foreground", children: "Seguridad y Rango" })]
                                     }
                                     ),
                                     _jsxs("div", {
@@ -617,15 +616,15 @@ export default function ConfigurationPage() {
                                             _jsxs(Select, {
                                               value: newUser.role, onValueChange: (val) => setNewUser({ ...newUser, role: val }), children: [
                                                 _jsx(SelectTrigger, {
-                                                  className: "bg-background border-input text-foreground h-12 text-sm font-medium rounded-lg uppercase ring-offset-background focus:ring-1 focus:ring-[#FF0C60]/30", children:
+                                                  className: "bg-background border-input text-foreground h-12 text-sm font-medium rounded-lg uppercase ring-offset-background focus:ring-2 focus:ring-ring", children:
                                                     _jsx(SelectValue, { placeholder: "Seleccionar rol" })
                                                 }
                                                 ),
                                                 _jsxs(SelectContent, {
                                                   className: "bg-popover border-border text-popover-foreground", children: [
-                                                    _jsx(SelectItem, { value: "OPERATOR", className: "focus:bg-[#FF0C60] focus:text-white hover:bg-muted", children: "Operador" }),
-                                                    _jsx(SelectItem, { value: "ENGINEER", className: "focus:bg-[#FF0C60] focus:text-white hover:bg-muted", children: "Ingeniero" }),
-                                                    _jsx(SelectItem, { value: "BOSS", className: "focus:bg-[#FF0C60] focus:text-white hover:bg-muted", children: "Coordinador" })]
+                                                    _jsx(SelectItem, { value: "OPERATOR", className: "focus:bg-accent focus:text-accent-foreground hover:bg-muted", children: "Operador" }),
+                                                    _jsx(SelectItem, { value: "ENGINEER", className: "focus:bg-accent focus:text-accent-foreground hover:bg-muted", children: "Ingeniero" }),
+                                                    _jsx(SelectItem, { value: "BOSS", className: "focus:bg-accent focus:text-accent-foreground hover:bg-muted", children: "Coordinador" })]
                                                 }
                                                 )]
                                             }
@@ -637,7 +636,7 @@ export default function ConfigurationPage() {
                                             _jsx(Label, { className: "text-[10px] font-semibold text-muted-foreground tracking-tight opacity-70 ml-1", children: "CONTRASE\xD1A DE ACCESO" }),
                                             _jsx(Input, {
                                               value: newUser.password, onChange: (e) => setNewUser({ ...newUser, password: e.target.value }),
-                                              className: "bg-background border-input text-foreground focus:border-[#FF0C60]/50 placeholder:text-muted-foreground h-12 text-sm font-medium rounded-lg transition-all ring-offset-background focus-visible:ring-1 focus-visible:ring-[#FF0C60]/30 font-mono",
+                                              className: "bg-background border-input text-foreground placeholder:text-muted-foreground h-12 text-sm font-medium rounded-lg transition-all ring-offset-background focus-visible:ring-2 focus-visible:ring-ring font-mono",
                                               required: !isEditing,
                                               type: "password",
                                               placeholder: isEditing ? "SIN CAMBIOS" : "••••••••"
@@ -655,8 +654,8 @@ export default function ConfigurationPage() {
                                   className: "space-y-6", children: [
                                     _jsxs("div", {
                                       className: "flex items-center gap-2 mb-2", children: [
-                                        _jsx("div", { className: "w-1.5 h-4 bg-[#FF0C60] rounded-full" }),
-                                        _jsx("h4", { className: "text-[10px] font-bold uppercase tracking-widest text-muted-foreground", children: "Celebraciones" })]
+                                        _jsx("div", { className: "w-1.5 h-4 bg-primary rounded-full" }),
+                                        _jsx("h4", { className: "text-[10px] font-medium uppercase tracking-wide text-muted-foreground", children: "Celebraciones" })]
                                     }
                                     ),
                                     _jsxs("div", {
@@ -673,7 +672,7 @@ export default function ConfigurationPage() {
                                               }, children: [
 
                                                 _jsx(SelectTrigger, {
-                                                  className: "bg-background border-input text-foreground h-12 text-sm font-medium rounded-lg flex-1 ring-offset-background focus:ring-1 focus:ring-[#FF0C60]/30", children:
+                                                  className: "bg-background border-input text-foreground h-12 text-sm font-medium rounded-lg flex-1 ring-offset-background focus:ring-2 focus:ring-ring", children:
                                                     _jsx(SelectValue, { placeholder: "MES" })
                                                 }
                                                 ),
@@ -681,7 +680,7 @@ export default function ConfigurationPage() {
                                                   className: "bg-popover border-border text-popover-foreground max-h-60", children:
                                                     ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'].map((m) =>
                                                       _jsx(SelectItem, {
-                                                        value: m, className: "focus:bg-[#FF0C60] hover:bg-muted", children:
+                                                        value: m, className: "focus:bg-accent focus:text-accent-foreground hover:bg-muted", children:
                                                           new Date(2000, parseInt(m) - 1, 1).toLocaleString('es-CR', { month: 'long' }).toUpperCase()
                                                       }, m
                                                       )
@@ -700,14 +699,14 @@ export default function ConfigurationPage() {
                                               }, children: [
 
                                                 _jsx(SelectTrigger, {
-                                                  className: "bg-background border-input text-foreground h-12 text-sm font-medium rounded-lg w-32 ring-offset-background focus:ring-1 focus:ring-[#FF0C60]/30", children:
+                                                  className: "bg-background border-input text-foreground h-12 text-sm font-medium rounded-lg w-32 ring-offset-background focus:ring-2 focus:ring-ring", children:
                                                     _jsx(SelectValue, { placeholder: "D\xCDA" })
                                                 }
                                                 ),
                                                 _jsx(SelectContent, {
                                                   className: "bg-popover border-border text-popover-foreground max-h-60", children:
                                                     Array.from({ length: 31 }, (_, i) => (i + 1).toString().padStart(2, '0')).map((d) =>
-                                                      _jsx(SelectItem, { value: d, className: "focus:bg-[#FF0C60] hover:bg-muted", children: d }, d)
+                                                      _jsx(SelectItem, { value: d, className: "focus:bg-accent focus:text-accent-foreground hover:bg-muted", children: d }, d)
                                                     )
                                                 }
                                                 )]
@@ -722,11 +721,11 @@ export default function ConfigurationPage() {
 
 
                                 _jsxs("div", {
-                                  className: "pt-8 border-t border-white/5", children: [
+                                  className: "pt-8 border-t border-border", children: [
                                     _jsxs("div", {
                                       className: "flex items-center gap-2 mb-6", children: [
-                                        _jsx("div", { className: "w-1.5 h-4 bg-[#FF0C60] rounded-full" }),
-                                        _jsx("h4", { className: "text-[10px] font-bold uppercase tracking-widest text-muted-foreground", children: "Planificaci\xF3n de Turnos" })]
+                                        _jsx("div", { className: "w-1.5 h-4 bg-primary rounded-full" }),
+                                        _jsx("h4", { className: "text-[10px] font-medium uppercase tracking-wide text-muted-foreground", children: "Planificaci\xF3n de Turnos" })]
                                     }
                                     ),
                                     _jsx(ScheduleEditor, {
@@ -755,7 +754,7 @@ export default function ConfigurationPage() {
                             _jsx("button", {
                               form: "user-form",
                               type: "submit",
-                              className: "px-8 h-12 bg-[#FF0C60] hover:bg-[#FF0C60]/90 text-white font-semibold text-[11px] uppercase tracking-[0.15em] rounded-lg transition-all shadow-[0_8px_20px_-6px_rgba(255,12,96,0.4)] active:scale-95", children:
+                              className: "px-8 h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-[11px] uppercase tracking-wide rounded-lg transition-all shadow-md active:scale-95", children:
 
                                 isEditing ? 'GUARDAR CAMBIOS' : 'CONFIRMAR REGISTRO'
                             }
@@ -776,8 +775,8 @@ export default function ConfigurationPage() {
                     _jsxs("div", {
                       children: [
                         _jsxs("h1", {
-                          className: "text-3xl md:text-4xl font-bold text-foreground tracking-tight flex items-center gap-2", children: [
-                            _jsx(Settings, { className: "w-8 h-8 text-[#FF0C60]" }), " Configuraci\xF3n"]
+                          className: "text-3xl md:text-4xl font-semibold text-foreground tracking-tight flex items-center gap-2", children: [
+                            _jsx(Settings, { className: "w-8 h-8 text-primary" }), " Configuraci\xF3n"]
                         }
                         ),
                         _jsx("p", { className: "text-muted-foreground mt-1 text-base md:text-lg font-medium", children: "Administraci\xF3n de usuarios y limpieza de base de datos." })]
@@ -787,7 +786,7 @@ export default function ConfigurationPage() {
                     _jsxs("div", {
                       className: "flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full xl:w-auto", children: [
                         _jsxs(Button, {
-                          onClick: () => { cancelEdit(); setIsUserModalOpen(true); }, className: "bg-[#FF0C60] hover:bg-[#FF0C60]/90 text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-[#FF0C60]/20 h-11 sm:w-auto w-full", children: [
+                          onClick: () => { cancelEdit(); setIsUserModalOpen(true); }, className: "bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs uppercase tracking-wide shadow-md h-11 sm:w-auto w-full", children: [
                             _jsx(UserPlus, { className: "w-4 h-4 mr-2" }), " Nuevo Operador"]
                         }
                         ),
@@ -795,27 +794,27 @@ export default function ConfigurationPage() {
                         _jsxs("div", {
                           className: "flex bg-muted/20 p-1.5 rounded-lg border border-border w-full sm:w-auto overflow-x-auto no-scrollbar scroll-smooth snap-x", children: [
                             _jsxs("button", {
-                              onClick: () => setActiveTab('users'), className: `px-4 py-2.5 rounded-md text-xs font-semibold tracking-tight transition-all flex items-center justify-center gap-2 whitespace-nowrap flex-shrink-0 snap-start ${activeTab === 'users' ? 'bg-[#FF0C60]/10 text-[#FF0C60] shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`, children: [
+                              onClick: () => setActiveTab('users'), className: `px-4 py-2.5 rounded-md text-xs font-semibold tracking-tight transition-all flex items-center justify-center gap-2 whitespace-nowrap flex-shrink-0 snap-start ${activeTab === 'users' ? 'bg-primary/10 text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`, children: [
                                 _jsx(Shield, { className: "w-4 h-4" }), " Usuarios"]
                             }
                             ),
                             _jsxs("button", {
-                              onClick: () => setActiveTab('schedule'), className: `px-4 py-2.5 rounded-md text-xs font-semibold tracking-tight transition-all flex items-center justify-center gap-2 whitespace-nowrap flex-shrink-0 snap-start ${activeTab === 'schedule' ? 'bg-[#FF0C60]/10 text-[#FF0C60] shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`, children: [
+                              onClick: () => setActiveTab('schedule'), className: `px-4 py-2.5 rounded-md text-xs font-semibold tracking-tight transition-all flex items-center justify-center gap-2 whitespace-nowrap flex-shrink-0 snap-start ${activeTab === 'schedule' ? 'bg-primary/10 text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`, children: [
                                 _jsx(CalendarIcon, { className: "w-4 h-4" }), " Horarios"]
                             }
                             ),
                             _jsxs("button", {
-                              onClick: () => setActiveTab('events'), className: `px-4 py-2.5 rounded-md text-xs font-semibold tracking-tight transition-all flex items-center justify-center gap-2 whitespace-nowrap flex-shrink-0 snap-start ${activeTab === 'events' ? 'bg-[#FF0C60]/10 text-[#FF0C60] shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`, children: [
+                              onClick: () => setActiveTab('events'), className: `px-4 py-2.5 rounded-md text-xs font-semibold tracking-tight transition-all flex items-center justify-center gap-2 whitespace-nowrap flex-shrink-0 snap-start ${activeTab === 'events' ? 'bg-primary/10 text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`, children: [
                                 _jsx(CalendarDays, { className: "w-4 h-4" }), " Eventos"]
                             }
                             ),
                             _jsxs("button", {
-                              onClick: () => setActiveTab('security'), className: `px-4 py-2.5 rounded-md text-xs font-semibold tracking-tight transition-all flex items-center justify-center gap-2 whitespace-nowrap flex-shrink-0 snap-start ${activeTab === 'security' ? 'bg-[#FF0C60]/10 text-[#FF0C60] shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`, children: [
+                              onClick: () => setActiveTab('security'), className: `px-4 py-2.5 rounded-md text-xs font-semibold tracking-tight transition-all flex items-center justify-center gap-2 whitespace-nowrap flex-shrink-0 snap-start ${activeTab === 'security' ? 'bg-primary/10 text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`, children: [
                                 _jsx(KeyRound, { className: "w-4 h-4" }), " Seguridad"]
                             }
                             ),
                             _jsxs("button", {
-                              onClick: () => setActiveTab('reports'), className: `px-4 py-2.5 rounded-md text-xs font-semibold tracking-tight transition-all flex items-center justify-center gap-2 whitespace-nowrap flex-shrink-0 snap-start ${activeTab === 'reports' ? 'bg-[#FF0C60]/10 text-[#FF0C60] shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`, children: [
+                              onClick: () => setActiveTab('reports'), className: `px-4 py-2.5 rounded-md text-xs font-semibold tracking-tight transition-all flex items-center justify-center gap-2 whitespace-nowrap flex-shrink-0 snap-start ${activeTab === 'reports' ? 'bg-primary/10 text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`, children: [
                                 _jsx(Archive, { className: "w-4 h-4" }), " Reportes"]
                             }
                             )]
@@ -855,11 +854,11 @@ export default function ConfigurationPage() {
                                     { label: 'Operadores', value: users.filter((u) => !['BOSS', 'ENGINEER'].includes(u.role || '')).length, icon: Shield, color: 'text-emerald-500' }].
                                     map((stat, i) =>
                                       _jsxs(Card, {
-                                        className: "bg-card/40 backdrop-blur-md border-border shadow-none rounded-md ring-1 ring-border p-5 flex items-center justify-between group hover:border-[#FF0C60]/30 transition-all duration-300", children: [
+                                        className: "bg-card border border-border shadow-sm rounded-xl p-5 flex items-center justify-between group hover:border-primary/30 transition-all duration-300", children: [
                                           _jsxs("div", {
                                             children: [
                                               _jsx("p", { className: "text-[10px] font-semibold text-muted-foreground tracking-widest uppercase opacity-60", children: stat.label }),
-                                              _jsx("p", { className: "text-3xl font-bold text-foreground mt-1 tracking-tighter", children: stat.value })]
+                                              _jsx("p", { className: "text-3xl font-semibold text-foreground mt-1 tracking-tight", children: stat.value })]
                                           }
                                           ),
                                           _jsx("div", {
@@ -877,7 +876,7 @@ export default function ConfigurationPage() {
 
 
                           _jsxs(Card, {
-                            className: "bg-card/20 backdrop-blur-md border border-border shadow-none rounded-md ring-1 ring-border overflow-hidden", children: [
+                            className: "bg-card border border-border shadow-sm rounded-xl overflow-hidden", children: [
                               _jsx(CardHeader, {
                                 className: "bg-muted/30 border-b border-border py-4 px-8", children:
                                   _jsxs("div", {
@@ -916,7 +915,7 @@ export default function ConfigurationPage() {
                           transition: { duration: 0.2 }, children:
 
                             _jsxs(Card, {
-                              className: "bg-card/40 backdrop-blur-md border border-border shadow-none rounded-md overflow-hidden h-fit ring-1 ring-border flex flex-col", children: [
+                              className: "bg-card border border-border shadow-sm rounded-xl overflow-hidden h-fit flex flex-col", children: [
                                 _jsxs("div", {
                                   className: "p-4 border-b border-border bg-muted/10 flex justify-between items-center", children: [
                                     _jsxs("div", {
@@ -929,14 +928,14 @@ export default function ConfigurationPage() {
                                       className: "flex items-center gap-2 bg-muted/30 p-1 rounded-lg border border-border", children: [
                                         _jsx("button", {
                                           onClick: () => setScheduleMode('weekly'),
-                                          className: `px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all ${scheduleMode === 'weekly' ? 'bg-[#FF0C60] text-white shadow-md' : 'text-muted-foreground hover:text-foreground'}`, children:
+                                          className: `px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide rounded-md transition-all ${scheduleMode === 'weekly' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`, children:
                                             "Esta Semana (Temp)"
                                         }
 
                                         ),
                                         _jsx("button", {
                                           onClick: () => setScheduleMode('default'),
-                                          className: `px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all ${scheduleMode === 'default' ? 'bg-[#FF0C60] text-white shadow-md' : 'text-muted-foreground hover:text-foreground'}`, children:
+                                          className: `px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide rounded-md transition-all ${scheduleMode === 'default' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`, children:
                                             "Fijo (Predeterminado)"
                                         }
 
@@ -949,7 +948,7 @@ export default function ConfigurationPage() {
                                   className: "relative", children: [
 
                                     scheduleMode === 'default' &&
-                                    _jsx("div", { className: "absolute top-0 left-0 w-full h-1 bg-[#FF0C60] z-20 animate-pulse" }),
+                                    _jsx("div", { className: "absolute top-0 left-0 w-full h-1 bg-primary z-20 animate-pulse" }),
 
 
                                     _jsx(WeeklyCalendar, {
@@ -994,7 +993,7 @@ export default function ConfigurationPage() {
                               exit: { opacity: 0, scale: 0.98, y: 10 },
                               transition: { duration: 0.3, ease: "easeOut" }, children:
                                 _jsxs(Card, {
-                                  className: "bg-card/40 backdrop-blur-md border border-border shadow-none rounded-md ring-1 ring-border", children: [
+                                  className: "bg-card border border-border shadow-sm rounded-xl", children: [
                                     _jsx(CardHeader, {
                                       className: "bg-muted/10 p-8 border-b border-border", children:
                                         _jsxs("div", {
@@ -1002,14 +1001,14 @@ export default function ConfigurationPage() {
                                             _jsxs("div", {
                                               className: "space-y-2", children: [
                                                 _jsxs(CardTitle, {
-                                                  className: "text-3xl font-bold text-foreground tracking-tighter leading-none flex items-center gap-3", children: [
-                                                    _jsx(KeyRound, { className: "w-8 h-8 text-[#FF0C60]" }), "Códigos de Registro"]
+                                                  className: "text-3xl font-semibold text-foreground tracking-tight leading-none flex items-center gap-3", children: [
+                                                    _jsx(KeyRound, { className: "w-8 h-8 text-primary" }), "Códigos de Registro"]
                                                 }),
                                                 _jsx(CardDescription, { className: "text-muted-foreground font-semibold text-[10px] tracking-tight mt-2 opacity-60", children: "Genere códigos de seguridad para autorizar nuevos operadores. Cada código expira en 24 horas y solo puede usarse una vez." })]
                                             }),
                                             _jsxs(Button, {
                                               onClick: generateCode, disabled: codesLoading,
-                                              className: "bg-[#FF0C60] hover:bg-[#FF0C60]/90 text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-[#FF0C60]/20 h-11", children: [
+                                              className: "bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs uppercase tracking-wide shadow-md h-11", children: [
                                                 codesLoading ? _jsx(Loader2, { className: "w-4 h-4 mr-2 animate-spin" }) : _jsx(KeyRound, { className: "w-4 h-4 mr-2" }),
                                                 "Generar Código"]
                                             })]
@@ -1035,9 +1034,9 @@ export default function ConfigurationPage() {
                                                       _jsxs("div", {
                                                         className: "flex items-center justify-between", children: [
                                                           _jsxs("div", {
-                                                            className: `inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[9px] font-bold uppercase tracking-widest ${c.status === 'available' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' :
-                                                              c.status === 'used' ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20' :
-                                                                'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                                                            className: `inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[9px] font-semibold uppercase tracking-wide ${c.status === 'available' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' :
+                                                              c.status === 'used' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20' :
+                                                                'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
                                                               }`, children: [
                                                                 c.status === 'available' ? _jsx(CheckCircle2, { className: "w-3 h-3" }) :
                                                                   c.status === 'used' ? _jsx(Shield, { className: "w-3 h-3" }) :
@@ -1055,12 +1054,12 @@ export default function ConfigurationPage() {
                                                       }),
                                                       _jsxs("div", {
                                                         className: "space-y-2", children: [
-                                                          _jsx("p", { id: `code-${c.code}`, className: "text-2xl font-mono font-bold tracking-[0.2em] text-foreground text-center py-2", children: c.code }),
+                                                          _jsx("p", { id: `code-${c.code}`, className: "text-2xl font-mono font-semibold tracking-[0.2em] text-foreground text-center py-2", children: c.code }),
                                                           c.status === 'available' &&
                                                           _jsxs(Button, {
                                                             variant: "outline", size: "sm",
                                                             onClick: () => copyCode(c.code),
-                                                            className: "w-full h-9 text-[10px] font-bold uppercase tracking-wider border-border hover:border-[#FF0C60]/30 hover:text-[#FF0C60] hover:bg-[#FF0C60]/5", children: [
+                                                            className: "w-full h-9 text-[10px] font-semibold uppercase tracking-wide border-border hover:border-primary/30 hover:text-primary hover:bg-primary/5", children: [
                                                               _jsx(Copy, { className: "w-3 h-3 mr-2" }), "Copiar Código"]
                                                           })]
                                                       }),
@@ -1089,21 +1088,21 @@ export default function ConfigurationPage() {
                               transition: { duration: 0.3, ease: "easeOut" }, children:
 
                                 _jsxs(Card, {
-                                  className: "bg-card/40 backdrop-blur-md border border-border shadow-none rounded-md ring-1 ring-border", children: [
+                                  className: "bg-card border border-border shadow-sm rounded-xl", children: [
                                     _jsx(CardHeader, {
                                       className: "bg-muted/10 p-8 border-b border-border", children:
                                         _jsxs("div", {
                                           className: "flex flex-col md:flex-row justify-between items-start md:items-center gap-6", children: [
                                             _jsxs("div", {
                                               className: "space-y-2", children: [
-                                                _jsx(CardTitle, { className: "text-3xl font-bold text-foreground tracking-tighter leading-none", children: "Gesti\xF3n de reportes" }),
+                                                _jsx(CardTitle, { className: "text-3xl font-semibold text-foreground tracking-tight leading-none", children: "Gesti\xF3n de reportes" }),
                                                 _jsx(CardDescription, { className: "text-muted-foreground font-semibold text-[10px] tracking-tight mt-2 opacity-60", children: "Filtro y depuraci\xF3n de la base de datos de incidencias." })]
                                             }
                                             ),
                                             _jsxs("div", {
                                               className: "relative w-full md:w-[300px]", children: [
-                                                _jsx(Search, { className: "absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#FF0C60]" }),
-                                                _jsx(Input, { placeholder: "Buscar por ID o descripci\xF3n...", className: "pl-12 bg-muted/20 border-2 border-border w-full text-[10px] font-medium tracking-tight h-12 text-foreground focus:border-[#FF0C60] transition-colors rounded-md" })]
+                                                _jsx(Search, { className: "absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" }),
+                                                _jsx(Input, { placeholder: "Buscar por ID o descripci\xF3n...", className: "pl-12 bg-background border border-input w-full text-sm font-medium tracking-tight h-12 text-foreground focus-visible:ring-2 focus-visible:ring-ring rounded-lg ring-offset-background" })]
                                             }
                                             )]
                                         }
@@ -1132,14 +1131,14 @@ export default function ConfigurationPage() {
                                                 reports.map((report) =>
                                                   _jsxs(TableRow, {
                                                     className: "border-none hover:bg-muted/20 transition-all duration-200 group", children: [
-                                                      _jsxs(TableCell, { className: "pl-8 font-mono text-[10px] text-[#FF0C60] font-semibold tracking-tighter", children: ["#", report.id.slice(0, 8)] }),
+                                                      _jsxs(TableCell, { className: "pl-8 font-mono text-[10px] text-primary font-medium tracking-tight", children: ["#", report.id.slice(0, 8)] }),
                                                       _jsx(TableCell, { className: "text-foreground text-xs font-semibold tracking-tight", children: new Date(report.createdAt).toLocaleDateString('es-CR', { day: '2-digit', month: 'short', year: 'numeric' }) }),
                                                       _jsx(TableCell, { className: "text-foreground text-xs font-semibold tracking-tight", children: report.operatorName }),
                                                       _jsx(TableCell, { className: "text-muted-foreground text-xs font-medium max-w-md truncate", children: report.problemDescription }),
                                                       _jsx(TableCell, {
                                                         className: "text-right pr-8", children:
                                                           _jsx(Button, {
-                                                            variant: "ghost", size: "icon", onClick: () => confirmDeleteReport(report.id), className: "h-9 w-9 text-rose-500 hover:text-white hover:bg-rose-500 transition-all rounded-md", children:
+                                                            variant: "ghost", size: "icon", onClick: () => confirmDeleteReport(report.id), className: "h-9 w-9 text-destructive hover:text-destructive-foreground hover:bg-destructive transition-all rounded-md", children:
                                                               _jsx(Trash2, { className: "w-4 h-4 stroke-[3]" })
                                                           }
                                                           )
