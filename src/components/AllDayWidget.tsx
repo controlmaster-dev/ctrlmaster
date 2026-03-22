@@ -84,8 +84,8 @@ export function AllDayWidget({ operators, specialEvents = [] }: AllDayWidgetProp
       className="space-y-3"
     >
       <div className="flex items-center justify-between px-1">
-        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#FF0C60]">{label}</span>
-        <span className="text-[10px] font-medium text-muted-foreground/60">{format(date, "EEEE d 'de' MMMM", { locale: es })}</span>
+        <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#FF0C60]">{label}</span>
+        <span className="text-[10px] text-muted-foreground/60">{format(date, "EEEE d 'de' MMMM", { locale: es })}</span>
       </div>
 
       <div className="grid gap-2">
@@ -104,12 +104,12 @@ export function AllDayWidget({ operators, specialEvents = [] }: AllDayWidgetProp
                   <div className="flex items-center gap-3">
                     <Avatar className="h-9 w-9 border border-border shrink-0">
                       <AvatarImage src={item.op.image || item.op.avatar} />
-                      <AvatarFallback className="bg-muted text-xs font-bold">{item.op.name.charAt(0)}</AvatarFallback>
+                      <AvatarFallback className="bg-muted text-xs font-medium">{item.op.name.charAt(0)}</AvatarFallback>
                     </Avatar>
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 overflow-hidden">
-                        <h4 className="text-xs font-bold text-foreground truncate">{item.op.name}</h4>
+                        <h4 className="text-xs font-medium text-foreground truncate">{item.op.name}</h4>
                         {item.op.isTempSchedule && <div className="w-1 h-1 bg-amber-500 rounded-full shrink-0" />}
                       </div>
                       <div className="flex items-center gap-2 mt-0.5">
@@ -118,7 +118,7 @@ export function AllDayWidget({ operators, specialEvents = [] }: AllDayWidgetProp
                           <span>{formatTime(item.shift.start)} - {formatTime(item.shift.end)}</span>
                         </div>
                         {item.op.role?.toUpperCase() === 'BOSS' && (
-                          <div className="flex items-center gap-0.5 text-[8px] font-bold text-amber-500/80 bg-amber-500/5 px-1 rounded border border-amber-500/10">
+                          <div className="flex items-center gap-0.5 text-[8px] text-amber-500/80 bg-amber-500/5 px-1 rounded border border-amber-500/10">
                             <Shield className="w-2 h-2" />
                             ADMIN
                           </div>
@@ -144,8 +144,8 @@ export function AllDayWidget({ operators, specialEvents = [] }: AllDayWidgetProp
             <CalendarDays className="w-4 h-4 text-[#FF0C60]" />
           </div>
           <div>
-            <h2 className="text-sm font-bold text-foreground">Turnos del Día</h2>
-            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tighter opacity-70 italic">Horario de Operaciones</p>
+            <h2 className="text-sm font-semibold text-foreground">Turnos del Día</h2>
+            <p className="text-[10px] text-muted-foreground tracking-tighter opacity-70 italic">Horario de Operadores de Control</p>
           </div>
         </div>
       </div>
@@ -162,8 +162,8 @@ export function AllDayWidget({ operators, specialEvents = [] }: AllDayWidgetProp
                 <Sparkles className="h-4 w-4 text-indigo-500" />
              </div>
              <div>
-                <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest leading-none mb-1">Evento en curso</p>
-                <h3 className="text-xs font-bold text-foreground leading-tight">{activeEvent.name}</h3>
+                <p className="text-[10px] text-indigo-500 uppercase tracking-widest leading-none mb-1">Evento en curso</p>
+                <h3 className="text-xs font-medium text-foreground leading-tight">{activeEvent.name}</h3>
              </div>
           </div>
         </motion.div>
