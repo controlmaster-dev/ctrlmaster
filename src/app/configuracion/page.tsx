@@ -317,7 +317,10 @@ export default function ConfigurationPage() {
       message: "¿Estás seguro de eliminar este reporte permanentemente?",
       type: "danger",
       action: async () => {
-        await fetch(`/api/reports?id=${id}`, { method: "DELETE" });
+        await fetch(`/api/reports?id=${id}`, {
+          method: "DELETE",
+          credentials: "include",
+        });
         await fetchData();
         setModal((prev) => ({ ...prev, isOpen: false }));
       },

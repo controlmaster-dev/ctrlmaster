@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -25,14 +25,17 @@ import {
   Search,
   Plus,
   FileText,
-  Send,
-  CheckCircle,
+  CheckCircle2,
   Mail,
-  Zap,
   MessageSquare,
   ThumbsUp,
   Clock,
-  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Filter,
+  Calendar,
+  BarChart3,
 } from "lucide-react";
 import {
   Tooltip,
@@ -63,19 +66,29 @@ interface Report {
   dateResolved?: string | null;
   createdAt: string;
   emailStatus?: string;
-  comments?: any[];
-  reactions?: any[];
+  _count?: { comments: number; reactions: number };
 }
 
 export function ReportesClient() {
   const [reports, setReports] = useState<Report[]>([]);
-  const [filteredReports, setFilteredReports] = useState<Report[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [priorityFilter, setPriorityFilter] = useState("all");
-  const [categoryFilter] = useState("all");
   const [loading, setLoading] = useState(true);
 
+  // Server-side state
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const limit = 20;
+
+  // Filter state
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [priorityFilter, setPriorityFilter] = useState("all");
+  const [operatorFilter, setOperatorFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Modals
   const [modal, setModal] = useState({
     isOpen: false,
     type: "success" as "success" | "error",
@@ -90,33 +103,40 @@ export function ReportesClient() {
     isOpen: boolean;
     report: Report | null;
     type: "email" | "both";
-  }>({
-    isOpen: false,
-    report: null,
-    type: "email",
-  });
+  }>({ isOpen: false, report: null, type: "email" });
 
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
 
+  // Operator stats
+  const [showStats, setShowStats] = useState(false);
+  const [operatorStats, setOperatorStats] = useState<any[]>([]);
+
+  // Build query params
+  const buildQuery = useCallback(() => {
+    const params = new URLSearchParams();
+    params.set('page', String(page));
+    params.set('limit', String(limit));
+    if (search) params.set('search', search);
+    if (statusFilter !== 'all') params.set('status', statusFilter);
+    if (priorityFilter !== 'all') params.set('priority', priorityFilter);
+    if (operatorFilter !== 'all') params.set('operator', operatorFilter);
+    if (dateFrom) params.set('dateFrom', dateFrom);
+    if (dateTo) params.set('dateTo', dateTo);
+    return params.toString();
+  }, [page, search, statusFilter, priorityFilter, operatorFilter, dateFrom, dateTo]);
+
   const fetchReports = async () => {
+    setLoading(true);
     try {
-      const res = await fetch("/api/reports");
+      const query = buildQuery();
+      const res = await fetch(`/api/reports?${query}`);
       const data = await res.json();
-      if (Array.isArray(data)) {
-        const validReports = data.filter(
-          (r) => r.operatorName !== "Monitoreo Automático"
-        );
-        setReports(validReports);
-        setFilteredReports(validReports);
-      } else {
-        setReports([]);
-        setFilteredReports([]);
-      }
-      if (selectedReport) {
-        const updated = data.find((r: Report) => r.id === selectedReport.id);
-        if (updated) setSelectedReport(updated);
+      if (data.reports) {
+        setReports(data.reports);
+        setTotal(data.total || 0);
+        setTotalPages(data.totalPages || 1);
       }
     } catch (error) {
       console.error(error);
@@ -129,30 +149,71 @@ export function ReportesClient() {
     fetchReports();
     const savedUser = localStorage.getItem("enlace-user");
     if (savedUser) setCurrentUser(JSON.parse(savedUser));
-  }, []);
+  }, [page, statusFilter, priorityFilter, operatorFilter, dateFrom, dateTo]);
 
+  // Debounced search
   useEffect(() => {
-    let filtered = reports;
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (report) =>
-          report.problemDescription
-            ?.toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          report.operatorName
-            ?.toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          report.id?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+    const timer = setTimeout(() => {
+      setPage(1);
+      fetchReports();
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Fetch operator stats
+  const fetchOperatorStats = async () => {
+    try {
+      const res = await fetch('/api/reports?limit=500');
+      const data = await res.json();
+      if (data.reports) {
+        const stats: Record<string, any> = {};
+        data.reports.forEach((r: Report) => {
+          if (!stats[r.operatorName]) {
+            stats[r.operatorName] = {
+              name: r.operatorName,
+              total: 0,
+              pending: 0,
+              resolved: 0,
+              emailSent: 0,
+            };
+          }
+          stats[r.operatorName].total++;
+          if (r.status === 'pending') stats[r.operatorName].pending++;
+          if (r.status === 'resolved') stats[r.operatorName].resolved++;
+          if (r.emailStatus === 'sent') stats[r.operatorName].emailSent++;
+        });
+        setOperatorStats(Object.values(stats).sort((a: any, b: any) => b.total - a.total));
+      }
+    } catch (e) {
+      console.error(e);
     }
-    if (statusFilter !== "all")
-      filtered = filtered.filter((report) => report.status === statusFilter);
-    if (priorityFilter !== "all")
-      filtered = filtered.filter((report) => report.priority === priorityFilter);
-    if (categoryFilter !== "all")
-      filtered = filtered.filter((report) => report.category === categoryFilter);
-    setFilteredReports(filtered);
-  }, [reports, searchTerm, statusFilter, priorityFilter, categoryFilter]);
+  };
+
+  // CSV Export
+  const exportToCSV = () => {
+    const headers = ['ID', 'Operador', 'Email', 'Descripción', 'Categoría', 'Prioridad', 'Estado', 'Fecha Inicio', 'Fecha Resolución', 'Email Enviado'];
+    const rows = reports.map(r => [
+      r.id.slice(0, 8),
+      r.operatorName,
+      r.operatorEmail,
+      `"${r.problemDescription.replace(/"/g, '""')}"`,
+      r.category,
+      r.priority,
+      r.status,
+      new Date(r.dateStarted).toLocaleString('es-CR'),
+      r.dateResolved ? new Date(r.dateResolved).toLocaleString('es-CR') : 'Pendiente',
+      r.emailStatus === 'sent' ? 'Sí' : 'No',
+    ]);
+
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `reportes-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   const handleRowClick = (report: Report) => {
     setSelectedReport(report);
@@ -168,11 +229,7 @@ export function ReportesClient() {
         body: JSON.stringify({ id, status: "resolved" }),
       });
       if (res.ok) {
-        setModal({
-          isOpen: true,
-          type: "success",
-          message: "Reporte marcado como resuelto.",
-        });
+        setModal({ isOpen: true, type: "success", message: "Reporte marcado como resuelto." });
         fetchReports();
       } else throw new Error("Error al actualizar");
     } catch (error) {
@@ -183,95 +240,56 @@ export function ReportesClient() {
   const executeAction = async (report: Report, type: string, recipients: any) => {
     let title = "";
     let message = "";
-    if (type === "download") {
-      title = "Generando PDF";
-      message = "Preparando descarga...";
-    }
-    if (type === "email") {
-      title = "Enviando Correo";
-      message = "Contactando servidor de correo...";
-    }
-    if (type === "both") {
-      title = "Procesando";
-      message = "Generando PDF y enviando notificación...";
-    }
+    if (type === "download") { title = "Generando PDF"; message = "Preparando descarga..."; }
+    if (type === "email") { title = "Enviando Correo"; message = "Contactando servidor de correo..."; }
+    if (type === "both") { title = "Procesando"; message = "Generando PDF y enviando notificación..."; }
+
     setProcessing({ isOpen: true, title, message });
     try {
       const download = type === "download" || type === "both";
       const email = type === "email" || type === "both";
       await new Promise((r) => setTimeout(r, 1200));
-      const res = (await generateReportPDF(report, {
-        download,
-        email,
-        recipients,
-      } as any)) as any;
+      const res = await generateReportPDF(report, { download, email, recipients } as any) as any;
       setProcessing((prev) => ({ ...prev, isOpen: false }));
       if (res?.success) {
         setModal({ isOpen: true, type: "success", message: "¡Listo!" });
         if (email) fetchReports();
-      } else if (email && !res?.success) {
-        setModal({
-          isOpen: true,
-          type: "error",
-          message: res?.message || "Error al enviar correo",
-        });
-        fetchReports();
-      } else
-        setModal({
-          isOpen: true,
-          type: "success",
-          message: "Operación completada.",
-        });
-    } catch (error) {
+      } else {
+        setModal({ isOpen: true, type: "error", message: res?.message || "Error" });
+      }
+    } catch {
       setProcessing((prev) => ({ ...prev, isOpen: false }));
-      setModal({
-        isOpen: true,
-        type: "error",
-        message: "Hubo un error al procesar.",
-      });
-      fetchReports();
+      setModal({ isOpen: true, type: "error", message: "Hubo un error al procesar." });
     }
   };
 
   const handleAction = async (report: Report, type: "email" | "both" | "download") => {
-    if (type === "download") {
-      executeAction(report, type, undefined);
-      return;
-    }
+    if (type === "download") { executeAction(report, type, undefined); return; }
     setEmailModal({ isOpen: true, report, type });
-  };
-
-  const handleEmailConfirm = (recipients: string[]) => {
-    if (emailModal.report) {
-      executeAction(emailModal.report, emailModal.type, recipients);
-    }
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "resolved":
-        return (
-          <Badge className="bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border-emerald-500/20 rounded-md">
-            <CheckCircle2 className="w-3 h-3 mr-1" /> Resuelto
-          </Badge>
-        );
+        return <Badge className="bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border-emerald-500/20 rounded-md"><CheckCircle2 className="w-3 h-3 mr-1" /> Resuelto</Badge>;
       case "pending":
-        return (
-          <Badge className="bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border-amber-500/20 rounded-md">
-            <Clock className="w-3 h-3 mr-1" /> Pendiente
-          </Badge>
-        );
+        return <Badge className="bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border-amber-500/20 rounded-md"><Clock className="w-3 h-3 mr-1" /> Pendiente</Badge>;
       default:
-        return (
-          <Badge
-            variant="outline"
-            className="text-muted-foreground border-border rounded-md"
-          >
-            Desconocido
-          </Badge>
-        );
+        return <Badge variant="outline" className="text-muted-foreground border-border rounded-md">Desconocido</Badge>;
     }
   };
+
+  const clearFilters = () => {
+    setSearch("");
+    setStatusFilter("all");
+    setPriorityFilter("all");
+    setOperatorFilter("all");
+    setDateFrom("");
+    setDateTo("");
+    setPage(1);
+  };
+
+  const hasActiveFilters = search || statusFilter !== 'all' || priorityFilter !== 'all' || operatorFilter !== 'all' || dateFrom || dateTo;
 
   if (loading)
     return (
@@ -416,60 +434,175 @@ export function ReportesClient() {
           transition={{ delay: 0.3 }}
           className="mb-6 md:mb-8"
         >
+          {/* Main filter bar */}
           <div className="bg-card backdrop-blur-md border border-border rounded-md p-3 flex flex-col md:flex-row gap-4 items-center ring-1 ring-border">
             <div className="relative flex-1 w-full group">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-[#FF0C60] transition-colors" />
               <Input
                 placeholder="Buscar por ID, operador o descripción..."
                 className="pl-12 h-12 bg-transparent border-none text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-0 text-xs font-medium tracking-tight"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-            <div className="h-8 w-px bg-border hidden md:block" />
-            <div className="flex items-center gap-1.5 p-1 bg-muted/20 rounded-md">
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowFilters(!showFilters)}
+              className={`h-12 w-12 shrink-0 ${hasActiveFilters ? 'text-[#FF0C60] bg-[#FF0C60]/10' : 'text-muted-foreground'}`}
+            >
+              <Filter className="w-4 h-4" />
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => { setShowStats(!showStats); if (!showStats) fetchOperatorStats(); }}
+              className="h-12 w-12 shrink-0 text-muted-foreground"
+            >
+              <BarChart3 className="w-4 h-4" />
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={exportToCSV}
+              className="h-12 w-12 shrink-0 text-muted-foreground"
+              title="Exportar CSV"
+            >
+              <Download className="w-4 h-4" />
+            </Button>
+
+            {/* Quick filters */}
+            <div className="flex items-center gap-1.5 p-1 bg-muted/20 rounded-md shrink-0">
               {["all", "Enlace", "EJTV", "Enlace USA"].map((filter) => (
                 <button
                   key={filter}
-                  onClick={() => setPriorityFilter(filter)}
-                  className={`px-4 py-2.5 rounded-md text-[10px] font-semibold tracking-tight transition-all ${
+                  onClick={() => { setPriorityFilter(filter); setPage(1); }}
+                  className={`px-3 py-2 rounded-md text-[10px] font-semibold tracking-tight transition-all ${
                     priorityFilter === filter
                       ? "bg-[#FF0C60] text-white shadow-lg shadow-rose-500/20"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                   }`}
                 >
-                  {filter === "all" ? "Ver Todos" : filter}
+                  {filter === "all" ? "Todos" : filter}
                 </button>
               ))}
             </div>
-            <div className="h-8 w-px bg-border hidden md:block" />
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px] h-12 border-none bg-transparent text-muted-foreground font-semibold text-[10px] tracking-tight focus:ring-0">
+
+            <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+              <SelectTrigger className="w-[160px] h-12 border-none bg-transparent text-muted-foreground font-semibold text-[10px] tracking-tight focus:ring-0 shrink-0">
                 <SelectValue placeholder="Estado" />
               </SelectTrigger>
               <SelectContent className="bg-popover border-border text-popover-foreground rounded-md">
-                <SelectItem
-                  value="all"
-                  className="text-[10px] font-semibold tracking-tight"
-                >
-                  Cualquier estado
-                </SelectItem>
-                <SelectItem
-                  value="pending"
-                  className="text-[10px] font-semibold tracking-tight text-rose-500"
-                >
-                  Pendientes
-                </SelectItem>
-                <SelectItem
-                  value="resolved"
-                  className="text-[10px] font-semibold tracking-tight text-emerald-500"
-                >
-                  Resueltos
-                </SelectItem>
+                <SelectItem value="all" className="text-[10px] font-semibold tracking-tight">Cualquier estado</SelectItem>
+                <SelectItem value="pending" className="text-[10px] font-semibold tracking-tight text-rose-500">Pendientes</SelectItem>
+                <SelectItem value="resolved" className="text-[10px] font-semibold tracking-tight text-emerald-500">Resueltos</SelectItem>
               </SelectContent>
             </Select>
           </div>
+
+          {/* Advanced filters */}
+          {showFilters && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mt-3 bg-card backdrop-blur-md border border-border rounded-md p-4 ring-1 ring-border"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Operador</label>
+                  <Select value={operatorFilter} onValueChange={(v) => { setOperatorFilter(v); setPage(1); }}>
+                    <SelectTrigger className="h-10 bg-transparent border-border text-xs">
+                      <SelectValue placeholder="Todos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos los operadores</SelectItem>
+                      <SelectItem value="Gabriel">Gabriel</SelectItem>
+                      <SelectItem value="Diego">Diego</SelectItem>
+                      <SelectItem value="Alex">Alex</SelectItem>
+                      <SelectItem value="Andres">Andres</SelectItem>
+                      <SelectItem value="Josue">Josue</SelectItem>
+                      <SelectItem value="Jeremy">Jeremy</SelectItem>
+                      <SelectItem value="Ronald">Ronald</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1"><Calendar className="w-3 h-3" /> Desde</label>
+                  <Input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
+                    className="h-10 bg-transparent border-border text-xs"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1"><Calendar className="w-3 h-3" /> Hasta</label>
+                  <Input
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
+                    className="h-10 bg-transparent border-border text-xs"
+                  />
+                </div>
+
+                <div className="flex items-end">
+                  <Button
+                    variant="ghost"
+                    onClick={clearFilters}
+                    className="h-10 text-xs text-muted-foreground w-full"
+                  >
+                    Limpiar filtros
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          )}
         </motion.div>
+
+        {/* Operator Stats */}
+        {showStats && operatorStats.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8 bg-card backdrop-blur-md border border-border rounded-md p-6 ring-1 ring-border"
+          >
+            <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-[#FF0C60]" />
+              Estadísticas por Operador
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {operatorStats.map((op: any, idx: number) => (
+                <div key={idx} className="p-4 rounded-md bg-muted/20 border border-border">
+                  <div className="font-semibold text-foreground text-sm mb-2">{op.name}</div>
+                  <div className="grid grid-cols-4 gap-2 text-center text-[10px]">
+                    <div>
+                      <div className="text-lg font-bold text-foreground">{op.total}</div>
+                      <div className="text-muted-foreground">Total</div>
+                    </div>
+                    <div>
+                      <div className="text-lg font-bold text-amber-500">{op.pending}</div>
+                      <div className="text-muted-foreground">Pendiente</div>
+                    </div>
+                    <div>
+                      <div className="text-lg font-bold text-emerald-500">{op.resolved}</div>
+                      <div className="text-muted-foreground">Resuelto</div>
+                    </div>
+                    <div>
+                      <div className="text-lg font-bold text-blue-500">{op.emailSent}</div>
+                      <div className="text-muted-foreground">Email</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
 
         <motion.div
           initial={{ opacity: 0 }}
@@ -502,7 +635,7 @@ export function ReportesClient() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredReports.map((report) => (
+                  {reports.map((report) => (
                     <TableRow
                       key={report.id}
                       className="border-border group hover:bg-muted/10 transition-colors cursor-pointer"
@@ -709,7 +842,7 @@ export function ReportesClient() {
                 </TableBody>
               </Table>
             </div>
-            {filteredReports.length === 0 && (
+            {reports.length === 0 && (
               <div className="py-32 text-center">
                 <div className="w-24 h-24 bg-muted/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-border border-dashed ring-8 ring-muted/5">
                   <Zap className="w-12 h-12 text-muted-foreground/30" />
@@ -723,6 +856,58 @@ export function ReportesClient() {
               </div>
             )}
           </Card>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4 px-2">
+              <p className="text-xs text-muted-foreground">
+                Mostrando {reports.length} de {total} reportes (página {page} de {totalPages})
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="h-9 px-3 text-xs"
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" /> Anterior
+                </Button>
+                {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                  let pageNum: number;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (page <= 3) {
+                    pageNum = i + 1;
+                  } else if (page >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = page - 2 + i;
+                  }
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={page === pageNum ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setPage(pageNum)}
+                      className={`h-9 w-9 text-xs ${page === pageNum ? 'bg-[#FF0C60] hover:bg-[#FF0C60]' : ''}`}
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                })}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="h-9 px-3 text-xs"
+                >
+                  Siguiente <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
         </motion.div>
 
         <motion.div

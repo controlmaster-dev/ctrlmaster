@@ -19,6 +19,10 @@ const PUBLIC_API_ROUTES = [
   '/api/auth/register',
   '/api/auth/registration-codes',
   '/api/auth/verify',
+  '/api/users',
+  '/api/special-events',
+  '/api/calendar',
+  '/api/health',
 ];
 
 /**

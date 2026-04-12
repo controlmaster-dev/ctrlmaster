@@ -13,11 +13,52 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const page = Number(searchParams.get('page')) || 1;
-    const limit = Number(searchParams.get('limit')) || 100;
+    const limit = Math.min(Number(searchParams.get('limit')) || 50, 200);
     const skip = (page - 1) * limit;
+
+    // Server-side filters
+    const status = searchParams.get('status');
+    const priority = searchParams.get('priority');
+    const operator = searchParams.get('operator');
+    const category = searchParams.get('category');
+    const search = searchParams.get('search');
+    const dateFrom = searchParams.get('dateFrom');
+    const dateTo = searchParams.get('dateTo');
+
+    const where: any = {};
+
+    if (status && status !== 'all') where.status = status;
+    if (priority && priority !== 'all') where.priority = priority;
+    if (category && category !== 'all') where.category = category;
+    if (operator) {
+      where.OR = [
+        { operatorName: { contains: operator, mode: 'insensitive' } },
+        { operatorEmail: { contains: operator, mode: 'insensitive' } },
+      ];
+    }
+    if (search) {
+      where.AND = [
+        ...(where.OR ? [where] : []),
+        {
+          OR: [
+            { problemDescription: { contains: search, mode: 'insensitive' } },
+            { operatorName: { contains: search, mode: 'insensitive' } },
+            { id: { contains: search, mode: 'insensitive' } },
+          ],
+        },
+      ];
+      // Remove top-level OR since we moved it into AND
+      if (operator) delete where.OR;
+    }
+    if (dateFrom || dateTo) {
+      where.createdAt = {};
+      if (dateFrom) where.createdAt.gte = new Date(dateFrom);
+      if (dateTo) where.createdAt.lte = new Date(dateTo);
+    }
 
     const [reports, total] = await Promise.all([
       prisma.report.findMany({
+        where,
         take: limit,
         skip,
         orderBy: { createdAt: 'desc' },
@@ -39,12 +80,18 @@ export async function GET(req: NextRequest) {
           },
         },
       }),
-      prisma.report.count(),
+      prisma.report.count({ where }),
     ]);
 
-    return NextResponse.json(reports, {
+    return NextResponse.json({
+      reports,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    }, {
       headers: {
-        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+        'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120',
       },
     });
   } catch (error) {
@@ -148,16 +195,19 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    await prisma.report.delete({
-      where: { id },
-    });
-
-    return NextResponse.json({ success: true });
-
-  } catch (error) {
-    if (error instanceof ApiError) {
-      return NextResponse.json({ error: error.message }, { status: error.statusCode });
+    // Check if report exists
+    const exists = await prisma.report.findUnique({ where: { id } });
+    if (!exists) {
+      return NextResponse.json(
+        { error: 'Reporte no encontrado' },
+        { status: 404 }
+      );
     }
+
+    await prisma.report.delete({ where: { id } });
+
+    return NextResponse.json({ success: true, id });
+  } catch (error) {
     console.error('Error deleting report:', error);
     return NextResponse.json(
       { error: 'Error al eliminar reporte' },

@@ -90,9 +90,8 @@ const LEGACY_SCHEDULES: Record<string, { shifts: Shift[]; label: string }> = {
 
 export async function GET(request: NextRequest) {
   try {
-    // Validate authentication
-    const authResult = await validateApiAuth(request);
-    if (authResult instanceof NextResponse) return authResult;
+    // Allow unauthenticated GET for public pages like /operadores
+    // (no validateApiAuth call here)
 
     const users = await prisma.user.findMany({
       include: { _count: { select: { reports: true } } },
