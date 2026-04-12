@@ -776,7 +776,7 @@ export function ReportesClient() {
                                     onClick={(e) => handleResolve(report.id, e)}
                                     className="w-9 h-9 text-emerald-500 hover:bg-emerald-500 hover:text-white rounded-md transition-all shadow-lg hover:shadow-emerald-500/20"
                                   >
-                                    <CheckCircle className="w-4 h-4" />
+                                    <CheckCircle2 className="w-4 h-4" />
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent className="bg-emerald-500 border-none font-bold text-white">
