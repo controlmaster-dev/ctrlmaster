@@ -4,7 +4,6 @@ import { createReportSchema, updateReportSchema } from '@/lib/validation';
 import { ValidationError, ApiError } from '@/lib/errors';
 import { validateApiAuth } from '@/lib/apiAuth';
 import { sendWhatsApp } from '@/lib/whatsapp';
-import { revalidatePath } from 'next/cache';
 
 export async function GET(req: NextRequest) {
   try {
@@ -163,10 +162,6 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Invalidate cache so new reports appear immediately
-    revalidatePath('/reportes');
-    revalidatePath('/');
-
     return NextResponse.json(newReport, { status: 201 });
 
   } catch (error) {
@@ -211,9 +206,6 @@ export async function DELETE(req: NextRequest) {
 
     await prisma.report.delete({ where: { id } });
 
-    revalidatePath('/reportes');
-    revalidatePath('/');
-
     return NextResponse.json({ success: true, id });
   } catch (error) {
     console.error('Error deleting report:', error);
@@ -256,9 +248,6 @@ export async function PATCH(req: NextRequest) {
       where: { id },
       data: updateData,
     });
-
-    revalidatePath('/reportes');
-    revalidatePath('/');
 
     return NextResponse.json(updatedReport);
 

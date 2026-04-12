@@ -184,23 +184,31 @@ export function DashboardClient() {
   const [whatsappHealth, setWhatsappHealth] = useState<any>(null);
   const [isLoadingWA, setIsLoadingWA] = useState(true);
 
+  const checkWhatsAppHealth = useCallback(async () => {
+    try {
+      // Check the REAL WhatsApp API at the configured URL
+      const apiUrl = process.env.NEXT_PUBLIC_WHATSAPP_API_URL || 'http://localhost:3001';
+      const res = await fetch(`${apiUrl}/api/health`, {
+        // Use a short timeout so we don't block the page
+        signal: AbortSignal.timeout(5000),
+      });
+      const data = await res.json();
+      setWhatsappHealth(data);
+    } catch {
+      // If we can't reach the WhatsApp API, mark as disconnected
+      setWhatsappHealth(null);
+    } finally {
+      setIsLoadingWA(false);
+    }
+  }, []);
+
   useEffect(() => {
-    fetch("/api/health")
-      .then(r => r.json())
-      .then(data => setWhatsappHealth(data))
-      .catch(() => setWhatsappHealth(null))
-      .finally(() => setIsLoadingWA(false));
+    checkWhatsAppHealth();
 
     // Refresh every 60s
-    const interval = setInterval(() => {
-      fetch("/api/health")
-        .then(r => r.json())
-        .then(data => setWhatsappHealth(data))
-        .catch(() => {});
-    }, 60000);
-
+    const interval = setInterval(checkWhatsAppHealth, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [checkWhatsAppHealth]);
 
   // ── Side effects ───────────────────────────────────────────────────────────
   useBirthdayNotifications(users, isLoadingUsers);

@@ -5,11 +5,36 @@
 
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import type { Report } from "@/types/report";
 import type { User } from "@/types/auth";
 import { UI_CONFIG, STORAGE_KEYS } from "@/config/constants";
+
+// Global refetch registry - allows any component to trigger a refetch in others
+type RefetchCallback = () => void;
+const refetchRegistry = new Map<string, Set<RefetchCallback>>();
+
+export function registerRefetch(key: string, callback: RefetchCallback) {
+  if (!refetchRegistry.has(key)) {
+    refetchRegistry.set(key, new Set());
+  }
+  refetchRegistry.get(key)!.add(callback);
+}
+
+export function triggerRefetch(key: string) {
+  const callbacks = refetchRegistry.get(key);
+  if (callbacks) {
+    callbacks.forEach(cb => cb());
+  }
+}
+
+export function unregisterRefetch(key: string, callback: RefetchCallback) {
+  const callbacks = refetchRegistry.get(key);
+  if (callbacks) {
+    callbacks.delete(callback);
+  }
+}
 
 
 export interface DashboardStats {
@@ -38,13 +63,16 @@ export interface Comment {
 export function useDashboardStats() {
   const [reports, setReports] = useState<Report[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const fetchRef = useRef<AbortController | null>(null);
 
-  useEffect(() => {
+  const doFetch = useCallback(() => {
+    if (fetchRef.current) fetchRef.current.abort();
+    fetchRef.current = new AbortController();
+
     setIsLoading(true);
-    fetch("/api/reports?limit=50")
+    fetch("/api/reports?limit=50", { signal: fetchRef.current.signal })
       .then((res) => res.json())
       .then((data) => {
-        // Support both old array format and new paginated format
         const reportsList: Report[] = Array.isArray(data)
           ? data
           : (data.reports || []);
@@ -53,11 +81,27 @@ export function useDashboardStats() {
         );
         setReports(allReports);
       })
-      .catch(() => {
-        // Errors handled by error boundary upstream
+      .catch((err) => {
+        if (err.name !== 'AbortError') {
+          // Ignore abort errors
+        }
       })
       .finally(() => setIsLoading(false));
   }, []);
+
+  useEffect(() => {
+    doFetch();
+    return () => {
+      if (fetchRef.current) fetchRef.current.abort();
+    };
+  }, [doFetch]);
+
+  // Register for global refetch events
+  useEffect(() => {
+    const refetch = () => doFetch();
+    registerRefetch('reports', refetch);
+    return () => unregisterRefetch('reports', refetch);
+  }, [doFetch]);
 
   /** Memoized stats derived from reports */
   const stats = useMemo<DashboardStats>(() => {
@@ -227,8 +271,11 @@ export function useResolveReport(
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id, status: "resolved" }),
+          credentials: "include",
         });
         if (res.ok) {
+          // Trigger refetch across all components listening
+          triggerRefetch('reports');
           onSuccess("¡Incidencia resuelta!");
           setTimeout(() => window.location.reload(), 1500);
         } else {

@@ -199,6 +199,12 @@ export function useReportForm() {
 
       toast.success("¡Reporte creado con éxito!");
 
+      // Trigger refetch across all components that display reports
+      try {
+        const { triggerRefetch } = await import('./useDashboardData');
+        triggerRefetch('reports');
+      } catch {}
+
       // Handle email/pdf generation
       if (formData.sendEmail) {
         toast.loading("Generando PDF y enviando correo...", { id: "sending-email" });

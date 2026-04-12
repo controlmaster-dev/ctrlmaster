@@ -312,18 +312,29 @@ export default function ConfigurationPage() {
     });
   };
 
-  const confirmDeleteReport = (id: string) => {
+  const confirmDeleteReport = async (id: string) => {
     setModal({
       isOpen: true,
       title: "Eliminar Reporte",
       message: "¿Estás seguro de eliminar este reporte permanentemente?",
       type: "danger",
       action: async () => {
-        await fetch(`/api/reports?id=${id}`, {
-          method: "DELETE",
-          credentials: "include",
-        });
-        await fetchData();
+        try {
+          const res = await fetch(`/api/reports?id=${id}`, {
+            method: "DELETE",
+            credentials: "include",
+          });
+          if (res.ok) {
+            // Force immediate refetch
+            await fetchData();
+            setReports(prev => prev.filter(r => r.id !== id));
+            toast.success("Reporte eliminado");
+          } else {
+            toast.error("Error al eliminar el reporte");
+          }
+        } catch {
+          toast.error("Error de conexión");
+        }
         setModal((prev) => ({ ...prev, isOpen: false }));
       },
     });
