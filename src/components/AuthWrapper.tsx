@@ -30,6 +30,16 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
   }, [isLoading, user, pathname, router]);
 
   if (pathname.startsWith("/operadores")) {
+    // Public route but show navbar if logged in
+    if (user) {
+      return (
+        <div className="min-h-screen text-foreground relative flex flex-col">
+          <div className="grid-background" />
+          <Navbar />
+          <main className="w-full flex-1 relative z-10">{children}</main>
+        </div>
+      );
+    }
     return <>{children}</>;
   }
 

@@ -7,7 +7,11 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // Routes that don't require authentication
-const PUBLIC_ROUTES = ['/login'];
+const PUBLIC_ROUTES = [
+  '/login',
+  '/operadores',
+  '/operadores/monitoreo',
+];
 
 // API routes that are public (no auth required)
 const PUBLIC_API_ROUTES = [
