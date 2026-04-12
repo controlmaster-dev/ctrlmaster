@@ -27,6 +27,12 @@ import {
   FileText,
   Users as UsersIcon,
   MonitorPlay,
+  MessageCircle,
+  AlertTriangle,
+  Wifi,
+  WifiOff,
+  TrendingUp,
+  AlertCircle,
 } from "lucide-react";
 import type { Report } from "@/types/report";
 
@@ -173,6 +179,28 @@ export function DashboardClient() {
   const { stats, recentReports, chartData, isLoading: isLoadingReports } = useDashboardStats();
   const { users, isLoading: isLoadingUsers } = useUsers();
   const { comments, isLoading: isLoadingComments } = useRecentComments();
+
+  // ── WhatsApp health ────────────────────────────────────────────────────────
+  const [whatsappHealth, setWhatsappHealth] = useState<any>(null);
+  const [isLoadingWA, setIsLoadingWA] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/health")
+      .then(r => r.json())
+      .then(data => setWhatsappHealth(data))
+      .catch(() => setWhatsappHealth(null))
+      .finally(() => setIsLoadingWA(false));
+
+    // Refresh every 60s
+    const interval = setInterval(() => {
+      fetch("/api/health")
+        .then(r => r.json())
+        .then(data => setWhatsappHealth(data))
+        .catch(() => {});
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // ── Side effects ───────────────────────────────────────────────────────────
   useBirthdayNotifications(users, isLoadingUsers);
@@ -378,6 +406,94 @@ export function DashboardClient() {
                 />
                 <LiveActivityCard comments={comments} loading={isLoadingComments} />
                 <BirthdayWidget users={users} />
+              </div>
+
+              {/* ── Pending Alerts + WhatsApp Status ─────────────────────────── */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+                {/* Pending Reports Alert */}
+                {stats.pendingReports > 0 && (
+                  <Card className="lg:col-span-2 bg-amber-500/5 border-amber-500/20 rounded-2xl overflow-hidden ring-1 ring-amber-500/10">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base text-amber-500 flex items-center gap-2 font-semibold">
+                        <AlertTriangle className="w-5 h-5" />
+                        Reportes Pendientes ({stats.pendingReports})
+                      </CardTitle>
+                      <CardDescription className="text-amber-500/70 text-xs">
+                        Requieren atención inmediata
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <div className="space-y-2">
+                        {recentReports
+                          .filter(r => r.status === 'pending')
+                          .slice(0, 3)
+                          .map(report => (
+                            <div key={report.id} className="flex items-center justify-between p-3 rounded-lg bg-amber-500/5 border border-amber-500/10">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-foreground truncate">{report.problemDescription}</p>
+                                <p className="text-[10px] text-muted-foreground">{report.operatorName} · {report.priority}</p>
+                              </div>
+                              <Link href="/reportes">
+                                <Button variant="ghost" size="sm" className="text-amber-500 hover:text-amber-400 hover:bg-amber-500/10 text-xs h-8">
+                                  Ver <ArrowUpRight className="w-3 h-3 ml-1" />
+                                </Button>
+                              </Link>
+                            </div>
+                          ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* WhatsApp Status */}
+                <Card className={`rounded-2xl overflow-hidden ring-1 ${
+                  whatsappHealth?.success ? 'border-emerald-500/20 bg-emerald-500/5 ring-emerald-500/10' :
+                  whatsappHealth ? 'border-red-500/20 bg-red-500/5 ring-red-500/10' :
+                  'border-border bg-card'
+                }`}>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2 font-semibold text-foreground">
+                      {isLoadingWA ? (
+                        <div className="w-5 h-5 rounded-full bg-muted animate-pulse" />
+                      ) : whatsappHealth?.success ? (
+                        <Wifi className="w-5 h-5 text-emerald-500" />
+                      ) : (
+                        <WifiOff className="w-5 h-5 text-red-500" />
+                      )}
+                      WhatsApp
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      {isLoadingWA ? 'Verificando...' :
+                       whatsappHealth?.success ? 'Conectado y operativo' :
+                       whatsappHealth ? 'Desconectado' : 'No configurado'}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    {whatsappHealth?.data && (
+                      <div className="space-y-2 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Mensajes hoy</span>
+                          <span className="font-semibold text-foreground">{whatsappHealth.data.messagesSent || 0}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Errores</span>
+                          <span className={`font-semibold ${whatsappHealth.data.messagesFailed > 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                            {whatsappHealth.data.messagesFailed || 0}
+                          </span>
+                        </div>
+                        {whatsappHealth.data.queueSize > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">En cola</span>
+                            <span className="font-semibold text-amber-500">{whatsappHealth.data.queueSize}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {!whatsappHealth && (
+                      <p className="text-xs text-muted-foreground">Configura la API de WhatsApp para enviar alertas</p>
+                    )}
+                  </CardContent>
+                </Card>
               </div>
 
               {/* ── Weekly Trend (Engineers only) ────────────────────────────── */}
