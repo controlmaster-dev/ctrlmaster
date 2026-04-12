@@ -1,0 +1,26 @@
+[Unit]
+Description=CtrlMaster WhatsApp API
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/ctrlmaster-whatsapp-api
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node dist/index.js
+Restart=always
+RestartSec=5
+StandardOutput=append:/root/ctrlmaster-whatsapp-api/logs/out.log
+StandardError=append:/root/ctrlmaster-whatsapp-api/logs/error.log
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+
+# Limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  whatsapp-api:
+    build: .
+    container_name: ctrlmaster-whatsapp
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./sessions:/app/sessions
+    environment:
+      - PORT=3001
+      - WHATSAPP_API_KEY=${WHATSAPP_API_KEY:-change-me-in-production}
+      - LOG_LEVEL=info
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
