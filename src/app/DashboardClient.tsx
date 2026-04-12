@@ -186,16 +186,15 @@ export function DashboardClient() {
 
   const checkWhatsAppHealth = useCallback(async () => {
     try {
-      // Check the REAL WhatsApp API at the configured URL
-      const apiUrl = process.env.NEXT_PUBLIC_WHATSAPP_API_URL || 'http://localhost:3001';
-      const res = await fetch(`${apiUrl}/api/health`, {
-        // Use a short timeout so we don't block the page
-        signal: AbortSignal.timeout(5000),
-      });
+      // Use server-side proxy to avoid CORS issues
+      const res = await fetch('/api/proxy/whatsapp');
       const data = await res.json();
-      setWhatsappHealth(data);
+      if (data.success) {
+        setWhatsappHealth(data);
+      } else {
+        setWhatsappHealth(null);
+      }
     } catch {
-      // If we can't reach the WhatsApp API, mark as disconnected
       setWhatsappHealth(null);
     } finally {
       setIsLoadingWA(false);

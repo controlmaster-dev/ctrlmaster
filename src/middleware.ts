@@ -23,6 +23,8 @@ const PUBLIC_API_ROUTES = [
   '/api/special-events',
   '/api/calendar',
   '/api/health',
+  '/api/cron',
+  '/api/proxy/whatsapp',
 ];
 
 /**

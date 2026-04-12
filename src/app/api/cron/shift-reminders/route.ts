@@ -15,14 +15,13 @@ export async function GET(req: Request) {
     const testEmail = searchParams.get('email');
     const isTest = searchParams.get('test') === 'true';
 
-    // En producción, Vercel Crons envía un Bearer token en el Header "Authorization"
-    const authHeader = req.headers.get('authorization');
-    if (
-      !isTest && 
-      process.env.CRON_SECRET && 
-      authHeader !== `Bearer ${process.env.CRON_SECRET}`
-    ) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Vercel Crons sends a Bearer token in the Authorization header
+    // If CRON_SECRET is not set, allow all requests (development mode)
+    if (process.env.CRON_SECRET) {
+      const authHeader = req.headers.get('authorization');
+      if (!isTest && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
     }
 
     // Calcular la fecha objetivo usando zona horaria de Costa Rica para evitar bugs en servidores UTC
