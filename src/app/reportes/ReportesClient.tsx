@@ -268,6 +268,12 @@ export function ReportesClient() {
     setEmailModal({ isOpen: true, report, type });
   };
 
+  const handleEmailConfirm = (recipients: string[]) => {
+    if (emailModal.report) {
+      executeAction(emailModal.report, emailModal.type, recipients);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "resolved":
@@ -718,7 +724,7 @@ export function ReportesClient() {
                       </TableCell>
                       <TableCell className="py-5">
                         <div className="flex items-center gap-2">
-                          {(report.comments?.length || 0) > 0 && (
+                          {((report._count?.comments || 0) > 0) && (
                             <div
                               className="w-8 h-8 rounded-md bg-blue-500/10 border border-blue-500/20 flex items-center justify-center"
                               title="Comentarios"
@@ -726,7 +732,7 @@ export function ReportesClient() {
                               <MessageSquare className="w-3.5 h-3.5 text-blue-500" />
                             </div>
                           )}
-                          {(report.reactions?.length || 0) > 0 && (
+                          {((report._count?.reactions || 0) > 0) && (
                             <div
                               className="w-8 h-8 rounded-md bg-[#FF0C60]/10 border border-[#FF0C60]/20 flex items-center justify-center"
                               title="Reacciones"
@@ -734,7 +740,7 @@ export function ReportesClient() {
                               <ThumbsUp className="w-3.5 h-3.5 text-[#FF0C60]" />
                             </div>
                           )}
-                          {!report.comments?.length && !report.reactions?.length && (
+                          {!(report._count?.comments || 0) && !(report._count?.reactions || 0) && (
                             <span className="text-muted-foreground/30 font-medium">
                               -
                             </span>
