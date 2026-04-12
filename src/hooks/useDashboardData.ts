@@ -41,12 +41,16 @@ export function useDashboardStats() {
 
   useEffect(() => {
     setIsLoading(true);
-    fetch("/api/reports")
+    fetch("/api/reports?limit=50")
       .then((res) => res.json())
       .then((data) => {
-        const allReports: Report[] = Array.isArray(data)
-          ? data.filter((r: Report) => r.operatorName !== "Monitoreo Automático")
-          : [];
+        // Support both old array format and new paginated format
+        const reportsList: Report[] = Array.isArray(data)
+          ? data
+          : (data.reports || []);
+        const allReports: Report[] = reportsList.filter(
+          (r: Report) => r.operatorName !== "Monitoreo Automático"
+        );
         setReports(allReports);
       })
       .catch(() => {

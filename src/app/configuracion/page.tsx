@@ -196,7 +196,9 @@ export default function ConfigurationPage() {
       const reportsData = await reportsRes.json();
 
       if (Array.isArray(usersData)) setUsers(usersData);
+      // Support both old array format and new paginated format
       if (Array.isArray(reportsData)) setReports(reportsData);
+      else if (reportsData.reports && Array.isArray(reportsData.reports)) setReports(reportsData.reports);
     } catch (e) {
       console.error("Error fetching data", e);
     } finally {

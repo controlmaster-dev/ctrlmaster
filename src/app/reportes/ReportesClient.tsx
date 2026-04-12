@@ -139,6 +139,11 @@ export function ReportesClient() {
         setReports(data.reports);
         setTotal(data.total || 0);
         setTotalPages(data.totalPages || 1);
+      } else if (Array.isArray(data)) {
+        // Fallback for old array format
+        setReports(data);
+        setTotal(data.length);
+        setTotalPages(1);
       }
     } catch (error) {
       console.error(error);
