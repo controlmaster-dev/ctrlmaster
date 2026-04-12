@@ -27,6 +27,7 @@ import {
   FileText,
   CheckCircle2,
   Mail,
+  Send,
   MessageSquare,
   ThumbsUp,
   Clock,
@@ -36,6 +37,7 @@ import {
   Filter,
   Calendar,
   BarChart3,
+  Zap,
 } from "lucide-react";
 import {
   Tooltip,
