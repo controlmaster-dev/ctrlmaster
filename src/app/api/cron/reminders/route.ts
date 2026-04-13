@@ -155,8 +155,8 @@ export async function GET() {
 
     return NextResponse.json({ success: true, processed: results.length, details: results });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[Cron Reminders] Error:', error);
-    return NextResponse.json({ error: 'Internal Server Error', details: error?.message || String(error) }, { status: 500 });
+    return NextResponse.json({ error: 'Internal Server Error', details: error instanceof Error ? error.message : String(error) }, { status: 500 });
   }
 }

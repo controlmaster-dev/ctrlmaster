@@ -286,7 +286,7 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, messageId: info.messageId });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Error enviando correo vía Nodemailer:', error);
 
     if (reportId) {
@@ -298,6 +298,6 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    return NextResponse.json({ success: false, error: error?.message || 'Error desconocido' }, { status: 500 });
+    return NextResponse.json({ success: false, error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
   }
 }

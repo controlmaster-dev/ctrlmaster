@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { validateApiAuth, requireRole } from '@/lib/apiAuth';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(_req: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
+    const authResult = await validateApiAuth(req);
+    if (authResult instanceof NextResponse) return authResult;
+
     const credentials = await prisma.credential.findMany({
       orderBy: { createdAt: 'desc' }
     });
@@ -17,6 +21,14 @@ export async function GET(_req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const authResult = await validateApiAuth(req);
+    if (authResult instanceof NextResponse) return authResult;
+    const { user } = authResult;
+
+    // Engineers and admins can create credentials
+    const roleCheck = requireRole(user, ['ENGINEER', 'ADMIN', 'BOSS']);
+    if (roleCheck instanceof NextResponse) return roleCheck;
+
     const body = await req.json();
     const { service, category, username, password, notes } = body;
 
@@ -42,6 +54,14 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
+    const authResult = await validateApiAuth(req);
+    if (authResult instanceof NextResponse) return authResult;
+    const { user } = authResult;
+
+    // Engineers and admins can delete credentials
+    const roleCheck = requireRole(user, ['ENGINEER', 'ADMIN', 'BOSS']);
+    if (roleCheck instanceof NextResponse) return roleCheck;
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
 
@@ -62,6 +82,14 @@ export async function DELETE(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
+    const authResult = await validateApiAuth(req);
+    if (authResult instanceof NextResponse) return authResult;
+    const { user } = authResult;
+
+    // Engineers and admins can update credentials
+    const roleCheck = requireRole(user, ['ENGINEER', 'ADMIN', 'BOSS']);
+    if (roleCheck instanceof NextResponse) return roleCheck;
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
     const body = await req.json();

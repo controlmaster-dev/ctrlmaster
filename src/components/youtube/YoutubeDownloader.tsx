@@ -81,9 +81,9 @@ export function YoutubeDownloader() {
       document.body.removeChild(link);
       
       toast.success(`La descarga de ${type === 'audio' ? 'audio' : 'video'} debería comenzar en breve`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
-      toast.error(error.message || `Error al intentar descargar el ${type}. Es posible que el video sea muy largo.`);
+      toast.error(error instanceof Error ? error.message : `Error al intentar descargar el ${type}. Es posible que el video sea muy largo.`);
     } finally {
       setTimeout(() => {
         if (type === 'audio') setDownloadingAudio(false);

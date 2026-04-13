@@ -302,9 +302,9 @@ export const generateReportPDF = async (
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Error del servidor');
       return { success: true };
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('⚠️ Error enviando email:', err);
-      return { success: false, message: err?.message || 'Error desconocido' };
+      return { success: false, message: err instanceof Error ? err.message : 'Unknown error' };
     }
   }
 

@@ -14,6 +14,7 @@ export interface User {
   avatar?: string;
   image?: string;
   birthday?: string;
+  phone?: string | null;
   lastLogin?: Date;
   lastLoginIP?: string;
   lastLoginCountry?: string;

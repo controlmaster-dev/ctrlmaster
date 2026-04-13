@@ -248,8 +248,8 @@ Por favor, asegúrate de segmentar los programas con tiempo.`;
       });
     }
 
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("[Shift Reminders] Exception caught:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ error: err instanceof Error ? err.message : 'Unknown error' }, { status: 500 });
   }
 }

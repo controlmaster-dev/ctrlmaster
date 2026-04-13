@@ -39,6 +39,7 @@ import type { Report } from "@/types/report";
 import Link from "next/link";
 import { ProcessingModal } from "@/components/ProcessingModal";
 import { SuccessModal } from "@/components/SuccessModal";
+import { ReminderModal } from "@/components/ReminderModal";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -173,6 +174,7 @@ export function DashboardClient() {
     title: "",
     message: "",
   });
+  const [reminderModalOpen, setReminderModalOpen] = useState(false);
 
   // ── Data hooks ─────────────────────────────────────────────────────────────
   const currentUser = useCurrentUser();
@@ -250,6 +252,17 @@ export function DashboardClient() {
         type={successModal.type}
         title={successModal.type === "success" ? "Operación Exitosa" : "Error"}
         message={successModal.message}
+      />
+      <ReminderModal
+        isOpen={reminderModalOpen}
+        onClose={() => setReminderModalOpen(false)}
+        operators={users.map(u => ({
+          id: u.id,
+          name: u.name,
+          email: u.email,
+          phone: u.phone,
+          image: u.image,
+        }))}
       />
 
       <motion.div
@@ -453,52 +466,57 @@ export function DashboardClient() {
                 )}
 
                 {/* WhatsApp Status */}
-                <Card className={`rounded-2xl overflow-hidden ring-1 ${
-                  whatsappHealth?.success ? 'border-emerald-500/20 bg-emerald-500/5 ring-emerald-500/10' :
-                  whatsappHealth ? 'border-red-500/20 bg-red-500/5 ring-red-500/10' :
-                  'border-border bg-card'
-                }`}>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center gap-2 font-semibold text-foreground">
+                <Card className={`rounded-xl border-border bg-card`}>
+                  <CardHeader className="pb-2 pt-4 px-4">
+                    <CardTitle className="text-sm flex items-center gap-2 font-semibold text-foreground">
                       {isLoadingWA ? (
-                        <div className="w-5 h-5 rounded-full bg-muted animate-pulse" />
+                        <div className="w-4 h-4 rounded-full bg-muted animate-pulse" />
                       ) : whatsappHealth?.success ? (
-                        <Wifi className="w-5 h-5 text-emerald-500" />
+                        <Wifi className="w-4 h-4 text-emerald-500" />
                       ) : (
-                        <WifiOff className="w-5 h-5 text-red-500" />
+                        <WifiOff className="w-4 h-4 text-red-500" />
                       )}
                       WhatsApp
                     </CardTitle>
-                    <CardDescription className="text-xs">
+                    <CardDescription className="text-[11px] -mt-1">
                       {isLoadingWA ? 'Verificando...' :
                        whatsappHealth?.success ? 'Conectado y operativo' :
                        whatsappHealth ? 'Desconectado' : 'No configurado'}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="pt-0">
+                  <CardContent className="pt-0 px-4 pb-4">
                     {whatsappHealth?.data && (
-                      <div className="space-y-2 text-xs">
+                      <div className="space-y-1.5 text-xs mb-3">
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">Mensajes hoy</span>
-                          <span className="font-semibold text-foreground">{whatsappHealth.data.messagesSent || 0}</span>
+                          <span className="text-muted-foreground text-[11px]">Mensajes hoy</span>
+                          <span className="font-semibold text-foreground text-[11px]">{whatsappHealth.data.messagesSent || 0}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">Errores</span>
-                          <span className={`font-semibold ${whatsappHealth.data.messagesFailed > 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                          <span className="text-muted-foreground text-[11px]">Errores</span>
+                          <span className={`font-semibold text-[11px] ${whatsappHealth.data.messagesFailed > 0 ? 'text-red-500' : 'text-emerald-500'}`}>
                             {whatsappHealth.data.messagesFailed || 0}
                           </span>
                         </div>
                         {whatsappHealth.data.queueSize > 0 && (
                           <div className="flex justify-between">
-                            <span className="text-muted-foreground">En cola</span>
-                            <span className="font-semibold text-amber-500">{whatsappHealth.data.queueSize}</span>
+                            <span className="text-muted-foreground text-[11px]">En cola</span>
+                            <span className="font-semibold text-amber-500 text-[11px]">{whatsappHealth.data.queueSize}</span>
                           </div>
                         )}
                       </div>
                     )}
                     {!whatsappHealth && (
-                      <p className="text-xs text-muted-foreground">Configura la API de WhatsApp para enviar alertas</p>
+                      <p className="text-[11px] text-muted-foreground mb-3">Configura la API de WhatsApp para enviar alertas</p>
                     )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full h-8 text-[11px] border-border/60 bg-card/60 text-muted-foreground hover:text-[#FF0C60] hover:border-[#FF0C60]/30 rounded-lg transition-all gap-1.5"
+                      onClick={() => setReminderModalOpen(true)}
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      Enviar recordatorio
+                    </Button>
                   </CardContent>
                 </Card>
               </div>

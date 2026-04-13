@@ -16,8 +16,8 @@ export async function POST(req: NextRequest) {
     }
 
     return await generateAndSendReport(emails, 'CURRENT');
-  } catch (error: any) {
-    return NextResponse.json({ error: error?.message || 'Internal server error' }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -296,8 +296,8 @@ async function generateAndSendReport(recipients: string[], mode: 'LAST' | 'CURRE
 
     return NextResponse.json({ success: true, count: stats.length });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[Weekly Report] Error:', error);
-    return NextResponse.json({ error: error?.message || 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Internal server error' }, { status: 500 });
   }
 }

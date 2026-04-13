@@ -18,11 +18,13 @@ import {
   X,
 } from "lucide-react";
 
+import type { LucideIcon } from "lucide-react";
+
 interface CommandItem {
   id: string;
   label: string;
   desc: string;
-  icon: any;
+  icon: LucideIcon;
   action: () => void;
 }
 

@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { Youtube, Facebook } from "lucide-react";
 
 interface SocialPlayerProps {
