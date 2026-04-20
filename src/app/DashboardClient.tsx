@@ -37,6 +37,7 @@ import {
 import type { Report } from "@/types/report";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ProcessingModal } from "@/components/ProcessingModal";
 import { SuccessModal } from "@/components/SuccessModal";
 import { ReminderModal } from "@/components/ReminderModal";
@@ -87,8 +88,13 @@ const ReportRow = React.memo(function ReportRow({
   report: Report;
   onResolve: (id: string, e: React.MouseEvent) => void;
 }) {
+  const router = useRouter();
+
   return (
-    <TableRow className="border-border hover:bg-muted/10 transition-all group/row">
+    <TableRow 
+      className="border-border hover:bg-muted/10 transition-all group/row cursor-pointer"
+      onClick={() => router.push(`/reportes?reportId=${report.id}`)}
+    >
       <TableCell className="font-mono text-xs text-muted-foreground pl-6 py-4">
         <span className="opacity-50">#</span>
         {report.id.slice(0, 6)}
@@ -400,7 +406,7 @@ export function DashboardClient() {
               </div>
 
               {/* ── Stats Grid ──────────────────────────────────────────────── */}
-              <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-6">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
                 <StatsCard
                   title="Total Reportes"
                   value={stats.totalReports}
@@ -424,38 +430,36 @@ export function DashboardClient() {
                   variant="success"
                   valueColor="text-emerald-500"
                 />
-                <LiveActivityCard comments={comments} loading={isLoadingComments} />
                 <BirthdayWidget users={users} />
               </div>
 
-              {/* ── Pending Alerts + WhatsApp Status ─────────────────────────── */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
-                {/* Pending Reports Alert */}
-                {stats.pendingReports > 0 && (
-                  <Card className="lg:col-span-2 bg-amber-500/5 border-amber-500/20 rounded-2xl overflow-hidden ring-1 ring-amber-500/10">
-                    <CardHeader className="pb-3">
+              {/* ── Pending Alerts ─────────────────────────── */}
+              {stats.pendingReports > 0 && (
+                <div className="w-full">
+                  <Card className="bg-amber-500/5 border-amber-500/20 rounded-2xl overflow-hidden ring-1 ring-amber-500/10 shadow-sm">
+                    <CardHeader className="pb-3 border-b border-amber-500/10">
                       <CardTitle className="text-base text-amber-500 flex items-center gap-2 font-semibold">
-                        <AlertTriangle className="w-5 h-5" />
+                        <AlertTriangle className="w-5 h-5 flex-shrink-0" />
                         Reportes Pendientes ({stats.pendingReports})
                       </CardTitle>
-                      <CardDescription className="text-amber-500/70 text-xs">
+                      <CardDescription className="text-amber-600/70 dark:text-amber-400/70 text-xs font-medium">
                         Requieren atención inmediata
                       </CardDescription>
                     </CardHeader>
-                    <CardContent className="pt-0">
-                      <div className="space-y-2">
+                    <CardContent className="pt-3 pb-4 px-5">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                         {recentReports
                           .filter(r => r.status === 'pending')
                           .slice(0, 3)
                           .map(report => (
-                            <div key={report.id} className="flex items-center justify-between p-3 rounded-lg bg-amber-500/5 border border-amber-500/10">
+                            <div key={report.id} className="flex flex-col justify-between p-3 rounded-xl bg-background/50 border border-amber-500/10 hover:border-amber-500/30 transition-all gap-2 shadow-sm">
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-foreground truncate">{report.problemDescription}</p>
-                                <p className="text-[10px] text-muted-foreground">{report.operatorName} · {report.priority}</p>
+                                <p className="text-sm font-semibold text-foreground line-clamp-1">{report.problemDescription}</p>
+                                <p className="text-[10px] text-muted-foreground mt-1 truncate">{report.operatorName} · {report.priority}</p>
                               </div>
-                              <Link href="/reportes">
-                                <Button variant="ghost" size="sm" className="text-amber-500 hover:text-amber-400 hover:bg-amber-500/10 text-xs h-8">
-                                  Ver <ArrowUpRight className="w-3 h-3 ml-1" />
+                              <Link href={`/reportes?reportId=${report.id}`} className="mt-1">
+                                <Button variant="ghost" size="sm" className="w-full text-amber-600 dark:text-amber-400 hover:text-amber-700 hover:bg-amber-500/10 text-xs h-8 font-medium">
+                                  Ver detalles <ArrowUpRight className="w-3 h-3 ml-1" />
                                 </Button>
                               </Link>
                             </div>
@@ -463,94 +467,35 @@ export function DashboardClient() {
                       </div>
                     </CardContent>
                   </Card>
-                )}
-
-                {/* WhatsApp Status */}
-                <Card className={`rounded-xl border-border bg-card`}>
-                  <CardHeader className="pb-2 pt-4 px-4">
-                    <CardTitle className="text-sm flex items-center gap-2 font-semibold text-foreground">
-                      {isLoadingWA ? (
-                        <div className="w-4 h-4 rounded-full bg-muted animate-pulse" />
-                      ) : whatsappHealth?.success ? (
-                        <Wifi className="w-4 h-4 text-emerald-500" />
-                      ) : (
-                        <WifiOff className="w-4 h-4 text-red-500" />
-                      )}
-                      WhatsApp
-                    </CardTitle>
-                    <CardDescription className="text-[11px] -mt-1">
-                      {isLoadingWA ? 'Verificando...' :
-                       whatsappHealth?.success ? 'Conectado y operativo' :
-                       whatsappHealth ? 'Desconectado' : 'No configurado'}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="pt-0 px-4 pb-4">
-                    {whatsappHealth?.data && (
-                      <div className="space-y-1.5 text-xs mb-3">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground text-[11px]">Mensajes hoy</span>
-                          <span className="font-semibold text-foreground text-[11px]">{whatsappHealth.data.messagesSent || 0}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground text-[11px]">Errores</span>
-                          <span className={`font-semibold text-[11px] ${whatsappHealth.data.messagesFailed > 0 ? 'text-red-500' : 'text-emerald-500'}`}>
-                            {whatsappHealth.data.messagesFailed || 0}
-                          </span>
-                        </div>
-                        {whatsappHealth.data.queueSize > 0 && (
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground text-[11px]">En cola</span>
-                            <span className="font-semibold text-amber-500 text-[11px]">{whatsappHealth.data.queueSize}</span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    {!whatsappHealth && (
-                      <p className="text-[11px] text-muted-foreground mb-3">Configura la API de WhatsApp para enviar alertas</p>
-                    )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full h-8 text-[11px] border-border/60 bg-card/60 text-muted-foreground hover:text-[#FF0C60] hover:border-[#FF0C60]/30 rounded-lg transition-all gap-1.5"
-                      onClick={() => setReminderModalOpen(true)}
-                    >
-                      <MessageCircle className="w-3.5 h-3.5" />
-                      Enviar recordatorio
-                    </Button>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* ── Weekly Trend (Engineers only) ────────────────────────────── */}
-              {isEngineer && (
-                <div className="w-full">
-                  <Card className="bg-card/50 backdrop-blur-xl border border-border/50 shadow-sm overflow-hidden rounded-2xl ring-0">
-                    <CardHeader>
-                      <CardTitle className="text-xl text-foreground flex items-center gap-2 font-semibold tracking-tight">
-                        <Activity className="w-5 h-5 text-purple-400" /> Tendencia
-                        semanal
-                      </CardTitle>
-                      <CardDescription className="text-muted-foreground font-medium text-xs">
-                        Reportes generados en los últimos 7 días
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="h-[220px] w-full p-4 flex flex-col justify-between relative group">
-                        <WeeklyTrendChart
-                          loading={isLoadingReports}
-                          chartData={chartData}
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
                 </div>
               )}
 
               {/* ── Main Content Grid ────────────────────────────────────────── */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-                {/* Recent Reports Table */}
-                <div className="lg:col-span-2 space-y-10">
-                  <Card className="bg-card/50 backdrop-blur-xl border border-border/50 shadow-sm overflow-hidden rounded-2xl group ring-0">
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 md:gap-10">
+                {/* ── Left Column: Reports & Trends ── */}
+                <div className="xl:col-span-2 flex flex-col gap-6 md:gap-10">
+                  
+                  {/* Weekly Trend (Engineers only) */}
+                  {isEngineer && (
+                    <Card className="bg-card/50 backdrop-blur-xl border border-border/50 shadow-sm overflow-hidden rounded-2xl ring-0">
+                      <CardHeader>
+                        <CardTitle className="text-xl text-foreground flex items-center gap-2 font-semibold tracking-tight">
+                          <Activity className="w-5 h-5 text-purple-400" /> Tendencia semanal
+                        </CardTitle>
+                        <CardDescription className="text-muted-foreground font-medium text-xs">
+                          Reportes generados en los últimos 7 días
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="h-[220px] w-full p-4 flex flex-col justify-between relative group">
+                          <WeeklyTrendChart loading={isLoadingReports} chartData={chartData} />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Recent Reports Table */}
+                  <Card className="bg-card/50 backdrop-blur-xl border border-border/50 shadow-sm overflow-hidden rounded-2xl group ring-0 flex-1">
                     <CardHeader className="border-b border-border/60 flex flex-row items-center justify-between p-6 relative gap-4">
                       <div className="min-w-0">
                         <CardTitle className="text-xl text-foreground font-semibold tracking-tight">
@@ -609,13 +554,75 @@ export function DashboardClient() {
                   </Card>
                 </div>
 
-                {/* Bitcentral Widget */}
-                <div className="lg:col-span-1">
+                {/* ── Right Column: Widgets ── */}
+                <div className="xl:col-span-1 flex flex-col gap-6 md:gap-10">
+                  
+                  {/* Bitcentral Widget */}
                   {isLoadingUsers ? (
                     <BitcentralLoadingSkeleton />
                   ) : (
                     <BitcentralWidget users={users} />
                   )}
+
+                  {/* WhatsApp Status */}
+                  <Card className={`rounded-2xl border-border/50 bg-card/50 backdrop-blur-xl shadow-sm ring-0`}>
+                    <CardHeader className="pb-2 pt-5 px-5">
+                      <CardTitle className="text-base flex items-center gap-2 font-semibold text-foreground tracking-tight">
+                        {isLoadingWA ? (
+                          <div className="w-4 h-4 rounded-full bg-muted animate-pulse" />
+                        ) : whatsappHealth?.success ? (
+                          <Wifi className="w-4 h-4 text-emerald-500" />
+                        ) : (
+                          <WifiOff className="w-4 h-4 text-red-500" />
+                        )}
+                        Estado de WhatsApp
+                      </CardTitle>
+                      <CardDescription className="text-xs -mt-1 font-medium">
+                        {isLoadingWA ? 'Verificando...' :
+                         whatsappHealth?.success ? 'Conectado y operativo' :
+                         whatsappHealth ? 'Desconectado' : 'No configurado'}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-0 px-5 pb-5">
+                      {whatsappHealth?.data && (
+                        <div className="space-y-2 text-xs mb-4 mt-2">
+                          <div className="flex justify-between items-center bg-muted/20 p-2 rounded-lg border border-border/50">
+                            <span className="text-muted-foreground font-medium">Mensajes hoy</span>
+                            <span className="font-semibold text-foreground">{whatsappHealth.data.messagesSent || 0}</span>
+                          </div>
+                          <div className="flex justify-between items-center bg-muted/20 p-2 rounded-lg border border-border/50">
+                            <span className="text-muted-foreground font-medium">Errores</span>
+                            <span className={`font-semibold ${whatsappHealth.data.messagesFailed > 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                              {whatsappHealth.data.messagesFailed || 0}
+                            </span>
+                          </div>
+                          {whatsappHealth.data.queueSize > 0 && (
+                            <div className="flex justify-between items-center bg-muted/20 p-2 rounded-lg border border-border/50">
+                              <span className="text-muted-foreground font-medium">En cola</span>
+                              <span className="font-semibold text-amber-500">{whatsappHealth.data.queueSize}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {!whatsappHealth && !isLoadingWA && (
+                        <p className="text-xs text-muted-foreground mb-4">Configura la API de WhatsApp para enviar alertas automáticamente.</p>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full h-10 text-xs font-semibold border-border/60 bg-background hover:text-[#FF0C60] hover:border-[#FF0C60]/30 rounded-xl transition-all gap-2"
+                        onClick={() => setReminderModalOpen(true)}
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                        Enviar recordatorio manual
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  {/* Live Activity (Recent Comments) */}
+                  <div className="flex-1 min-h-[300px]">
+                    <LiveActivityCard comments={comments} loading={isLoadingComments} />
+                  </div>
                 </div>
               </div>
             </motion.div>

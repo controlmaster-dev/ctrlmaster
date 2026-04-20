@@ -158,6 +158,25 @@ export function ReportesClient() {
     if (savedUser) setCurrentUser(JSON.parse(savedUser));
   }, [page, statusFilter, priorityFilter, operatorFilter, dateFrom, dateTo]);
 
+  // Handle direct report link (?reportId=xxx)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const reportId = params.get("reportId");
+    if (reportId) {
+      fetch(`/api/reports/${reportId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && !data.error) {
+            setSelectedReport(data);
+            setDetailModalOpen(true);
+            // Clean up URL to avoid reopening on refresh/back
+            window.history.replaceState({}, '', window.location.pathname);
+          }
+        })
+        .catch(console.error);
+    }
+  }, []);
+
   // Debounced search
   useEffect(() => {
     const timer = setTimeout(() => {

@@ -70,7 +70,7 @@ export function BirthdayWidget({ users }: { users: UserBirthday[] }) {
   };
 
   return (
-    <Card className="bg-card border border-border shadow-sm rounded-xl flex flex-col group transition-all duration-300 overflow-hidden h-[200px]">
+    <Card className="bg-card border border-border shadow-sm rounded-md flex flex-col group transition-all duration-300 overflow-hidden h-[170px]">
       <div className="p-4 border-b border-border bg-gradient-to-br from-[#FF0C60]/10 to-transparent flex items-center gap-3 shrink-0">
         <div className="w-8 h-8 rounded-full bg-[#FF0C60] flex items-center justify-center shadow-[0_4px_15px_rgba(255,12,96,0.4)] shrink-0">
           <Cake className="w-4 h-4 text-white" />
