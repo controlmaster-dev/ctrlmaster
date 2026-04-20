@@ -19,7 +19,7 @@ const createUserSchema = z.object({
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
   email: z.string().email('Email inválido'),
   password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
-  role: z.enum(['ADMIN', 'ENGINEER', 'OPERATOR']).optional().default('OPERATOR'),
+  role: z.enum(['ADMIN', 'BOSS', 'ENGINEER', 'OPERATOR']).optional().default('OPERATOR'),
   image: z.string().url().optional(),
   birthday: z.string().optional(),
   schedule: z.array(z.any()).optional(),
@@ -29,7 +29,7 @@ const updateUserSchema = z.object({
   id: z.string().min(1, 'ID de usuario es requerido'),
   name: z.string().min(2).optional(),
   email: z.string().email().optional(),
-  role: z.enum(['ADMIN', 'ENGINEER', 'OPERATOR']).optional(),
+  role: z.enum(['ADMIN', 'BOSS', 'ENGINEER', 'OPERATOR']).optional(),
   image: z.string().optional(),
   birthday: z.string().optional(),
   schedule: z.array(z.any()).optional(),
@@ -257,8 +257,8 @@ export async function POST(req: NextRequest) {
     const authResult = await validateApiAuth(req);
     if (authResult instanceof NextResponse) return authResult;
 
-    // Only ADMIN and ENGINEER can create users
-    const roleResult = requireRole(authResult.user, ['ADMIN', 'ENGINEER']);
+    // Only ADMIN, BOSS, and ENGINEER can create users
+    const roleResult = requireRole(authResult.user, ['ADMIN', 'BOSS', 'ENGINEER']);
     if (roleResult instanceof NextResponse) return roleResult;
 
     const body = await req.json();
@@ -305,8 +305,8 @@ export async function PATCH(req: NextRequest) {
     const authResult = await validateApiAuth(req);
     if (authResult instanceof NextResponse) return authResult;
 
-    // Only ADMIN and ENGINEER can update users
-    const roleResult = requireRole(authResult.user, ['ADMIN', 'ENGINEER']);
+    // Only ADMIN, BOSS, and ENGINEER can update users
+    const roleResult = requireRole(authResult.user, ['ADMIN', 'BOSS', 'ENGINEER']);
     if (roleResult instanceof NextResponse) return roleResult;
 
     const body = await req.json();
@@ -377,8 +377,8 @@ export async function DELETE(req: NextRequest) {
     const authResult = await validateApiAuth(req);
     if (authResult instanceof NextResponse) return authResult;
 
-    // Only ADMIN can delete users
-    const roleResult = requireRole(authResult.user, ['ADMIN']);
+    // Only ADMIN and BOSS can delete users
+    const roleResult = requireRole(authResult.user, ['ADMIN', 'BOSS']);
     if (roleResult instanceof NextResponse) return roleResult;
 
     const { searchParams } = new URL(req.url);
