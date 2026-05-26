@@ -19,7 +19,7 @@ import { AllDayWidget } from "@/components/AllDayWidget";
 import { OperatorCard } from "@/components/operadores/OperatorCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { Operator } from "@/lib/types";
+import { Operator, Shift } from "@/lib/types";
 import { toast } from "sonner";
 import { OperadoresCardsSkeleton } from "@/components/skeletons/OperadoresCardsSkeleton";
 
@@ -269,13 +269,15 @@ export default function OperatorsPage() {
     };
   };
 
-  const getActiveEvent = () => {
+  const getActiveEvent = (): SpecialEvent | null => {
     if (!specialEvents || specialEvents.length === 0) return null;
     const now = new Date();
-    return specialEvents.find((e) => {
-      if (!e.isActive) return false;
-      return now >= new Date(e.startDate) && now <= new Date(e.endDate);
-    });
+    return (
+      specialEvents.find((e) => {
+        if (!e.isActive) return false;
+        return now >= new Date(e.startDate) && now <= new Date(e.endDate);
+      }) ?? null
+    );
   };
 
   // ─── calendar subscribe ───────────────────────────────────────────────────

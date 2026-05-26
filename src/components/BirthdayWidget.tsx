@@ -3,13 +3,7 @@
 import React from "react";
 import { Cake } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-
-interface UserBirthday {
-  id: string;
-  name: string;
-  birthday?: string;
-  [key: string]: unknown;
-}
+import type { User } from "@/types/auth";
 
 const AVATAR_COLORS = [
   "bg-[#E91E63]",
@@ -40,7 +34,7 @@ function formatName(name: string) {
   return name;
 }
 
-export function BirthdayWidget({ users }: { users: UserBirthday[] }) {
+export function BirthdayWidget({ users }: { users: User[] }) {
   const today = new Date();
   const currentMonth = today.getMonth() + 1;
   const currentDay = today.getDate();
