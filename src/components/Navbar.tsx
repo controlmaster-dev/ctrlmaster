@@ -87,82 +87,95 @@ export function Navbar() {
         )}
 
       {/* ── Desktop Navbar ─────────────────────────────────────────────────── */}
-      <div className="hidden md:flex sticky top-0 left-0 right-0 z-[100] bg-background/80 backdrop-blur-2xl border-b border-border h-[60px] px-6 items-center justify-center gap-2 lg:gap-8 shadow-sm pointer-events-auto">
+      <header className="pointer-events-auto sticky top-0 z-[100] hidden h-14 w-full items-center gap-2 border-b border-border bg-background/85 px-4 shadow-sm backdrop-blur-xl md:flex lg:px-6">
 
-        {/* Logo + Nav links */}
+        {/* Izquierda: marca + navegación */}
         <motion.div
-          initial={{ y: -20, opacity: 0 }}
+          initial={{ y: -12, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.3, delay: 0.05, type: "spring", stiffness: 400, damping: 30 }}
-          className="flex items-center gap-1"
+          transition={{ duration: 0.25, delay: 0.05 }}
+          className="flex shrink-0 items-center gap-3 lg:gap-4"
         >
-          <div className="pl-2 pr-4 flex items-center gap-3 border-r border-border mr-1">
+          <Link
+            href="/"
+            className="flex items-center gap-2.5 rounded-lg pr-2 transition-opacity hover:opacity-90 lg:pr-3"
+          >
             <NextImage
               src="https://res.cloudinary.com/dtgpm5idm/image/upload/v1760034292/cropped-logo-3D-preview-192x192_c8yd8r.png"
-              alt="Logo"
-              width={24}
-              height={24}
+              alt="Control Master"
+              width={28}
+              height={28}
               className="object-contain"
             />
-          </div>
-
-          <Link href="/">
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`w-10 h-10 rounded-xl transition-all duration-300 hover:scale-110 active:scale-95 ${isActive("/")}`}
-              title="Inicio"
-            >
-              <Home className="w-5 h-5" />
-            </Button>
+            <span className="hidden text-sm font-semibold tracking-tight text-foreground lg:inline">
+              Control Master
+            </span>
           </Link>
 
-          <Link href="/crear-reporte">
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`w-10 h-10 rounded-xl transition-all duration-300 hover:scale-110 active:scale-95 ${isActive("/crear-reporte")}`}
-              title="Nuevo Reporte"
-            >
-              <Plus className="w-5 h-5" />
-            </Button>
-          </Link>
+          <nav
+            className="flex items-center gap-0.5 rounded-xl border border-border/60 bg-muted/25 p-0.5"
+            aria-label="Navegación principal"
+          >
+            <Link href="/">
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-9 w-9 rounded-lg ${isActive("/")}`}
+                title="Inicio"
+              >
+                <Home className="h-[18px] w-[18px]" />
+              </Button>
+            </Link>
 
-          <Link href="/reportes">
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`w-10 h-10 rounded-xl transition-all duration-300 hover:scale-110 active:scale-95 ${isActive("/reportes")}`}
-              title="Reportes"
-            >
-              <Layout className="w-5 h-5" />
-            </Button>
-          </Link>
+            <Link href="/crear-reporte">
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-9 w-9 rounded-lg ${isActive("/crear-reporte")}`}
+                title="Nuevo reporte"
+              >
+                <Plus className="h-[18px] w-[18px]" />
+              </Button>
+            </Link>
 
-          <Link href="/claves">
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`w-10 h-10 rounded-xl transition-all duration-300 hover:scale-110 active:scale-95 ${isActive("/claves")}`}
-              title="Bóveda de Claves"
-            >
-              <Key className="w-5 h-5" />
-            </Button>
-          </Link>
+            <Link href="/reportes">
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-9 w-9 rounded-lg ${isActive("/reportes")}`}
+                title="Reportes"
+              >
+                <Layout className="h-[18px] w-[18px]" />
+              </Button>
+            </Link>
+
+            <Link href="/claves">
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-9 w-9 rounded-lg ${isActive("/claves")}`}
+                title="Claves"
+              >
+                <Key className="h-[18px] w-[18px]" />
+              </Button>
+            </Link>
+          </nav>
         </motion.div>
 
-        {/* Search bar */}
+        {/* Centro: búsqueda */}
         <motion.div
-          className="relative pointer-events-auto"
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1, width: openPalette ? 580 : 420 }}
-          transition={{ type: "spring", stiffness: 400, damping: 30, delay: 0.1 }}
+          className={`relative mx-3 min-w-0 flex-1 pointer-events-auto lg:mx-8 xl:mx-12 ${
+            openPalette ? "z-[100]" : ""
+          }`}
+          initial={{ y: -12, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.25, delay: 0.08 }}
         >
           <div
-            className={`bg-muted/50 border w-full flex items-center gap-4 transition-all duration-300 group overflow-hidden ${
+            className={`relative z-[101] mx-auto flex w-full max-w-md items-center gap-3 overflow-hidden border bg-muted/40 transition-all duration-300 group lg:max-w-lg xl:max-w-xl ${
               openPalette
-                ? "border-primary/40 bg-popover shadow-sm rounded-t-xl rounded-b-none border-b-transparent h-[44px]"
-                : "border-border hover:border-primary/20 rounded-xl h-10"
+                ? "h-11 rounded-t-2xl rounded-b-none border-b-transparent border-[#FF0C60]/35 bg-card shadow-md ring-1 ring-[#FF0C60]/15"
+                : "h-10 rounded-xl border-border hover:border-[#FF0C60]/25"
             }`}
           >
             <div className="pl-4 w-10 flex items-center justify-center">
@@ -218,77 +231,111 @@ export function Navbar() {
           )}
         </motion.div>
 
-        {/* Right side actions */}
+        {/* Derecha: herramientas + cuenta */}
         <motion.div
-          initial={{ y: -20, opacity: 0 }}
+          initial={{ y: -12, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.3, delay: 0.15, type: "spring", stiffness: 400, damping: 30 }}
-          className="flex items-center gap-2 pointer-events-auto"
+          transition={{ duration: 0.25, delay: 0.12 }}
+          className="flex shrink-0 items-center gap-1.5 pointer-events-auto lg:gap-2"
         >
-          {user?.role !== "ENGINEER" && (
-            <Link href="/configuracion">
+          <div className="flex items-center gap-0.5 rounded-xl border border-border/60 bg-muted/25 p-0.5">
+            {user?.role !== "ENGINEER" && (
+              <Link href="/configuracion">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`h-9 w-9 rounded-lg ${isActive("/configuracion")}`}
+                  title="Configuración"
+                >
+                  <Settings className="h-[18px] w-[18px]" />
+                </Button>
+              </Link>
+            )}
+
+            <Link href="/operadores/monitoreo">
               <Button
                 variant="ghost"
                 size="icon"
-                className={`w-10 h-10 rounded-xl transition-all duration-300 hover:scale-110 active:scale-95 ${isActive("/configuracion")}`}
-                title="Configuración"
+                className={`h-9 w-9 rounded-lg ${isActive("/operadores/monitoreo")}`}
+                title="Monitoreo de canales"
               >
-                <Settings className="w-5 h-5" />
+                <MonitorPlay className="h-[18px] w-[18px]" />
               </Button>
             </Link>
-          )}
 
-          <Link href="/operadores/monitoreo">
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`w-10 h-10 rounded-xl transition-all duration-300 hover:scale-110 active:scale-95 ${isActive("/operadores/monitoreo")}`}
-              title="Monitoreo"
-            >
-              <MonitorPlay className="w-5 h-5" />
-            </Button>
-          </Link>
-
-          <Link href="/operadores">
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`w-10 h-10 rounded-xl transition-all duration-300 hover:scale-110 active:scale-95 ${isActive("/operadores")}`}
-              title="Operadores"
-            >
-              <Headset className="w-5 h-5" />
-            </Button>
-          </Link>
-
-          <div className="w-px h-6 bg-border mx-1" />
-          <ThemeToggle />
-          <div className="w-px h-6 bg-slate-200 dark:bg-white/10 mx-1" />
-
-          <Button
-            onClick={logout}
-            variant="ghost"
-            className="rounded-xl w-10 h-10 p-0 hover:bg-rose-500/10 text-muted-foreground hover:text-rose-500 hover:scale-110 transition-all duration-300"
-            title="Cerrar Sesión"
-          >
-            <LogOut className="w-5 h-5" />
-          </Button>
-
-          <div className="ml-1">
-            <Avatar className="h-9 w-9 border border-border/50 ring-2 ring-transparent hover:ring-[#FF0C60]/20 transition-all duration-300 shadow-sm">
-              <AvatarImage src={user?.avatar || ""} alt={user?.name || "User avatar"} />
-              <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
-                {user?.name
-                  ?.split(" ")
-                  .filter(Boolean)
-                  .map((n) => n[0])
-                  .join("")
-                  .substring(0, 2)
-                  .toUpperCase() || "CM"}
-              </AvatarFallback>
-            </Avatar>
+            <Link href="/operadores">
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-9 w-9 rounded-lg ${pathname.startsWith("/operadores") && pathname !== "/operadores/monitoreo" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground hover:bg-accent/50"}`}
+                title="Operadores"
+              >
+                <Headset className="h-[18px] w-[18px]" />
+              </Button>
+            </Link>
           </div>
+
+          <div className="mx-0.5 hidden h-6 w-px bg-border sm:block" />
+
+          <div className="flex items-center gap-0.5 rounded-xl border border-border/60 bg-muted/25 p-0.5">
+            <ThemeToggle />
+
+            <Button
+              onClick={logout}
+              variant="ghost"
+              className="h-9 w-9 rounded-lg p-0 text-muted-foreground hover:bg-rose-500/10 hover:text-rose-500"
+              title="Cerrar sesión"
+            >
+              <LogOut className="h-[18px] w-[18px]" />
+            </Button>
+          </div>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="ml-0.5 rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                title={user?.name || "Mi cuenta"}
+              >
+                <Avatar className="h-9 w-9 border border-border/60 shadow-sm transition-shadow hover:ring-2 hover:ring-[#FF0C60]/25">
+                  <AvatarImage src={user?.avatar || ""} alt={user?.name || "Usuario"} />
+                  <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">
+                    {user?.name
+                      ?.split(" ")
+                      .filter(Boolean)
+                      .map((n) => n[0])
+                      .join("")
+                      .substring(0, 2)
+                      .toUpperCase() || "CM"}
+                  </AvatarFallback>
+                </Avatar>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuLabel className="font-normal">
+                <p className="text-sm font-medium text-foreground">{user?.name || "Usuario"}</p>
+                <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {user?.role !== "ENGINEER" && (
+                <Link href="/configuracion">
+                  <DropdownMenuItem className="cursor-pointer gap-2">
+                    <Settings className="h-4 w-4" />
+                    Configuración
+                  </DropdownMenuItem>
+                </Link>
+              )}
+              <DropdownMenuItem
+                className="cursor-pointer gap-2 text-rose-600 focus:text-rose-600"
+                onClick={logout}
+              >
+                <LogOut className="h-4 w-4" />
+                Cerrar sesión
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </motion.div>
-      </div>
+      </header>
 
       {/* ── Mobile Navbar (portal) ──────────────────────────────────────────── */}
       {mounted &&

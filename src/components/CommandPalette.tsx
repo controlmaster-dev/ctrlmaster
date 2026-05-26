@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -14,7 +15,6 @@ import {
   MonitorPlay,
   Headset,
   History,
-  Sparkles,
   X,
 } from "lucide-react";
 
@@ -50,11 +50,23 @@ export function CommandPalette({
 }: CommandPaletteProps) {
   const router = useRouter();
   const [localQuery, setLocalQuery] = useState("");
+  const [mounted, setMounted] = useState(false);
   const query = isIntegrated ? externalQuery ?? "" : localQuery;
   const setQuery = isIntegrated ? onQueryChange ?? (() => {}) : setLocalQuery;
 
   const [selectedIndex, setSelectedIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [isOpen]);
 
   const quickActions = [
     { label: "Recientes", icon: History, path: "/reportes" },
@@ -67,45 +79,45 @@ export function CommandPalette({
   const displayItems = useMemo<CommandSection[]>(() => {
     const sections: CommandSection[] = [
       {
-        group: "RECOMENDADOS",
+        group: "Recomendados",
         items: [
           {
             id: "nav-home",
-            label: "Dashboard Principal",
-            desc: "Vista general del sistema y estadísticas técnicas.",
+            label: "Inicio",
+            desc: "Resumen del sistema y accesos rápidos.",
             icon: Layout,
             action: () => router.push("/"),
           },
           {
             id: "nav-new",
-            label: "Crear Nuevo Reporte",
-            desc: "Registrar un evento o incidencia en el sistema.",
+            label: "Nuevo reporte",
+            desc: "Registrar una incidencia o evento.",
             icon: Plus,
             action: () => router.push("/crear-reporte"),
           },
         ],
       },
       {
-        group: "APLICACIÓN",
+        group: "Más opciones",
         items: [
           {
             id: "nav-reports",
-            label: "Historial de Reportes",
-            desc: "Explorar y filtrar todos los registros técnicos.",
+            label: "Reportes",
+            desc: "Ver y filtrar el historial.",
             icon: FileText,
             action: () => router.push("/reportes"),
           },
           {
             id: "nav-monitor",
-            label: "Monitoreo Técnico",
-            desc: "Acceso a señales en vivo y métricas de red.",
+            label: "Monitoreo de canales",
+            desc: "Señales en vivo y estado técnico.",
             icon: MonitorPlay,
             action: () => router.push("/operadores/monitoreo"),
           },
           {
             id: "nav-users",
-            label: "Gestión de Operadores",
-            desc: "Panel de control de personal y turnos.",
+            label: "Operadores",
+            desc: "Personal, turnos y disponibilidad.",
             icon: Headset,
             action: () => router.push("/operadores"),
           },
@@ -125,17 +137,17 @@ export function CommandPalette({
 
     return [
       {
-        group: "RESULTADOS",
+        group: "Resultados",
         items:
           filtered.length > 0
             ? filtered
             : [
                 {
                   id: "search-global",
-                  label: `Buscar "${query}" en reportes...`,
-                  desc: "Búsqueda profunda en la base de datos de reportes históricos.",
+                  label: `Buscar «${query}» en reportes`,
+                  desc: "Abrir el historial con ese término.",
                   icon: Search,
-                  action: () => router.push(`/reportes?search=${query}`),
+                  action: () => router.push(`/reportes?search=${encodeURIComponent(query)}`),
                 },
               ],
       },
@@ -180,11 +192,11 @@ export function CommandPalette({
       }
     };
 
-    if (isOpen) {
+    if (isOpen && !isIntegrated) {
       document.addEventListener("mousedown", handleClickOutside);
     }
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isOpen, onClose]);
+  }, [isOpen, isIntegrated, onClose]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -193,183 +205,194 @@ export function CommandPalette({
     }
   }, [isOpen, isIntegrated]);
 
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <div
-          className={
-            isIntegrated
-              ? "absolute top-full left-0 right-0 z-[100] pointer-events-none"
-              : "fixed inset-0 z-[20000] flex items-start justify-center md:pt-[15vh] px-0 md:px-4"
-          }
-        >
-          {!isIntegrated && (
-            <motion.div
+  const backdrop = mounted
+    ? createPortal(
+        <AnimatePresence>
+          {isOpen && (
+            <motion.button
+              type="button"
+              aria-label="Cerrar búsqueda"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
               onClick={onClose}
-              className="absolute inset-0 bg-black/40 backdrop-blur-md dark:bg-black/60"
+              className={`fixed inset-0 border-0 bg-black/35 backdrop-blur-md dark:bg-black/50 ${
+                isIntegrated ? "z-[95]" : "z-[19999]"
+              }`}
             />
           )}
+        </AnimatePresence>,
+        document.body
+      )
+    : null;
 
-          <motion.div
-            ref={containerRef}
-            initial={
-              isIntegrated ? { opacity: 0, y: -10 } : { opacity: 0, scale: 0.98, y: -20 }
-            }
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={
-              isIntegrated ? { opacity: 0, y: -5 } : { opacity: 0, scale: 0.98, y: -20 }
-            }
-            transition={{ type: "spring", bounce: 0, duration: 0.3 }}
-            className={`relative w-full border-x border-b md:border-t-0 border-border overflow-hidden flex flex-col h-full md:h-auto md:max-h-[70vh] pointer-events-auto ${
-              isIntegrated
-                ? "bg-popover rounded-b-xl shadow-xl shadow-black/5"
-                : "bg-popover/95 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:shadow-[0_40px_100px_rgba(0,0,0,0.5)] max-w-[720px] md:rounded-[32px] rounded-t-[24px] mt-[10vh] md:mt-0"
-            }`}
-          >
-            {!isIntegrated && (
-              <div className="p-4 pb-2">
-                <div className="flex items-center px-4 h-12 md:h-14 bg-muted/30 border border-border focus-within:border-primary/40 focus-within:bg-popover transition-all duration-200 rounded-[16px] md:rounded-[18px]">
-                  <Search className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground/50" />
-                  <input
-                    autoFocus
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="¿Qué necesitas buscar?"
-                    className="flex-1 bg-transparent border-none outline-none px-3 text-sm md:text-base font-medium text-foreground placeholder:text-muted-foreground/40"
-                  />
-                  <button
-                    onClick={onClose}
-                    className="p-2 hover:bg-muted rounded-full transition-colors"
-                  >
-                    <X className="w-5 h-5 text-muted-foreground/60" />
-                  </button>
-                </div>
-              </div>
-            )}
+  const panel = (
+    <motion.div
+      ref={containerRef}
+      initial={isIntegrated ? { opacity: 0, y: -8 } : { opacity: 0, scale: 0.98, y: -16 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={isIntegrated ? { opacity: 0, y: -6 } : { opacity: 0, scale: 0.98, y: -16 }}
+      transition={{ type: "spring", bounce: 0, duration: 0.28 }}
+      className={`relative flex w-full flex-col overflow-hidden border border-border bg-card shadow-xl pointer-events-auto ${
+        isIntegrated
+          ? "z-[100] max-h-[min(42vh,340px)] rounded-b-xl rounded-t-none border-t-0"
+          : "z-[20001] mt-[10vh] max-h-[min(58vh,420px)] max-w-[480px] rounded-xl md:mt-[12vh]"
+      }`}
+    >
+      <div className="h-0.5 shrink-0 bg-gradient-to-r from-[#FF0C60] via-[#FF0C60]/50 to-transparent" />
 
-            <div className="px-4 md:px-6 py-3 border-b border-border">
-              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-                <span className="text-[9px] md:text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.12em] mr-2">
-                  Filtros
-                </span>
-                {quickActions.map((action) => (
-                  <button
-                    key={action.path}
-                    onClick={() => {
-                      router.push(action.path);
-                      onClose();
-                    }}
-                    className="h-8 md:h-9 flex items-center gap-2 px-4 md:px-5 rounded-full bg-muted border border-border hover:border-primary/30 hover:bg-primary/5 transition-all text-[10px] md:text-[11px] font-medium text-muted-foreground hover:text-primary whitespace-nowrap"
-                  >
-                    <action.icon className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                    {action.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+      {!isIntegrated && (
+        <div className="shrink-0 border-b border-border/60 p-2.5">
+          <div className="flex h-9 items-center gap-2 rounded-lg border border-border bg-muted/30 px-2.5 focus-within:border-[#FF0C60]/40 focus-within:ring-1 focus-within:ring-[#FF0C60]/15">
+            <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <input
+              autoFocus
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="¿Qué estás buscando?"
+              className="h-full flex-1 bg-transparent text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground/50"
+            />
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
-            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-              {displayItems.map((group, groupIndex) => (
-                <div key={group.group} className="mb-8 last:mb-2">
-                  <div className="px-4 md:px-5 mb-2 md:mb-3 flex items-center justify-between">
-                    <span className="text-[8px] md:text-[9px] font-bold text-muted-foreground/40 uppercase tracking-[0.15em]">
-                      {group.group}
-                    </span>
-                    {groupIndex === 0 && !query && (
-                      <Sparkles className="w-3 h-3 text-primary/60 animate-pulse" />
-                    )}
-                  </div>
-                  <div className="space-y-1.5">
-                    {group.items.map((item) => {
-                      const globalIndex = flatItems.indexOf(item);
-                      const isSelected = globalIndex === selectedIndex;
-                      return (
-                        <button
-                          key={item.id}
-                          onClick={() => {
-                            item.action();
-                            onClose();
-                          }}
-                          onMouseEnter={() => setSelectedIndex(globalIndex)}
-                          className={`w-full group/item flex items-center gap-3 md:gap-4 p-2.5 md:p-3 rounded-[16px] md:rounded-[20px] transition-all text-left relative overflow-hidden ${
-                            isSelected ? "bg-muted/50" : "hover:bg-muted/20"
+      <div className="shrink-0 border-b border-border/60 px-2.5 py-1.5">
+        <div className="flex gap-1 overflow-x-auto no-scrollbar">
+          {quickActions.map((action) => (
+            <button
+              key={action.path}
+              type="button"
+              onClick={() => {
+                router.push(action.path);
+                onClose();
+              }}
+              className="flex h-6 shrink-0 items-center gap-1 rounded-md border border-border/80 bg-muted/40 px-2 text-[10px] font-medium text-muted-foreground transition-colors hover:border-[#FF0C60]/30 hover:bg-[#FF0C60]/5 hover:text-[#FF0C60]"
+            >
+              <action.icon className="h-3 w-3" />
+              {action.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="custom-scrollbar flex-1 overflow-y-auto px-1.5 py-1">
+        {displayItems.map((group) => (
+          <div key={group.group} className="mb-2 last:mb-0">
+            <p className="mb-0.5 px-1.5 text-[10px] font-medium text-muted-foreground">
+              {group.group}
+            </p>
+            <ul className="space-y-px">
+              {group.items.map((item) => {
+                const globalIndex = flatItems.indexOf(item);
+                const isSelected = globalIndex === selectedIndex;
+                return (
+                  <li key={item.id}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        item.action();
+                        onClose();
+                      }}
+                      onMouseEnter={() => setSelectedIndex(globalIndex)}
+                      className={`flex w-full items-center gap-2 rounded-lg px-1.5 py-1.5 text-left transition-colors ${
+                        isSelected
+                          ? "bg-[#FF0C60]/8 ring-1 ring-[#FF0C60]/20"
+                          : "hover:bg-muted/50"
+                      }`}
+                    >
+                      <div
+                        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors ${
+                          isSelected
+                            ? "bg-[#FF0C60] text-white"
+                            : "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        <item.icon className="h-3.5 w-3.5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <span
+                          className={`block truncate text-[13px] font-medium leading-tight ${
+                            isSelected ? "text-foreground" : "text-foreground/90"
                           }`}
                         >
-                          {isSelected && (
-                            <motion.div
-                              layoutId="active-indicator"
-                              className="absolute left-0 top-4 bottom-4 w-1.5 bg-primary rounded-r-full"
-                              transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                            />
-                          )}
+                          {item.label}
+                        </span>
+                        {!isIntegrated && (
+                          <span className="mt-px block truncate text-[11px] leading-tight text-muted-foreground">
+                            {item.desc}
+                          </span>
+                        )}
+                      </div>
+                      {isSelected && (
+                        <ArrowRight className="h-3.5 w-3.5 shrink-0 text-[#FF0C60]" />
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+      </div>
 
-                          <div
-                            className={`p-2 md:p-2.5 rounded-lg md:rounded-xl transition-all duration-200 ${
-                              isSelected
-                                ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-                                : "bg-muted/50 text-muted-foreground group-hover/item:text-foreground"
-                            }`}
-                          >
-                            <item.icon className="w-4 h-4 md:w-5 md:h-5" />
-                          </div>
-
-                          <div className="flex-1 flex flex-col min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={`text-[13px] md:text-[14px] font-medium transition-colors ${
-                                  isSelected ? "text-foreground" : "text-muted-foreground"
-                                }`}
-                              >
-                                {item.label}
-                              </span>
-                            </div>
-                            <p
-                              className={`text-[11px] md:text-[12px] transition-colors mt-0.5 max-w-[480px] line-clamp-1 ${
-                                isSelected ? "text-muted-foreground/80" : "text-muted-foreground/40"
-                              }`}
-                            >
-                              {item.desc}
-                            </p>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="px-6 md:px-8 py-4 md:py-5 bg-muted/30 border-t border-border flex justify-between items-center mt-auto">
-              <div className="flex items-center gap-3 md:gap-5 text-[9px] md:text-[10px] font-medium text-muted-foreground uppercase tracking-widest">
-                <div className="flex items-center gap-1.5 md:gap-2">
-                  <kbd className="h-5 md:h-6 md:w-6 w-5 flex items-center justify-center rounded-md bg-popover border border-border shadow-sm text-[10px] text-foreground/70">
-                    ↑
-                  </kbd>
-                  <kbd className="h-5 md:h-6 md:w-6 w-5 flex items-center justify-center rounded-md bg-popover border border-border shadow-sm text-[10px] text-foreground/70">
-                    ↓
-                  </kbd>
-                  <span className="hidden xs:inline">Navegar</span>
-                </div>
-                <div className="flex items-center gap-1.5 md:gap-2">
-                  <kbd className="h-5 md:h-6 px-1.5 md:px-2 flex items-center justify-center rounded-md bg-popover border border-border shadow-sm text-[10px] text-foreground/70">
-                    ENTER
-                  </kbd>
-                  <span className="hidden xs:inline">Seleccionar</span>
-                </div>
-              </div>
-
-              <button className="flex items-center gap-2 group/all text-primary">
-                <span className="text-[9px] md:text-[10px] font-semibold uppercase tracking-[0.12em]">
-                  Todos
-                </span>
-                <ArrowRight className="w-3.5 h-3.5 md:w-4 md:h-4 group-hover/all:translate-x-1 transition-transform" />
-              </button>
-            </div>
-          </motion.div>
+      <div className="flex shrink-0 items-center justify-between border-t border-border/60 bg-muted/20 px-2.5 py-1.5">
+        <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <kbd className="rounded border border-border bg-background px-1 py-0.5 font-mono text-[9px]">
+              ↑
+            </kbd>
+            <kbd className="rounded border border-border bg-background px-1 py-0.5 font-mono text-[9px]">
+              ↓
+            </kbd>
+            <span className="ml-0.5 hidden sm:inline">navegar</span>
+          </span>
+          <span className="flex items-center gap-1">
+            <kbd className="rounded border border-border bg-background px-1.5 py-0.5 font-mono text-[9px]">
+              Enter
+            </kbd>
+            <span className="hidden sm:inline">abrir</span>
+          </span>
         </div>
+        <button
+          type="button"
+          onClick={() => {
+            router.push("/reportes");
+            onClose();
+          }}
+          className="flex items-center gap-1 text-[10px] font-medium text-[#FF0C60] hover:underline"
+        >
+          {isIntegrated ? "Todos los reportes" : "Ver todos los reportes"}
+          <ArrowRight className="h-3 w-3" />
+        </button>
+      </div>
+    </motion.div>
+  );
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          {backdrop}
+          {isIntegrated ? (
+            <div className="absolute top-full left-0 right-0 z-[100] -mt-px flex justify-center pointer-events-none">
+              <div className="w-full max-w-md pointer-events-none lg:max-w-lg xl:max-w-xl">
+                {panel}
+              </div>
+            </div>
+          ) : (
+            <div className="fixed inset-0 z-[20000] flex items-start justify-center px-4 pointer-events-none">
+              {panel}
+            </div>
+          )}
+        </>
       )}
     </AnimatePresence>
   );

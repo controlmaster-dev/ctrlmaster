@@ -1,12 +1,19 @@
 import { cn } from "@/lib/utils";
 
+type SkeletonVariant = "wave" | "pulse";
+
 function Skeleton({
   className,
+  variant = "wave",
   ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
+}: React.HTMLAttributes<HTMLDivElement> & { variant?: SkeletonVariant }) {
+  const base = "relative overflow-hidden rounded-md bg-muted";
+  const variantClass =
+    variant === "pulse" ? "animate-pulse" : "skeleton-wave";
+
   return (
     <div
-      className={cn("animate-pulse rounded-md bg-white/10", className)}
+      className={cn(base, variantClass, className)}
       {...props}
     />
   );

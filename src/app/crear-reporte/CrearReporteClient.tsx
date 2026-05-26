@@ -1,34 +1,26 @@
 "use client";
 
-import React from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { AnimatePresence } from "framer-motion";
 
-// Sub-components
 import { StepIndicator } from "@/components/report-form/StepIndicator";
 import { ContextStep } from "@/components/report-form/ContextStep";
 import { DetailsStep } from "@/components/report-form/DetailsStep";
 import { EvidenceStep } from "@/components/report-form/EvidenceStep";
-
-// Hooks & Constants
 import { useReportForm } from "@/hooks/useReportForm";
+import { Button } from "@/components/ui/button";
 
 const STEPS = [
-  { id: 0, title: "Contexto", desc: "Sistema y Categoría" },
+  { id: 0, title: "Contexto", desc: "Sistema y categoría" },
   { id: 1, title: "Detalles", desc: "Descripción del fallo" },
-  { id: 2, title: "Evidencia", desc: "Archivos y Envío" },
+  { id: 2, title: "Evidencia", desc: "Archivos y envío" },
 ];
 
-/**
- * Main client component for report creation.
- * Uses the useReportForm hook for business logic.
- */
 export function CrearReporteClient() {
   const router = useRouter();
 
-  // ── Data Hook ─────────────────────────────────────────────────────────────
   const {
     formData,
     loading,
@@ -44,60 +36,47 @@ export function CrearReporteClient() {
     submitReport,
   } = useReportForm();
 
-  // ─────────────────────────────────────────────────────────────────────────
-
   return (
-    <div className="min-h-screen w-full text-foreground selection:bg-[#ff3366] selection:text-white flex flex-col md:flex-row bg-background">
-      {/* ── Sidebar - Stepper ───────────────────────────────────────────────── */}
-      <aside className="w-full md:w-[280px] lg:w-[310px] shrink-0 bg-card border-r border-border/40 flex flex-col p-6 md:h-screen md:sticky md:top-0 z-20">
+    <div className="relative flex min-h-screen flex-col bg-background text-foreground selection:bg-[#FF0C60] selection:text-white md:flex-row">
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute -right-20 top-0 h-72 w-72 rounded-full bg-[#FF0C60]/6 blur-3xl" />
+        <div className="absolute -left-24 bottom-0 h-64 w-64 rounded-full bg-violet-600/5 blur-3xl" />
+      </div>
+
+      <aside className="relative z-10 flex w-full shrink-0 flex-col border-b border-border/60 bg-card/80 p-5 md:h-screen md:w-[280px] md:border-b-0 md:border-r lg:w-[300px] md:sticky md:top-0">
         <button
+          type="button"
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-widest text-muted-foreground hover:text-[#ff3366] mb-8 transition-all w-fit group"
+          className="group mb-6 flex w-fit items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-[#FF0C60]"
         >
-          <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-1" />
+          <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
           Volver
         </button>
 
         <div className="mb-8">
-          <div className="text-[#ff3366] text-[9px] font-bold tracking-[0.2em] uppercase mb-1.5 opacity-80">
-            Control Master / Protocolo
-          </div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-foreground tracking-tighter leading-tight">
-            Reportar <br />
-            <span className="text-[#ff3366]">Fallo Técnico</span>
+          <p className="text-xs text-muted-foreground">Nuevo reporte</p>
+          <h1 className="mt-1 text-xl font-semibold tracking-tight text-foreground lg:text-2xl">
+            Reportar <span className="text-[#FF0C60]">incidencia</span>
           </h1>
         </div>
 
-        <StepIndicator
-          steps={STEPS}
-          currentStep={step}
-          onStepClick={(s) => setStep(s)}
-        />
+        <StepIndicator steps={STEPS} currentStep={step} onStepClick={setStep} />
 
-        <div className="mt-auto pt-8 border-t border-border/20">
-          <div className="flex items-center justify-between group cursor-pointer">
-            <div>
-              <p className="text-[9px] font-medium text-muted-foreground uppercase tracking-tight opacity-50">
-                Soporte
-              </p>
-              <Link
-                href="https://wa.me/50683472053"
-                target="_blank"
-                className="text-[11px] font-medium text-foreground group-hover:text-[#ff3366] transition-all flex items-center gap-1.5"
-              >
-                Ricardo Jarquín
-              </Link>
-            </div>
-            <div className="w-7 h-7 rounded-full bg-muted/50 flex items-center justify-center group-hover:bg-[#ff3366]/10 transition-colors border border-border/10">
-              <ChevronRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-[#ff3366]" />
-            </div>
-          </div>
+        <div className="mt-auto hidden border-t border-border/50 pt-6 md:block">
+          <p className="text-xs text-muted-foreground">Soporte</p>
+          <Link
+            href="https://wa.me/50683472053"
+            target="_blank"
+            className="mt-1 flex items-center gap-1 text-sm text-foreground transition-colors hover:text-[#FF0C60]"
+          >
+            Ricardo Jarquín
+            <ChevronRight className="h-3.5 w-3.5" />
+          </Link>
         </div>
       </aside>
 
-      {/* ── Main Content - Form Steps ───────────────────────────────────────── */}
-      <main className="flex-1 relative flex justify-center bg-muted/5">
-        <div className="max-w-3xl w-full p-6 md:p-10 pt-12 md:pt-16 pb-24">
+      <main className="relative z-10 flex flex-1 justify-center p-4 pb-24 pt-6 md:p-8 md:pt-10">
+        <div className="w-full max-w-2xl">
           <AnimatePresence mode="wait">
             {step === 0 && (
               <ContextStep
@@ -125,37 +104,37 @@ export function CrearReporteClient() {
             )}
           </AnimatePresence>
 
-          {/* ── Navigation Buttons ─────────────────────────────────────────── */}
-          <div className="flex justify-between items-center mt-10 pt-8 border-t border-border/30">
-            <div>
-              {step > 0 && (
-                <button
-                  onClick={prevStep}
-                  className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5" /> Anterior
-                </button>
-              )}
-            </div>
+          <div className="mt-8 flex items-center justify-between border-t border-border/50 pt-6">
+            {step > 0 ? (
+              <Button type="button" variant="ghost" size="sm" onClick={prevStep}>
+                <ArrowLeft className="mr-1 h-4 w-4" />
+                Anterior
+              </Button>
+            ) : (
+              <span />
+            )}
 
-            <div className="flex gap-3">
-              {step < 2 ? (
-                <button
-                  onClick={nextStep}
-                  className="bg-[#ff3366] hover:bg-[#d92b57] text-white px-7 h-11 rounded-lg font-medium shadow-lg shadow-rose-500/10 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center text-[11px] uppercase tracking-wider"
-                >
-                  Siguiente <ChevronRight className="w-4 h-4 ml-2" />
-                </button>
-              ) : (
-                <button
-                  onClick={submitReport}
-                  disabled={loading}
-                  className="bg-[#ff3366] hover:bg-[#d92b57] text-white px-7 h-11 rounded-lg font-medium transition-all hover:scale-[1.02] active:scale-95 text-[11px] uppercase tracking-wider disabled:opacity-50 disabled:scale-100"
-                >
-                  {loading ? "Enviando..." : "Registrar Reporte"}
-                </button>
-              )}
-            </div>
+            {step < 2 ? (
+              <Button
+                type="button"
+                size="sm"
+                onClick={nextStep}
+                className="bg-[#FF0C60] text-white hover:bg-[#E00A54]"
+              >
+                Siguiente
+                <ChevronRight className="ml-1 h-4 w-4" />
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                size="sm"
+                onClick={submitReport}
+                disabled={loading}
+                className="bg-[#FF0C60] text-white hover:bg-[#E00A54]"
+              >
+                {loading ? "Enviando…" : "Registrar reporte"}
+              </Button>
+            )}
           </div>
         </div>
       </main>

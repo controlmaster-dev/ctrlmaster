@@ -1,20 +1,27 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { LogIn, Shield, Calendar, Info, Download, Home, Calendar as CalIcon, Copy, Check } from "lucide-react";
+import {
+  LogIn,
+  Calendar,
+  Download,
+  Home,
+  Copy,
+  Check,
+} from "lucide-react";
 import Link from "next/link";
 import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { WeeklyCalendar } from "@/components/WeeklyCalendar";
 import { AllDayWidget } from "@/components/AllDayWidget";
+import { OperatorCard } from "@/components/operadores/OperatorCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { Operator, Shift, UserRole } from "@/lib/types";
+import { Operator } from "@/lib/types";
 import { toast } from "sonner";
+import { OperadoresCardsSkeleton } from "@/components/skeletons/OperadoresCardsSkeleton";
 
 interface Prediction {
   nextOperator: Operator;
@@ -73,15 +80,6 @@ export default function OperatorsPage() {
     const ampm = hour >= 12 ? "pm" : "am";
     const h = hour % 12 || 12;
     return `${h}${ampm}`;
-  };
-
-  const translateRole = (role: string | UserRole) => {
-    switch (role) {
-      case "OPERATOR": return "Operador";
-      case "ENGINEER": return "Ingeniero";
-      case "BOSS": return "Administrador";
-      default: return role;
-    }
   };
 
   const sortOperators = (data: Operator[]) =>
@@ -327,368 +325,229 @@ export default function OperatorsPage() {
     }
   };
 
+  const activeEvent = getActiveEvent();
+
   // ─── render ───────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen text-foreground selection:bg-[#FF0C60] selection:text-white">
+    <div className="relative min-h-screen overflow-hidden pb-20 text-foreground selection:bg-[#FF0C60] selection:text-white">
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute -right-20 top-0 h-72 w-72 rounded-full bg-[#FF0C60]/6 blur-3xl" />
+        <div className="absolute -left-24 bottom-0 h-64 w-64 rounded-full bg-violet-600/5 blur-3xl" />
+      </div>
 
-      {/* ── Header ── */}
-      <header className="fixed top-0 left-0 right-0 z-40 px-4 md:px-6 py-3 flex justify-between items-center bg-background/80 backdrop-blur-xl border-b border-border">
-        <div className="flex items-center gap-3">
-          <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <img
+      <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-xl">
+        <div className="h-0.5 bg-[#FF0C60]" aria-hidden />
+        <div className="mx-auto flex h-14 max-w-[1600px] items-center justify-between gap-3 px-4 md:px-8">
+          <Link href="/" className="flex items-center gap-2.5 hover:opacity-90">
+            <Image
               src="https://res.cloudinary.com/dtgpm5idm/image/upload/v1760034292/cropped-logo-3D-preview-192x192_c8yd8r.png"
-              alt="Logo"
-              className="w-8 h-8 object-contain"
+              alt="Control Master"
+              width={28}
+              height={28}
+              className="object-contain"
             />
-            <span className="font-semibold text-base tracking-tight hidden md:block text-foreground">
+            <span className="hidden text-sm font-semibold tracking-tight sm:inline">
               Control Master
-              </span>
-          </Link>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-
-          <Link href="/">
-            <Button
-              variant="outline"
-              size="icon"
-              className="border-border bg-card text-muted-foreground hover:text-[#FF0C60] hover:bg-rose-500/10 rounded-md h-9 w-9"
-            >
-              <Home className="w-4 h-4" />
-            </Button>
+            </span>
           </Link>
 
-          {/* Calendar modal */}
-          <Dialog>
-            <DialogTrigger asChild>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Link href="/">
               <Button
                 variant="outline"
-                className="border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted gap-2 backdrop-blur-md"
+                size="icon"
+                className="h-9 w-9 rounded-lg border-border/80"
               >
-                <Calendar className="w-4 h-4" />
-                <span className="hidden md:inline text-sm">Ver Calendario</span>
+                <Home className="h-4 w-4" />
               </Button>
-            </DialogTrigger>
-            <DialogContent className="w-full h-full md:h-[95vh] md:max-w-[98vw] bg-card backdrop-blur-xl border-border text-card-foreground p-0 overflow-hidden shadow-none ring-1 ring-border flex flex-col rounded-none md:rounded-xl duration-500 data-[state=open]:duration-500 data-[state=closed]:duration-500 data-[state=closed]:zoom-out-100 data-[state=open]:zoom-in-100">
-              <div className="px-6 py-4 border-b border-border flex justify-between items-center">
-                <div>
-                  <DialogTitle className="text-lg font-semibold text-foreground">
-                    Distribución Semanal
-                  </DialogTitle>
-                  <DialogDescription className="text-muted-foreground text-sm">
-                    Vista global de turnos de todos los operadores.
-                  </DialogDescription>
-                </div>
+            </Link>
 
-                {user && (
-                  <div className="flex items-center gap-2">
-                    <div className="relative">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9 gap-2 rounded-lg border-border/80 bg-card/80"
+                >
+                  <Calendar className="h-4 w-4" />
+                  <span className="hidden md:inline">Calendario</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="flex h-full w-full max-w-[98vw] flex-col overflow-hidden rounded-none border-border bg-card p-0 md:h-[95vh] md:rounded-xl">
+                <div className="flex flex-col gap-4 border-b border-border px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                  <div>
+                    <DialogTitle className="text-lg font-semibold">
+                      Distribución semanal
+                    </DialogTitle>
+                    <DialogDescription className="text-sm text-muted-foreground">
+                      Turnos de todos los operadores
+                    </DialogDescription>
+                  </div>
+
+                  {user && (
+                    <div className="flex flex-wrap items-center gap-2">
                       <select
-                        className="bg-muted/50 border border-border text-foreground text-xs rounded-md px-2 py-2 outline-none focus:border-ring appearance-none pr-8 cursor-pointer"
+                        className="h-9 rounded-lg border border-border/60 bg-muted/30 px-3 text-xs outline-none focus-visible:ring-1 focus-visible:ring-[#FF0C60]"
                         value={weeksDuration}
                         onChange={(e) => setWeeksDuration(Number(e.target.value))}
                       >
-                        <option value={4}>4 Semanas</option>
-                        <option value={8}>8 Semanas</option>
-                        <option value={12}>3 Meses</option>
-                        <option value={24}>6 Meses</option>
+                        <option value={4}>4 semanas</option>
+                        <option value={8}>8 semanas</option>
+                        <option value={12}>3 meses</option>
+                        <option value={24}>6 meses</option>
                       </select>
-                      <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground/50">
-                        <Calendar className="w-3 h-3" />
+
+                      <div className="flex rounded-lg border border-border/60 bg-muted/25 p-0.5">
+                        <Button
+                          onClick={() => handleSubscribe(true)}
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 gap-1.5 rounded-md text-xs"
+                        >
+                          <Calendar className="h-3.5 w-3.5" />
+                          Suscribir
+                        </Button>
+                        <Button
+                          onClick={() => (handleSubscribe as unknown as (m: string) => void)("copy")}
+                          variant="ghost"
+                          size="icon"
+                          className={`h-8 w-8 rounded-md ${copied ? "text-emerald-600" : ""}`}
+                          title="Copiar enlace"
+                        >
+                          {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                        </Button>
+                        <Button
+                          onClick={() => handleSubscribe(false)}
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-md"
+                          title="Descargar .ics"
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                        </Button>
                       </div>
                     </div>
+                  )}
+                </div>
 
-                    <div className="flex bg-muted/50 rounded-md border border-border p-0.5">
-                      <Button
-                        onClick={() => handleSubscribe(true)}
-                        variant="ghost"
-                        size="sm"
-                        className="text-xs h-8 gap-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-all rounded-r-none"
-                      >
-                        <Calendar className="w-3.5 h-3.5" />
-                        Suscribir
-                      </Button>
-                      <div className="w-px bg-slate-200 my-1" />
-                      <Button
-                        onClick={() => (handleSubscribe as any)('copy')}
-                        variant="ghost"
-                        size="icon"
-                        className={`h-8 w-8 transition-colors ${copied ? 'text-emerald-500' : 'text-slate-400 hover:text-slate-700'}`}
-                        title="Copiar Enlace para Google Calendar"
-                      >
-                        {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                      </Button>
-                      <div className="w-px bg-slate-200 my-1" />
-                      <Button
-                        onClick={() => handleSubscribe(false)}
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-slate-700 rounded-l-none"
-                        title="Descargar Archivo .ics"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
+                <div className="flex flex-1 flex-col overflow-hidden p-0 md:p-6">
+                  <WeeklyCalendar
+                    operators={modalOperators}
+                    currentWeekStart={modalWeekStart}
+                    onWeekChange={setModalWeekStart}
+                    isLoading={isModalLoading}
+                  />
+                </div>
+              </DialogContent>
+            </Dialog>
 
-              <div className="p-0 md:p-6 flex-1 flex flex-col overflow-hidden">
-                <WeeklyCalendar
-                  operators={modalOperators}
-                  currentWeekStart={modalWeekStart}
-                  onWeekChange={setModalWeekStart}
-                  isLoading={isModalLoading}
-                />
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          {user ? (
-            <div className="flex items-center gap-3 pl-3 border-l border-border">
-              <div className="hidden md:block text-right">
-                <div className="text-sm font-medium text-foreground">{user.name}</div>
-                <div className="text-[10px] text-muted-foreground tracking-wide">{translateRole(user.role)}</div>
-              </div>
-              <Link href="/">
-                <Avatar className="w-8 h-8 border border-border cursor-pointer hover:border-[#FF0C60] transition-all">
+            {user ? (
+              <Link href="/" className="ml-1 hidden border-l border-border pl-3 sm:block">
+                <Avatar className="h-8 w-8 border border-border">
                   <AvatarImage src={user.avatar} />
-                  <AvatarFallback className="bg-muted text-xs font-medium text-muted-foreground">
-                    {user.name?.charAt(0)}
-                  </AvatarFallback>
+                  <AvatarFallback className="text-xs">{user.name?.charAt(0)}</AvatarFallback>
                 </Avatar>
               </Link>
-            </div>
-          ) : (
-            <Link href="/login">
-              <Button variant="ghost" className="text-sm text-muted-foreground hover:text-foreground hover:bg-muted gap-2">
-                <LogIn className="w-4 h-4" />
-                <span className="hidden md:inline">Iniciar Sesión</span>
-              </Button>
-            </Link>
-          )}
+            ) : (
+              <Link href="/login">
+                <Button variant="ghost" size="sm" className="h-9 gap-2">
+                  <LogIn className="h-4 w-4" />
+                  <span className="hidden sm:inline">Ingresar</span>
+                </Button>
+              </Link>
+            )}
+          </div>
         </div>
       </header>
 
-      <main className="w-full max-w-[1600px] mx-auto px-4 md:px-8 pt-24 pb-20 md:pt-32 md:pb-12 space-y-10">
-
-        <div className="relative z-10 flex flex-col items-start gap-4 py-8 md:py-12 border-b border-border bg-card/50 backdrop-blur-sm rounded-md px-6 md:px-10 overflow-hidden ring-1 ring-border">
-          <div className="absolute inset-0 bg-gradient-to-t from-background/20 via-transparent to-transparent pointer-events-none" />
-
-          <div className="relative flex flex-col md:flex-row justify-between items-end w-full gap-6">
-            <div className="space-y-3 max-w-3xl">
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground tracking-tighter leading-[1.1] pt-1 select-none">
-                Operadores{" "}
-                <br className="hidden md:block" />
-                <span className="text-foreground/60">
-                  en Turno
-                </span>
-              </h1>
-              <p className="text-muted-foreground text-base md:text-lg tracking-tight max-w-lg leading-relaxed border-l-2 border-[#FF0C60]/20 pl-4">
-                Gestión y monitoreo del personal operativo en tiempo real.
-              </p>
-            </div>
+      <main className="relative z-10 mx-auto max-w-[1600px] space-y-6 px-4 py-6 md:space-y-8 md:px-8 md:py-8">
+        <header className="space-y-5 border-b border-border/60 pb-6">
+          <div>
+            <p className="text-sm text-muted-foreground">Equipo de control</p>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight md:text-3xl">
+              Horarios de <span className="text-[#FF0C60]">operadores</span>
+            </h1>
+            <p className="mt-1.5 max-w-xl text-sm text-muted-foreground">
+              Quién está en turno ahora y la programación de la semana.
+            </p>
           </div>
 
           {!loading && predictions.length > 0 && (
-            <div className="flex gap-3 overflow-x-auto pb-1 md:pb-0 w-full md:w-auto scrollbar-hide">
-              {predictions.map((pred, idx) => (
-                <motion.div
-                  key={pred.nextOperator.id}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.2 + idx * 0.1 }}
-                  className="bg-card/80 backdrop-blur-xl border border-border hover:border-[#FF0C60]/30 rounded-md p-3 flex items-center gap-3 min-w-[200px] group transition-all"
-                >
-                  <div className="relative">
-                    <Avatar className="w-8 h-8 border border-border">
+            <div>
+              <p className="mb-2 text-xs font-medium text-muted-foreground">
+                Próximos en turno
+              </p>
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {predictions.map((pred) => (
+                  <div
+                    key={pred.nextOperator.id}
+                    className="flex min-w-[180px] shrink-0 items-center gap-2.5 rounded-lg border border-border/60 bg-card/80 px-3 py-2"
+                  >
+                    <Avatar className="h-8 w-8 border border-border">
                       <AvatarImage src={pred.nextOperator.image} />
-                      <AvatarFallback className="bg-muted text-xs font-medium text-muted-foreground">
+                      <AvatarFallback className="text-xs">
                         {pred.nextOperator.name.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
-                    {pred.isReturning && (
-                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-background flex items-center justify-center">
-                        <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs font-medium text-foreground truncate group-hover:text-[#FF0C60] transition-colors">
-                      {pred.nextOperator.name}
-                    </div>
-                    <div className="text-[10px] text-muted-foreground flex items-center gap-1.5">
-                      {pred.timeUntil}
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-medium">
+                        {pred.nextOperator.name}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {pred.timeUntil}
+                      </p>
                     </div>
                   </div>
-                </motion.div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
-        </div>
+        </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start relative z-10">
-
-          <div className="lg:col-span-1 lg:sticky lg:top-24 z-20">
+        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-4 lg:gap-8">
+          <div className="lg:col-span-1 lg:sticky lg:top-20">
             <AllDayWidget operators={operators} specialEvents={specialEvents} />
           </div>
 
           <div className="lg:col-span-3">
             {loading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {[1, 2].map((i) => (
-                  <div key={i} className="h-48 bg-muted rounded-md animate-pulse" />
-                ))}
+              <OperadoresCardsSkeleton />
+            ) : operators.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-border/60 py-16 text-center">
+                <p className="text-sm font-medium text-foreground">
+                  No hay operadores configurados
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Revisa la configuración de horarios en el panel de administración.
+                </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                {operators.map((op, idx) => {
-                  const activeEvent = getActiveEvent();
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {operators.map((op) => {
                   const now = new Date();
                   const currentDay = now.getDay();
                   const currentHour = now.getHours() + now.getMinutes() / 60;
-                  const isAvailable = !!op.shifts?.some(s => {
+                  const isAvailable = !!op.shifts?.some((s) => {
                     const end = s.end === 0 ? 24 : s.end;
-                    return s.days.includes(currentDay) && currentHour >= s.start && currentHour < end;
+                    return (
+                      s.days.includes(currentDay) &&
+                      currentHour >= s.start &&
+                      currentHour < end
+                    );
                   });
-                  const activeStats = isAvailable ? getCurrentShiftStats(op) : null;
 
                   return (
-                    <motion.div
+                    <OperatorCard
                       key={op.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: idx * 0.05 }}
-                    >
-                      <Card className={`border-0 relative overflow-hidden h-full backdrop-blur-xl transition-all duration-300 hover:scale-[1.015] ${isAvailable ? "bg-card ring-1 ring-emerald-500/30 shadow-md shadow-emerald-500/10" : "bg-card border border-border hover:border-[#FF0C60]/20"}`}>
-                        <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent" />
-
-                        <CardContent className="p-5 flex flex-col gap-4">
-
-                          <div className="flex items-center gap-3">
-                            <div className="relative shrink-0">
-                              <Avatar className={`w-12 h-12 border-2 ${isAvailable ? "border-emerald-500 ring-4 ring-emerald-500/10" : "border-border"}`}>
-                                <AvatarImage src={op.image} />
-                                <AvatarFallback className="bg-muted text-base font-medium text-muted-foreground">
-                                  {op.name.charAt(0)}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-card ${isAvailable ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground/30"}`} />
-                            </div>
-
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-1.5 mb-0.5">
-                                <h3 className="text-base font-semibold truncate text-foreground">{op.name}</h3>
-                                {op.role === "BOSS" && <Shield className="w-3.5 h-3.5 text-[#FF0C60] shrink-0" />}
-                              </div>
-                              <div className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-muted/60 text-[10px] tracking-tight text-muted-foreground border border-border">
-                                {isAvailable
-                                  ? <span className="text-emerald-500">En turno activo</span>
-                                  : "Fuera de turno"
-                                }
-                              </div>
-                            </div>
-                          </div>
-
-                          {activeEvent && (() => {
-                            const endDate = new Date(activeEvent.endDate);
-                            const returnDateStr = `${endDate.getDate().toString().padStart(2, "0")}/${(endDate.getMonth() + 1).toString().padStart(2, "0")}`;
-                            return (
-                              <div className="bg-rose-500/5 border border-rose-500/20 rounded-md p-3 space-y-1 relative overflow-hidden group/event">
-                                <div className="flex items-center gap-2 text-[10px] font-medium text-[#FF0C60] uppercase tracking-wide">
-                                  <CalIcon className="w-3.5 h-3.5" />
-                                  Horario especial
-                                </div>
-                                <div className="text-sm font-medium text-foreground">{activeEvent.name}</div>
-                                <div className="text-[11px] text-muted-foreground leading-tight italic">
-                                  Sin horario fijo. Retorno:{" "}
-                                  <span className="text-[#FF0C60] not-italic font-medium">{returnDateStr}</span>
-                                </div>
-                                <div className="absolute -right-2 -bottom-2 opacity-5 text-[#FF0C60] group-hover/event:scale-110 transition-transform">
-                                  <CalIcon className="w-14 h-14" />
-                                </div>
-                              </div>
-                            );
-                          })()}
-
-                          {!activeEvent && activeStats && (
-                            <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-md p-3 space-y-2">
-                              <div className="flex justify-between text-xs text-emerald-500">
-                                <span>Turno en progreso</span>
-                                <span className="font-mono">{activeStats.remaining}</span>
-                              </div>
-                              <div className="h-1.5 bg-emerald-500/20 rounded-full overflow-hidden">
-                                <div
-                                  className="h-full bg-emerald-500 transition-all duration-1000"
-                                  style={{ width: `${activeStats.progress}%` }}
-                                />
-                              </div>
-                              <div className="text-[10px] text-emerald-500/60 text-right font-mono">{activeStats.label}</div>
-                            </div>
-                          )}
-
-                          {!activeEvent && (
-                            <div className="bg-muted/30 rounded-md p-3 space-y-2 border border-border">
-                              <div className="flex justify-between items-center text-[10px] tracking-wide text-muted-foreground uppercase">
-                                <span>Horario semanal</span>
-                                {op.isTempSchedule && (
-                                  <Badge variant="outline" className="text-[#FF0C60] border-[#FF0C60]/20 bg-[#FF0C60]/10 text-[9px] px-1.5 py-0 h-4">
-                                    MODIFICADO
-                                  </Badge>
-                                )}
-                              </div>
-
-                              {op.shifts && op.shifts.length > 0 ? (
-                                <div className="space-y-1.5">
-                                  {op.shifts.map((shift, sIdx) => {
-                                    if (!shift.days || shift.days.length === 0) return null;
-                                    const startOfWeekDate = new Date(currentRealWeek + "T12:00:00");
-                                    const todayDate = new Date();
-
-                                    const formattedDateLabels = shift.days
-                                      .map((d) => {
-                                        const target = new Date(startOfWeekDate);
-                                        target.setDate(startOfWeekDate.getDate() + d);
-                                        const dayName = ["Dom", "Lun", "Mar", "Mie", "Jue", "Vie", "Sab"][d];
-                                        return `${dayName} ${target.getDate()}`;
-                                      })
-                                      .join(", ");
-
-                                    const isTodayReal = shift.days.some((d) => {
-                                      const target = new Date(startOfWeekDate);
-                                      target.setDate(startOfWeekDate.getDate() + d);
-                                      return target.toDateString() === todayDate.toDateString();
-                                    });
-
-                                    return (
-                                      <div
-                                        key={sIdx}
-                                        className={`flex justify-between items-center text-sm ${isTodayReal ? "text-foreground" : "text-muted-foreground/50"}`}
-                                      >
-                                        <span className={isTodayReal ? "font-medium" : "font-normal"}>
-                                          {formattedDateLabels}
-                                        </span>
-                                        <span className={`px-2 py-0.5 rounded text-xs font-mono ${isTodayReal ? "bg-card text-[#FF0C60] shadow-sm border border-[#FF0C60]/20" : "bg-muted text-muted-foreground/40"}`}>
-                                          {formatTime(shift.start)} – {formatTime(shift.end)}
-                                        </span>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              ) : (
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground italic py-0.5">
-                                  <Info className="w-3.5 h-3.5 shrink-0" />
-                                  {"Sin horario asignado"}
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                        </CardContent>
-                      </Card>
-                    </motion.div>
+                      operator={op}
+                      isAvailable={isAvailable}
+                      activeStats={isAvailable ? getCurrentShiftStats(op) : null}
+                      activeEvent={activeEvent}
+                      currentWeekStart={currentRealWeek}
+                      formatTime={formatTime}
+                    />
                   );
                 })}
               </div>

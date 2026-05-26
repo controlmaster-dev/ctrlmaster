@@ -1,96 +1,91 @@
-import React from "react";
 import { motion } from "framer-motion";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { ReportFormData } from "@/hooks/useReportForm";
+import { FormStepHeader } from "./FormStepHeader";
 
 interface DetailsStepProps {
-  formData: Pick<ReportFormData, 'problemDescription' | 'isManualDate' | 'dateStarted'>;
-  handleInputChange: (field: keyof ReportFormData, value: any) => void;
+  formData: Pick<ReportFormData, "problemDescription" | "isManualDate" | "dateStarted">;
+  handleInputChange: (field: keyof ReportFormData, value: unknown) => void;
 }
 
 export function DetailsStep({ formData, handleInputChange }: DetailsStepProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      transition={{ duration: 0.3, ease: "easeOut" }}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8 }}
+      transition={{ duration: 0.2 }}
       className="space-y-8"
     >
-      <div className="space-y-3 mb-10">
-        <div className="h-1 w-10 bg-[#ff3366] rounded-full" />
-        <h2 className="text-4xl md:text-5xl font-bold text-foreground tracking-tighter leading-tight">
-          Detalles <br /> <span className="text-[#ff3366]">Técnicos</span>
-        </h2>
-        <p className="text-muted-foreground text-sm font-normal border-l border-border/80 pl-4">
-          Documenta el comportamiento del sistema.
-        </p>
-      </div>
+      <FormStepHeader
+        title="Detalles"
+        accent="técnicos"
+        description="Describe qué pasó y cuándo ocurrió el incidente."
+      />
 
-      <div className="space-y-8">
-        <div className="space-y-4">
-          <Label className="text-foreground text-[10px] font-medium tracking-wider uppercase opacity-50">
-            Bitácora del Incidente
-          </Label>
+      <div className="space-y-6">
+        <section className="space-y-2">
+          <p className="text-xs font-medium text-muted-foreground">
+            Descripción del problema
+          </p>
           <Textarea
             value={formData.problemDescription}
-            onChange={(e) => handleInputChange('problemDescription', e.target.value)}
-            className="min-h-[160px] bg-card border border-border focus:border-[#ff3366] text-foreground resize-none rounded-xl p-6 text-base font-normal placeholder:text-muted-foreground/30 transition-all outline-none"
-            placeholder="Describa el fallo, mensajes de error, equipo afectado..."
+            onChange={(e) => handleInputChange("problemDescription", e.target.value)}
+            className="min-h-[140px] resize-none rounded-lg border-border/60 bg-card/80 p-4 text-sm focus-visible:ring-[#FF0C60]/30"
+            placeholder="Ej.: se cayó el audio en el canal principal, mensaje de error en consola…"
           />
-        </div>
+        </section>
 
-        <div className="space-y-4">
-          <Label className="text-foreground text-[10px] font-medium tracking-wider uppercase opacity-50">
-            Cronología / Registro de Tiempo
-          </Label>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <section className="space-y-3">
+          <p className="text-xs font-medium text-muted-foreground">
+            Fecha y hora del incidente
+          </p>
+          <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
             <button
-              onClick={() => handleInputChange('isManualDate', false)}
+              type="button"
+              onClick={() => handleInputChange("isManualDate", false)}
               className={cn(
-                "h-16 px-6 rounded-lg border text-xs font-medium text-left transition-all leading-relaxed",
-                !formData.isManualDate ? 
-                  "bg-[#ff3366] border-[#ff3366] text-white shadow-lg shadow-[#ff3366]/10" : 
-                  "bg-card border-border text-muted-foreground hover:bg-card/80 hover:border-foreground/20"
+                "rounded-lg border px-4 py-3 text-left text-sm transition-colors",
+                !formData.isManualDate
+                  ? "border-[#FF0C60] bg-[#FF0C60] text-white"
+                  : "border-border/60 bg-card text-muted-foreground hover:text-foreground"
               )}
             >
-              Tiempo Real
-              <br />
-              <span className="text-[9px] opacity-70 font-normal font-mono">Sincronizado con la hora del servidor.</span>
+              <span className="block">Ahora</span>
+              <span className="mt-0.5 block text-xs opacity-80">
+                Usa la hora del servidor
+              </span>
             </button>
             <button
-              onClick={() => handleInputChange('isManualDate', true)}
+              type="button"
+              onClick={() => handleInputChange("isManualDate", true)}
               className={cn(
-                "h-16 px-6 rounded-lg border text-xs font-medium text-left transition-all leading-relaxed",
-                formData.isManualDate ? 
-                  "bg-[#ff3366] border-[#ff3366] text-white shadow-lg shadow-[#ff3366]/10" : 
-                  "bg-card border-border text-muted-foreground hover:bg-card/80 hover:border-foreground/20"
+                "rounded-lg border px-4 py-3 text-left text-sm transition-colors",
+                formData.isManualDate
+                  ? "border-[#FF0C60] bg-[#FF0C60] text-white"
+                  : "border-border/60 bg-card text-muted-foreground hover:text-foreground"
               )}
             >
-              Entrada Manual
-              <br />
-              <span className="text-[9px] opacity-70 font-normal font-mono">Selecciona un tiempo especifico.</span>
+              <span className="block">Fecha manual</span>
+              <span className="mt-0.5 block text-xs opacity-80">
+                Elige día y hora específicos
+              </span>
             </button>
           </div>
-          
+
           {formData.isManualDate && (
-            <motion.div
-              initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="pt-1"
-            >
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}>
               <Input
                 type="datetime-local"
                 value={formData.dateStarted}
-                onChange={(e) => handleInputChange('dateStarted', e.target.value)}
-                className="bg-card border border-border text-foreground h-12 text-lg font-medium rounded-lg focus:border-[#ff3366] px-4"
+                onChange={(e) => handleInputChange("dateStarted", e.target.value)}
+                className="h-10 rounded-lg border-border/60 bg-card/80 text-sm"
               />
             </motion.div>
           )}
-        </div>
+        </section>
       </div>
     </motion.div>
   );

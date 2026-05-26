@@ -2,10 +2,9 @@
 
 export default function BackgroundShapes() {
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none bg-background transition-colors duration-500">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,12,96,0.03)_0%,transparent_70%)] opacity-50 dark:opacity-100 transition-opacity duration-500" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(15,23,42,0.03)_100%)] dark:opacity-0 transition-opacity duration-500" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.6)_100%)] opacity-0 dark:opacity-100 transition-opacity duration-500" />
+    <div className="pointer-events-none absolute inset-0 overflow-hidden bg-background">
+      <div className="absolute -top-32 left-1/2 h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-[#FF0C60]/[0.07] blur-[100px]" />
+      <div className="absolute bottom-0 right-0 h-[280px] w-[280px] translate-x-1/4 translate-y-1/4 rounded-full bg-blue-500/[0.04] blur-[80px]" />
     </div>
   );
 }

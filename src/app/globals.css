@@ -165,6 +165,73 @@
 }
 
 @layer utilities {
+  @keyframes skeleton-wave-sweep {
+    0% {
+      left: -60%;
+    }
+    100% {
+      left: 120%;
+    }
+  }
+
+  .skeleton-wave {
+    background-color: hsl(var(--border) / 0.85);
+  }
+
+  .dark .skeleton-wave {
+    background-color: hsl(var(--muted));
+  }
+
+  .skeleton-wave::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -60%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      hsl(0 0% 100% / 0.65) 48%,
+      transparent 100%
+    );
+    transform: skewX(-20deg);
+    animation: skeleton-wave-sweep 0.55s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  .dark .skeleton-wave::after {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      hsl(0 0% 100% / 0.14) 48%,
+      transparent 100%
+    );
+  }
+
+  .skeleton-wave.bg-zinc-800,
+  .skeleton-wave.bg-zinc-900 {
+    background-color: hsl(240 4% 16%);
+  }
+
+  .skeleton-wave.bg-zinc-800::after,
+  .skeleton-wave.bg-zinc-900::after {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      hsl(0 0% 100% / 0.22) 48%,
+      transparent 100%
+    );
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton-wave::after {
+      animation-duration: 3.2s;
+    }
+  }
+}
+
+@layer utilities {
 
   .vjs-control-bar,
   .vjs-big-play-button,

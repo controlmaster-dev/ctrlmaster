@@ -15,38 +15,48 @@ interface StepIndicatorProps {
 
 export function StepIndicator({ steps, currentStep, onStepClick }: StepIndicatorProps) {
   return (
-    <div className="space-y-0 relative">
-      <div className="absolute left-[15px] top-4 bottom-8 w-[1px] bg-border/20 -z-10" />
+    <nav className="relative space-y-0" aria-label="Pasos del formulario">
+      <div className="absolute bottom-6 left-[15px] top-4 -z-10 w-px bg-border/40" />
       {steps.map((s, idx) => {
         const isActive = currentStep === idx;
         const isDone = currentStep > idx;
-        
+
         return (
-          <div
-            key={idx}
-            className="flex gap-4 pb-8 last:pb-0 items-start group cursor-pointer"
-            onClick={() => (isDone ? onStepClick(idx) : null)}
+          <button
+            key={s.id}
+            type="button"
+            disabled={!isDone && !isActive}
+            onClick={() => isDone && onStepClick(idx)}
+            className={cn(
+              "flex w-full gap-3 pb-6 text-left last:pb-0",
+              isDone && "cursor-pointer",
+              !isDone && !isActive && "cursor-default"
+            )}
           >
             <div
               className={cn(
-                "w-8 h-8 rounded-lg flex items-center justify-center text-xs font-medium border-2 transition-all duration-300",
-                isActive ? "border-[#ff3366] text-[#ff3366] bg-[#ff3366]/5 shadow-[0_0_15px_rgba(255,51,102,0.1)]" :
-                isDone ? "border-[#ff3366] bg-[#ff3366] text-white" : "border-border/40 bg-muted/30 text-muted-foreground/30"
+                "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-xs transition-colors",
+                isActive && "border-[#FF0C60] bg-[#FF0C60]/10 text-[#FF0C60]",
+                isDone && "border-[#FF0C60] bg-[#FF0C60] text-white",
+                !isActive && !isDone && "border-border/50 bg-muted/30 text-muted-foreground"
               )}
             >
-              {isDone ? <Check className="w-4 h-4 stroke-[2.5]" /> : idx + 1}
+              {isDone ? <Check className="h-4 w-4" /> : idx + 1}
             </div>
-            <div className={cn("pt-1 transition-all duration-300", isActive ? "opacity-100 translate-x-0.5" : "opacity-30")}>
-              <h3 className={cn("text-[11px] font-medium leading-none mb-1.5", isActive ? "text-foreground" : "text-muted-foreground")}>
+            <div className={cn("pt-0.5", !isActive && "opacity-50")}>
+              <p
+                className={cn(
+                  "text-sm",
+                  isActive ? "font-medium text-foreground" : "text-muted-foreground"
+                )}
+              >
                 {s.title}
-              </h3>
-              <p className="text-[9px] text-muted-foreground font-normal">
-                {s.desc}
               </p>
+              <p className="text-xs text-muted-foreground">{s.desc}</p>
             </div>
-          </div>
+          </button>
         );
       })}
-    </div>
+    </nav>
   );
 }

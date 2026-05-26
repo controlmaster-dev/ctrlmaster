@@ -1,12 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { CalendarDays, Clock, Shield, Sparkles } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CalendarDays, Shield } from "lucide-react";
 import { addDays, format } from "date-fns";
 import { es } from "date-fns/locale";
-import { motion } from "framer-motion";
 
 interface Shift {
   days: number[];
@@ -36,37 +34,108 @@ interface AllDayWidgetProps {
   specialEvents?: SpecialEvent[];
 }
 
-export function AllDayWidget({ operators, specialEvents = [] }: AllDayWidgetProps) {
-  
-  const formatTime = (h: number) => {
-    const ampm = h >= 12 ? 'pm' : 'am';
-    const hour = h % 12 || 12;
-    return `${hour}${ampm}`;
-  };
+function formatTime(h: number) {
+  const ampm = h >= 12 ? "pm" : "am";
+  const hour = h % 12 || 12;
+  return `${hour}${ampm}`;
+}
 
-  const getDayOperators = (date: Date) => {
-    const dayIndex = date.getDay();
-    const result: { op: Operator; shift: Shift }[] = [];
+function getInitials(name: string) {
+  const parts = name.split(" ").filter(Boolean);
+  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  return name.substring(0, 2).toUpperCase();
+}
 
-    operators.forEach(op => {
-      if (!op.shifts) return;
-      op.shifts.forEach(shift => {
-        if (shift.days.includes(dayIndex)) {
-          result.push({ op, shift });
-        }
-      });
+function formatName(name: string) {
+  const parts = name.split(" ").filter(Boolean);
+  if (parts.length >= 2) return `${parts[0]} ${parts[1][0]}.`;
+  return name;
+}
+
+function getDayOperators(operators: Operator[], date: Date) {
+  const dayIndex = date.getDay();
+  const result: { op: Operator; shift: Shift }[] = [];
+
+  operators.forEach((op) => {
+    if (!op.shifts) return;
+    op.shifts.forEach((shift) => {
+      if (shift.days.includes(dayIndex)) {
+        result.push({ op, shift });
+      }
     });
+  });
 
-    // Sort by start time
-    return result.sort((a, b) => a.shift.start - b.shift.start);
-  };
+  return result.sort((a, b) => a.shift.start - b.shift.start);
+}
 
-  const todayOperators = useMemo(() => getDayOperators(new Date()), [operators]);
-  const tomorrowOperators = useMemo(() => getDayOperators(addDays(new Date(), 1)), [operators]);
+function DayShiftList({
+  label,
+  list,
+  date,
+}: {
+  label: string;
+  list: { op: Operator; shift: Shift }[];
+  date: Date;
+}) {
+  const dateLabel = format(date, "EEEE d MMM", { locale: es });
+
+  return (
+    <div>
+      <div className="mb-2 flex items-baseline justify-between gap-2 px-1">
+        <span className="text-xs font-semibold text-foreground">{label}</span>
+        <span className="truncate text-[11px] capitalize text-muted-foreground">
+          {dateLabel}
+        </span>
+      </div>
+
+      {list.length === 0 ? (
+        <p className="px-1 py-6 text-center text-xs text-muted-foreground">
+          Sin turnos
+        </p>
+      ) : (
+        <ul className="divide-y divide-border/40 rounded-lg border border-border/50 bg-muted/10">
+          {list.map((item, idx) => (
+            <li
+              key={`${item.op.id}-${idx}`}
+              className="flex items-center justify-between gap-3 px-3 py-2.5"
+            >
+              <div className="flex min-w-0 items-center gap-2.5">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-semibold text-muted-foreground">
+                  {getInitials(item.op.name)}
+                </span>
+                <div className="min-w-0">
+                  <p className="flex items-center gap-1 truncate text-sm font-medium text-foreground">
+                    {formatName(item.op.name)}
+                    {item.op.role?.toUpperCase() === "BOSS" && (
+                      <Shield className="h-3 w-3 shrink-0 text-[#FF0C60]" />
+                    )}
+                  </p>
+                </div>
+              </div>
+              <span className="shrink-0 rounded-md bg-background px-2 py-1 font-mono text-[11px] text-muted-foreground ring-1 ring-border/50">
+                {formatTime(item.shift.start)} – {formatTime(item.shift.end)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+export function AllDayWidget({ operators, specialEvents = [] }: AllDayWidgetProps) {
+  const todayOperators = useMemo(
+    () => getDayOperators(operators, new Date()),
+    [operators]
+  );
+  const tomorrowOperators = useMemo(
+    () => getDayOperators(operators, addDays(new Date(), 1)),
+    [operators]
+  );
 
   const activeEvent = useMemo(() => {
     const now = new Date();
-    return specialEvents.find(e => {
+    return specialEvents.find((e) => {
       if (!e.isActive) return false;
       const start = new Date(e.startDate);
       const end = new Date(e.endDate);
@@ -76,111 +145,37 @@ export function AllDayWidget({ operators, specialEvents = [] }: AllDayWidgetProp
     });
   }, [specialEvents]);
 
-  const OperatorItemList = ({ list, label, date, delay }: { list: { op: Operator; shift: Shift }[], label: string, date: Date, delay: number }) => (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay }}
-      className="space-y-3"
-    >
-      <div className="flex items-center justify-between px-1">
-        <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#FF0C60]">{label}</span>
-        <span className="text-[10px] text-muted-foreground/60">{format(date, "EEEE d 'de' MMMM", { locale: es })}</span>
-      </div>
-
-      <div className="grid gap-2">
-        {list.length === 0 ? (
-          <div className="py-4 text-center border border-dashed border-border rounded-xl bg-muted/5">
-            <p className="text-[10px] text-muted-foreground italic">No hay turnos programados</p>
-          </div>
-        ) : (
-          list.map((item, idx) => (
-            <div 
-              key={`${item.op.id}-${idx}`}
-              className="group relative"
-            >
-              <Card className="overflow-hidden border-border bg-card/40 backdrop-blur-md transition-all duration-300 hover:bg-card/60 hover:translate-x-1 ring-1 ring-border/50">
-                <CardContent className="p-3">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-9 w-9 border border-border shrink-0">
-                      <AvatarImage src={item.op.image || item.op.avatar} />
-                      <AvatarFallback className="bg-muted text-xs font-medium">{item.op.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 overflow-hidden">
-                        <h4 className="text-xs font-medium text-foreground truncate">{item.op.name}</h4>
-                        {item.op.isTempSchedule && <div className="w-1 h-1 bg-amber-500 rounded-full shrink-0" />}
-                      </div>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <div className="flex items-center gap-1 text-[9px] text-muted-foreground font-medium">
-                          <Clock className="w-2.5 h-2.5 opacity-50" />
-                          <span>{formatTime(item.shift.start)} - {formatTime(item.shift.end)}</span>
-                        </div>
-                        {item.op.role?.toUpperCase() === 'BOSS' && (
-                          <div className="flex items-center gap-0.5 text-[8px] text-amber-500/80 bg-amber-500/5 px-1 rounded border border-amber-500/10">
-                            <Shield className="w-2 h-2" />
-                            ADMIN
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          ))
-        )}
-      </div>
-    </motion.div>
-  );
-
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between px-1">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-[#FF0C60]/10 rounded-xl border border-[#FF0C60]/20">
-            <CalendarDays className="w-4 h-4 text-[#FF0C60]" />
+    <Card className="overflow-hidden rounded-xl border border-border/60 bg-card/80 shadow-sm">
+      <CardHeader className="border-b border-border/50 px-4 py-3">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#FF0C60]/10 text-[#FF0C60]">
+            <CalendarDays className="h-4 w-4" />
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-foreground">Turnos del Día</h2>
-            <p className="text-[10px] text-muted-foreground tracking-tighter opacity-70 italic">Horario de Operadores de Control</p>
+            <CardTitle className="text-sm font-semibold">Turnos del día</CardTitle>
+            <p className="text-[11px] text-muted-foreground">Hoy y mañana</p>
           </div>
         </div>
-      </div>
+      </CardHeader>
 
-      {/* Featured Event if any */}
-      {activeEvent && (
-        <motion.div
-           initial={{ opacity: 0, scale: 0.95 }}
-           animate={{ opacity: 1, scale: 1 }}
-           className="relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-transparent border border-indigo-500/20 shadow-sm"
-        >
-          <div className="flex items-center gap-3">
-             <div className="h-8 w-8 rounded-full bg-indigo-500/20 flex items-center justify-center">
-                <Sparkles className="h-4 w-4 text-indigo-500" />
-             </div>
-             <div>
-                <p className="text-[10px] text-indigo-500 uppercase tracking-widest leading-none mb-1">Evento en curso</p>
-                <h3 className="text-xs font-medium text-foreground leading-tight">{activeEvent.name}</h3>
-             </div>
+      <CardContent className="space-y-5 p-4">
+        {activeEvent && (
+          <div className="rounded-lg border border-[#FF0C60]/20 bg-[#FF0C60]/5 px-3 py-2">
+            <p className="text-[10px] font-medium text-[#FF0C60]">Evento activo</p>
+            <p className="mt-0.5 text-sm font-medium text-foreground">
+              {activeEvent.name}
+            </p>
           </div>
-        </motion.div>
-      )}
+        )}
 
-      {/* Lists */}
-      <div className="space-y-10">
-        <OperatorItemList label="Hoy" list={todayOperators} date={new Date()} delay={0.1} />
-        <OperatorItemList label="Mañana" list={tomorrowOperators} date={addDays(new Date(), 1)} delay={0.2} />
-      </div>
-
-      {/* Footer Info */}
-      <div className="bg-muted/30 rounded-xl p-3 border border-border/50">
-        <p className="text-[9px] text-muted-foreground leading-relaxed text-center font-medium opacity-60">
-          Los turnos se actualizan dinámicamente según la programación semanal establecida.
-        </p>
-      </div>
-    </div>
+        <DayShiftList label="Hoy" list={todayOperators} date={new Date()} />
+        <DayShiftList
+          label="Mañana"
+          list={tomorrowOperators}
+          date={addDays(new Date(), 1)}
+        />
+      </CardContent>
+    </Card>
   );
 }

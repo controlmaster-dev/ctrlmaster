@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ReportesSkeleton } from "@/components/skeletons/ReportesSkeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -35,7 +35,6 @@ import {
   ChevronRight,
   Download,
   Filter,
-  Calendar,
   BarChart3,
   Zap,
 } from "lucide-react";
@@ -52,8 +51,7 @@ import { EmailSendModal } from "@/components/EmailSendModal";
 import { SuccessModal } from "@/components/SuccessModal";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
-
+import { StatsCard } from "@/components/dashboard/StatsCard";
 import { ReportDetailModal } from "@/components/ReportDetailModal";
 
 interface Report {
@@ -114,6 +112,12 @@ export function ReportesClient() {
   // Operator stats
   const [showStats, setShowStats] = useState(false);
   const [operatorStats, setOperatorStats] = useState<any[]>([]);
+  const [globalStats, setGlobalStats] = useState({
+    total: 0,
+    pending: 0,
+    resolved: 0,
+  });
+  const [initialLoad, setInitialLoad] = useState(true);
 
   // Build query params
   const buildQuery = useCallback(() => {
@@ -149,14 +153,37 @@ export function ReportesClient() {
       console.error(error);
     } finally {
       setLoading(false);
+      setInitialLoad(false);
     }
   };
 
+  const fetchGlobalStats = useCallback(async () => {
+    try {
+      const [all, pending, resolved] = await Promise.all([
+        fetch("/api/reports?limit=1").then((r) => r.json()),
+        fetch("/api/reports?limit=1&status=pending").then((r) => r.json()),
+        fetch("/api/reports?limit=1&status=resolved").then((r) => r.json()),
+      ]);
+      setGlobalStats({
+        total: all.total ?? 0,
+        pending: pending.total ?? 0,
+        resolved: resolved.total ?? 0,
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
   useEffect(() => {
     fetchReports();
+    fetchGlobalStats();
     const savedUser = localStorage.getItem("enlace-user");
     if (savedUser) setCurrentUser(JSON.parse(savedUser));
   }, [page, statusFilter, priorityFilter, operatorFilter, dateFrom, dateTo]);
+
+  useEffect(() => {
+    fetchGlobalStats();
+  }, [fetchGlobalStats]);
 
   // Handle direct report link (?reportId=xxx)
   useEffect(() => {
@@ -257,6 +284,7 @@ export function ReportesClient() {
       if (res.ok) {
         setModal({ isOpen: true, type: "success", message: "Reporte marcado como resuelto." });
         fetchReports();
+        fetchGlobalStats();
       } else throw new Error("Error al actualizar");
     } catch (error) {
       setModal({ isOpen: true, type: "error", message: "Error de servidor." });
@@ -301,13 +329,25 @@ export function ReportesClient() {
   };
 
   const getStatusBadge = (status: string) => {
+    const base =
+      "inline-flex items-center gap-1 rounded border px-2 py-0.5 text-[11px] font-medium";
     switch (status) {
       case "resolved":
-        return <Badge className="bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border-emerald-500/20 rounded-md"><CheckCircle2 className="w-3 h-3 mr-1" /> Resuelto</Badge>;
+        return (
+          <span className={`${base} border-emerald-500/25 bg-emerald-500/10 text-emerald-500`}>
+            <CheckCircle2 className="h-3 w-3" /> Resuelto
+          </span>
+        );
       case "pending":
-        return <Badge className="bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border-amber-500/20 rounded-md"><Clock className="w-3 h-3 mr-1" /> Pendiente</Badge>;
+        return (
+          <span className={`${base} border-amber-500/25 bg-amber-500/10 text-amber-500`}>
+            <Clock className="h-3 w-3" /> Pendiente
+          </span>
+        );
       default:
-        return <Badge variant="outline" className="text-muted-foreground border-border rounded-md">Desconocido</Badge>;
+        return (
+          <span className={`${base} border-border text-muted-foreground`}>Desconocido</span>
+        );
     }
   };
 
@@ -323,33 +363,18 @@ export function ReportesClient() {
 
   const hasActiveFilters = search || statusFilter !== 'all' || priorityFilter !== 'all' || operatorFilter !== 'all' || dateFrom || dateTo;
 
-  if (loading)
-    return (
-      <div className="min-h-screen bg-background pb-20 pt-20 md:pt-6 px-6 md:px-12 max-w-[1600px] mx-auto space-y-12">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
-          <div className="space-y-2">
-            <Skeleton className="h-12 w-64 rounded-md" />
-            <Skeleton className="h-6 w-96 rounded-md" />
-          </div>
-          <Skeleton className="h-12 w-48 rounded-md" />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-40 rounded-md" />
-          ))}
-        </div>
-        <div className="w-full h-16 rounded-md bg-muted/20 animate-pulse" />
-        <div className="space-y-4">
-          <Skeleton className="h-12 w-full rounded-t-sm" />
-          {[1, 2, 3, 4, 5].map((i) => (
-            <Skeleton key={i} className="h-16 w-full rounded-md" />
-          ))}
-        </div>
-      </div>
-    );
+  const uniqueOperators = Array.from(
+    new Set(reports.map((r) => r.operatorName).filter(Boolean))
+  ).sort();
+
+  if (initialLoad && loading) return <ReportesSkeleton />;
 
   return (
-    <div className="min-h-screen text-foreground pb-20 selection:bg-[#FF0C60] selection:text-white relative overflow-hidden">
+    <div className="relative min-h-screen overflow-hidden pb-20 text-foreground selection:bg-[#FF0C60] selection:text-white">
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute -right-20 top-0 h-72 w-72 rounded-full bg-[#FF0C60]/6 blur-3xl" />
+        <div className="absolute -left-24 bottom-0 h-64 w-64 rounded-full bg-violet-600/5 blur-3xl" />
+      </div>
       <ReportDetailModal
         isOpen={detailModalOpen}
         onClose={() => {
@@ -382,286 +407,260 @@ export function ReportesClient() {
         }
       />
 
-      <div className="relative z-10 pt-20 pb-6 md:pt-6 md:pb-12 px-4 md:px-12 max-w-[1600px] mx-auto">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8 md:mb-12">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="space-y-2"
-          >
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tighter text-foreground">
+      <div className="relative z-10 mx-auto max-w-[1600px] space-y-6 p-4 pt-20 md:space-y-8 md:p-8 md:pt-8">
+        <header className="flex flex-col gap-5 border-b border-border/60 pb-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
               Panel de <span className="text-[#FF0C60]">Incidencias</span>
             </h1>
-            <p className="text-muted-foreground text-sm md:text-base font-medium border-l-2 border-[#FF0C60]/20 pl-4 tracking-tight">
+            <p className="mt-1.5 max-w-xl text-sm text-muted-foreground">
               Gestión y monitoreo de reportes técnicos
             </p>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="relative group"
-          >
-            <div className="absolute inset-0 bg-[#FF0C60]/20 rounded-md blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-            <Link href="/crear-reporte">
-              <Button className="w-full md:w-auto h-12 md:h-14 bg-gradient-to-r from-[#FF0C60] to-[#FF0080] hover:from-[#FF2E75] hover:to-[#FF1A8C] text-white rounded-md border-0 shadow-lg shadow-rose-500/20 gap-3 text-base md:text-lg font-semibold tracking-tight transition-all hover:scale-[1.05] active:scale-95 px-8">
-                <Plus className="w-5 h-5 md:w-6 md:h-6 stroke-[3]" />
-                <span>Nuevo Reporte</span>
-              </Button>
-            </Link>
-          </motion.div>
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6 mb-8 md:mb-12 text-center">
-          {[
-            {
-              label: "Total",
-              value: reports.length,
-              icon: FileText,
-              color: "text-blue-500",
-              bg: "bg-blue-500/10",
-            },
-            {
-              label: "Pendientes",
-              value: reports.filter((r) => r.status === "pending").length,
-              icon: Clock,
-              color: "text-rose-500",
-              bg: "bg-rose-500/10",
-            },
-            {
-              label: "Resueltos",
-              value: reports.filter((r) => r.status === "resolved").length,
-              icon: CheckCircle2,
-              color: "text-emerald-500",
-              bg: "bg-emerald-500/10",
-            },
-          ].map((kpi, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.1 }}
-              className={`p-4 md:p-6 rounded-md bg-card border border-border relative overflow-hidden group ring-1 ring-border ${
-                idx === 2 ? "col-span-2 md:col-span-1" : ""
-              }`}
+          </div>
+          <Link href="/crear-reporte" className="shrink-0">
+            <Button
+              size="sm"
+              className="h-9 gap-2 rounded-lg bg-[#FF0C60] px-4 text-white shadow-[0_0_20px_rgba(255,12,96,0.25)] hover:bg-[#E00A54]"
             >
-              <div className={`absolute -right-4 -top-4 w-24 h-24 blur-3xl opacity-20 ${kpi.bg}`} />
-              <div className="relative z-10 flex flex-col items-start px-2">
-                <div className={`w-12 h-12 rounded-md ${kpi.bg} mb-4 flex items-center justify-center`}>
-                  <kpi.icon className={`w-6 h-6 ${kpi.color}`} />
-                </div>
-                <span className="text-3xl md:text-4xl font-bold text-foreground tracking-tighter mb-1">
-                  {kpi.value}
-                </span>
-                <span className="text-[10px] md:text-xs font-medium text-muted-foreground tracking-tight">
-                  {kpi.label}
-                </span>
-              </div>
-            </motion.div>
-          ))}
+              <Plus className="h-4 w-4" />
+              Nuevo Reporte
+            </Button>
+          </Link>
+        </header>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <StatsCard
+            title="Total"
+            value={globalStats.total}
+            subtitle="En el sistema"
+            icon={<FileText className="h-5 w-5" />}
+            variant="default"
+          />
+          <StatsCard
+            title="Pendientes"
+            value={globalStats.pending}
+            subtitle="Por revisar"
+            icon={<Clock className="h-5 w-5" />}
+            variant="danger"
+            valueColor="text-rose-500"
+          />
+          <StatsCard
+            title="Resueltos"
+            value={globalStats.resolved}
+            subtitle="Cerrados"
+            icon={<CheckCircle2 className="h-5 w-5" />}
+            variant="success"
+            valueColor="text-emerald-500"
+          />
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="mb-6 md:mb-8"
-        >
-          {/* Main filter bar */}
-          <div className="bg-card backdrop-blur-md border border-border rounded-md p-3 flex flex-col md:flex-row gap-4 items-center ring-1 ring-border">
-            <div className="relative flex-1 w-full group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-[#FF0C60] transition-colors" />
+        <Card className="overflow-hidden rounded-xl border border-border/60 bg-card/80 p-4 shadow-sm">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Buscar por ID, operador o descripción..."
-                className="pl-12 h-12 bg-transparent border-none text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-0 text-xs font-medium tracking-tight"
+                placeholder="Buscar por ID, operador o descripción…"
+                className="h-10 rounded-lg border-border/60 bg-muted/30 pl-9"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowFilters(!showFilters)}
-              className={`h-12 w-12 shrink-0 ${hasActiveFilters ? 'text-[#FF0C60] bg-[#FF0C60]/10' : 'text-muted-foreground'}`}
-            >
-              <Filter className="w-4 h-4" />
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex rounded-lg border border-border/60 bg-muted/25 p-0.5">
+                {["all", "Enlace", "EJTV", "Enlace USA"].map((filter) => (
+                  <button
+                    key={filter}
+                    type="button"
+                    onClick={() => {
+                      setPriorityFilter(filter);
+                      setPage(1);
+                    }}
+                    className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                      priorityFilter === filter
+                        ? "bg-[#FF0C60] text-white"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {filter === "all" ? "Todos" : filter}
+                  </button>
+                ))}
+              </div>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => { setShowStats(!showStats); if (!showStats) fetchOperatorStats(); }}
-              className="h-12 w-12 shrink-0 text-muted-foreground"
-            >
-              <BarChart3 className="w-4 h-4" />
-            </Button>
+              <Select
+                value={statusFilter}
+                onValueChange={(v) => {
+                  setStatusFilter(v);
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger className="h-10 w-[140px] rounded-lg border-border/60 bg-muted/30 text-xs">
+                  <SelectValue placeholder="Estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Cualquier estado</SelectItem>
+                  <SelectItem value="pending">Pendientes</SelectItem>
+                  <SelectItem value="resolved">Resueltos</SelectItem>
+                </SelectContent>
+              </Select>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={exportToCSV}
-              className="h-12 w-12 shrink-0 text-muted-foreground"
-              title="Exportar CSV"
-            >
-              <Download className="w-4 h-4" />
-            </Button>
-
-            {/* Quick filters */}
-            <div className="flex items-center gap-1.5 p-1 bg-muted/20 rounded-md shrink-0">
-              {["all", "Enlace", "EJTV", "Enlace USA"].map((filter) => (
-                <button
-                  key={filter}
-                  onClick={() => { setPriorityFilter(filter); setPage(1); }}
-                  className={`px-3 py-2 rounded-md text-[10px] font-semibold tracking-tight transition-all ${
-                    priorityFilter === filter
-                      ? "bg-[#FF0C60] text-white shadow-lg shadow-rose-500/20"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                  }`}
-                >
-                  {filter === "all" ? "Todos" : filter}
-                </button>
-              ))}
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-10 w-10 rounded-lg border-border/60"
+                onClick={() => setShowFilters(!showFilters)}
+                title="Más filtros"
+              >
+                <Filter className={`h-4 w-4 ${hasActiveFilters ? "text-[#FF0C60]" : ""}`} />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-10 w-10 rounded-lg border-border/60"
+                onClick={() => {
+                  setShowStats(!showStats);
+                  if (!showStats) fetchOperatorStats();
+                }}
+                title="Estadísticas"
+              >
+                <BarChart3 className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-10 w-10 rounded-lg border-border/60"
+                onClick={exportToCSV}
+                title="Exportar CSV"
+              >
+                <Download className="h-4 w-4" />
+              </Button>
             </div>
-
-            <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
-              <SelectTrigger className="w-[160px] h-12 border-none bg-transparent text-muted-foreground font-semibold text-[10px] tracking-tight focus:ring-0 shrink-0">
-                <SelectValue placeholder="Estado" />
-              </SelectTrigger>
-              <SelectContent className="bg-popover border-border text-popover-foreground rounded-md">
-                <SelectItem value="all" className="text-[10px] font-semibold tracking-tight">Cualquier estado</SelectItem>
-                <SelectItem value="pending" className="text-[10px] font-semibold tracking-tight text-rose-500">Pendientes</SelectItem>
-                <SelectItem value="resolved" className="text-[10px] font-semibold tracking-tight text-emerald-500">Resueltos</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
-          {/* Advanced filters */}
           {showFilters && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="mt-3 bg-card backdrop-blur-md border border-border rounded-md p-4 ring-1 ring-border"
-            >
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Operador</label>
-                  <Select value={operatorFilter} onValueChange={(v) => { setOperatorFilter(v); setPage(1); }}>
-                    <SelectTrigger className="h-10 bg-transparent border-border text-xs">
-                      <SelectValue placeholder="Todos" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos los operadores</SelectItem>
-                      <SelectItem value="Gabriel">Gabriel</SelectItem>
-                      <SelectItem value="Diego">Diego</SelectItem>
-                      <SelectItem value="Alex">Alex</SelectItem>
-                      <SelectItem value="Andres">Andres</SelectItem>
-                      <SelectItem value="Josue">Josue</SelectItem>
-                      <SelectItem value="Jeremy">Jeremy</SelectItem>
-                      <SelectItem value="Ronald">Ronald</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1"><Calendar className="w-3 h-3" /> Desde</label>
-                  <Input
-                    type="date"
-                    value={dateFrom}
-                    onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
-                    className="h-10 bg-transparent border-border text-xs"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1"><Calendar className="w-3 h-3" /> Hasta</label>
-                  <Input
-                    type="date"
-                    value={dateTo}
-                    onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
-                    className="h-10 bg-transparent border-border text-xs"
-                  />
-                </div>
-
-                <div className="flex items-end">
-                  <Button
-                    variant="ghost"
-                    onClick={clearFilters}
-                    className="h-10 text-xs text-muted-foreground w-full"
-                  >
-                    Limpiar filtros
-                  </Button>
-                </div>
+            <div className="mt-4 grid grid-cols-1 gap-3 border-t border-border/50 pt-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Operador</label>
+                <Select
+                  value={operatorFilter}
+                  onValueChange={(v) => {
+                    setOperatorFilter(v);
+                    setPage(1);
+                  }}
+                >
+                  <SelectTrigger className="h-10 rounded-lg border-border/60 bg-muted/30 text-xs">
+                    <SelectValue placeholder="Todos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    {uniqueOperators.map((name) => (
+                      <SelectItem key={name} value={name}>
+                        {name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            </motion.div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Desde</label>
+                <Input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => {
+                    setDateFrom(e.target.value);
+                    setPage(1);
+                  }}
+                  className="h-10 rounded-lg border-border/60 bg-muted/30 text-xs"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Hasta</label>
+                <Input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => {
+                    setDateTo(e.target.value);
+                    setPage(1);
+                  }}
+                  className="h-10 rounded-lg border-border/60 bg-muted/30 text-xs"
+                />
+              </div>
+              <div className="flex items-end">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="h-10 w-full text-xs text-muted-foreground"
+                >
+                  Limpiar filtros
+                </Button>
+              </div>
+            </div>
           )}
-        </motion.div>
+        </Card>
 
-        {/* Operator Stats */}
         {showStats && operatorStats.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8 bg-card backdrop-blur-md border border-border rounded-md p-6 ring-1 ring-border"
-          >
-            <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-[#FF0C60]" />
-              Estadísticas por Operador
+          <Card className="rounded-xl border border-border/60 bg-card/80 p-4 shadow-sm">
+            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold">
+              <BarChart3 className="h-4 w-4 text-[#FF0C60]" />
+              Por operador
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {operatorStats.map((op: any, idx: number) => (
-                <div key={idx} className="p-4 rounded-md bg-muted/20 border border-border">
-                  <div className="font-semibold text-foreground text-sm mb-2">{op.name}</div>
-                  <div className="grid grid-cols-4 gap-2 text-center text-[10px]">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {operatorStats.map((op: { name: string; total: number; pending: number; resolved: number; emailSent: number }, idx: number) => (
+                <div
+                  key={idx}
+                  className="rounded-lg border border-border/50 bg-muted/15 p-3"
+                >
+                  <p className="mb-2 truncate text-sm font-medium">{op.name}</p>
+                  <div className="grid grid-cols-4 gap-1 text-center text-[10px]">
                     <div>
-                      <div className="text-lg font-bold text-foreground">{op.total}</div>
-                      <div className="text-muted-foreground">Total</div>
+                      <p className="text-base font-semibold tabular-nums">{op.total}</p>
+                      <p className="text-muted-foreground">Total</p>
                     </div>
                     <div>
-                      <div className="text-lg font-bold text-amber-500">{op.pending}</div>
-                      <div className="text-muted-foreground">Pendiente</div>
+                      <p className="text-base font-semibold tabular-nums text-amber-600">
+                        {op.pending}
+                      </p>
+                      <p className="text-muted-foreground">Pend.</p>
                     </div>
                     <div>
-                      <div className="text-lg font-bold text-emerald-500">{op.resolved}</div>
-                      <div className="text-muted-foreground">Resuelto</div>
+                      <p className="text-base font-semibold tabular-nums text-emerald-600">
+                        {op.resolved}
+                      </p>
+                      <p className="text-muted-foreground">Res.</p>
                     </div>
                     <div>
-                      <div className="text-lg font-bold text-blue-500">{op.emailSent}</div>
-                      <div className="text-muted-foreground">Email</div>
+                      <p className="text-base font-semibold tabular-nums">{op.emailSent}</p>
+                      <p className="text-muted-foreground">Mail</p>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
-          </motion.div>
+          </Card>
         )}
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-        >
-          <Card className="bg-card backdrop-blur-xl border border-border overflow-hidden rounded-md ring-1 ring-border">
+        <Card className="overflow-hidden rounded-xl border border-border/60 bg-card/80 shadow-sm">
             <div className="overflow-x-auto">
               <Table>
-                <TableHeader className="bg-muted/10">
-                  <TableRow className="border-border hover:bg-transparent">
-                    <TableHead className="text-muted-foreground font-semibold text-[10px] tracking-tight pl-8 h-12">
+                <TableHeader className="border-b border-border/60 bg-muted/20">
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="h-11 pl-4 text-xs font-medium text-muted-foreground">
                       Incidencia
                     </TableHead>
-                    <TableHead className="text-muted-foreground font-semibold text-[10px] tracking-tight h-12">
+                    <TableHead className="h-11 text-xs font-medium text-muted-foreground">
                       Categoría
                     </TableHead>
-                    <TableHead className="text-muted-foreground font-semibold text-[10px] tracking-tight h-12">
+                    <TableHead className="h-11 text-xs font-medium text-muted-foreground">
                       Estado
                     </TableHead>
-                    <TableHead className="text-muted-foreground font-semibold text-[10px] tracking-tight h-12">
+                    <TableHead className="h-11 text-xs font-medium text-muted-foreground">
                       Actividad
                     </TableHead>
-                    <TableHead className="text-muted-foreground font-semibold text-[10px] tracking-tight h-12">
+                    <TableHead className="h-11 text-xs font-medium text-muted-foreground">
                       Prioridad
                     </TableHead>
-                    <TableHead className="text-right text-muted-foreground font-semibold text-[10px] tracking-tight pr-8 h-12">
+                    <TableHead className="h-11 pr-4 text-right text-xs font-medium text-muted-foreground">
                       Acciones
                     </TableHead>
                   </TableRow>
@@ -670,128 +669,81 @@ export function ReportesClient() {
                   {reports.map((report) => (
                     <TableRow
                       key={report.id}
-                      className="border-border group hover:bg-muted/10 transition-colors cursor-pointer"
+                      className="group cursor-pointer border-border/40 transition-colors hover:bg-muted/20"
                       onClick={() => handleRowClick(report)}
                     >
-                      <TableCell className="pl-8 py-5">
-                        <div className="flex flex-col gap-2">
-                          <div className="flex items-center gap-3">
-                            <span className="text-[10px] font-mono font-semibold text-muted-foreground/60 tracking-tighter bg-muted/30 px-2 py-0.5 rounded border border-border">
+                      <TableCell className="py-3.5 pl-4">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-[10px] text-muted-foreground">
                               #{report.id.slice(0, 6)}
                             </span>
-                            <span className="text-foreground font-semibold text-sm tracking-tight group-hover:text-[#FF0C60] transition-colors">
-                              {report.problemDescription.length > 50
-                                ? `${report.problemDescription.slice(0, 50)}...`
-                                : report.problemDescription}
+                            <span className="line-clamp-1 text-sm font-medium text-foreground group-hover:text-[#FF0C60]">
+                              {report.problemDescription}
                             </span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <div className="w-5 h-5 rounded bg-muted flex items-center justify-center text-[8px] text-muted-foreground font-bold border border-border">
-                              {report.operatorName
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")
-                                .substring(0, 2)}
-                            </div>
-                            <span className="text-[10px] font-medium text-muted-foreground tracking-tight">
-                              {report.operatorName}
-                            </span>
-                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {report.operatorName}
+                          </span>
                         </div>
                       </TableCell>
-                      <TableCell className="py-5">
-                        <span className="text-xs text-foreground font-medium tracking-tight">
-                          {report.category}
-                        </span>
+                      <TableCell className="py-3.5 text-sm text-muted-foreground">
+                        {report.category}
                       </TableCell>
-                      <TableCell className="py-5">
-                        <div className="flex flex-col gap-2 items-start">
-                          <div className="scale-90 origin-left">
-                            {getStatusBadge(report.status)}
-                          </div>
-                          {report.emailStatus && (
-                            <Badge
-                              variant="outline"
-                              className={`scale-90 origin-left border-dashed
-                                ${
-                                  report.emailStatus === "sent"
-                                    ? "text-blue-500 border-blue-500/30"
-                                    : ""
-                                }
-                                ${
-                                  report.emailStatus === "pending"
-                                    ? "text-amber-500 border-amber-500/30"
-                                    : ""
-                                }
-                                ${
-                                  report.emailStatus === "error"
-                                    ? "text-red-500 border-red-500/30"
-                                    : ""
-                                }
-                                ${
-                                  !report.emailStatus ||
-                                  report.emailStatus === "none"
-                                    ? "text-muted-foreground border-border bg-muted/30"
-                                    : ""
-                                }
-                              `}
+                      <TableCell className="py-3.5">
+                        <div className="flex flex-col gap-1.5">
+                          {getStatusBadge(report.status)}
+                          {report.emailStatus && report.emailStatus !== "none" && (
+                            <span
+                              className={`inline-flex items-center gap-1 text-[11px] ${
+                                report.emailStatus === "sent"
+                                  ? "text-blue-500"
+                                  : report.emailStatus === "pending"
+                                  ? "text-amber-500"
+                                  : report.emailStatus === "error"
+                                  ? "text-red-500"
+                                  : "text-muted-foreground"
+                              }`}
                             >
-                              <Mail className="w-3 h-3 mr-1" />
+                              <Mail className="h-3 w-3" />
                               {report.emailStatus === "sent"
                                 ? "Enviado"
                                 : report.emailStatus === "pending"
                                 ? "Pendiente"
                                 : report.emailStatus === "error"
                                 ? "Error"
-                                : "No Enviado"}
-                            </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="py-5">
-                        <div className="flex items-center gap-2">
-                          {((report._count?.comments || 0) > 0) && (
-                            <div
-                              className="w-8 h-8 rounded-md bg-blue-500/10 border border-blue-500/20 flex items-center justify-center"
-                              title="Comentarios"
-                            >
-                              <MessageSquare className="w-3.5 h-3.5 text-blue-500" />
-                            </div>
-                          )}
-                          {((report._count?.reactions || 0) > 0) && (
-                            <div
-                              className="w-8 h-8 rounded-md bg-[#FF0C60]/10 border border-[#FF0C60]/20 flex items-center justify-center"
-                              title="Reacciones"
-                            >
-                              <ThumbsUp className="w-3.5 h-3.5 text-[#FF0C60]" />
-                            </div>
-                          )}
-                          {!(report._count?.comments || 0) && !(report._count?.reactions || 0) && (
-                            <span className="text-muted-foreground/30 font-medium">
-                              -
+                                : "No enviado"}
                             </span>
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="py-5">
-                        <Badge
-                          variant="outline"
-                          className={`bg-muted/30 text-[9px] font-semibold tracking-tight border-border rounded px-3 py-1 ${
-                            report.priority === "Enlace"
-                              ? "text-indigo-400 border-indigo-500/30"
-                              : report.priority === "EJTV"
-                              ? "text-[#FF0C60] border-[#FF0C60]/30"
-                              : ""
-                          }`}
-                        >
-                          {report.priority}
-                        </Badge>
+                      <TableCell className="py-3.5">
+                        <div className="flex items-center gap-2.5 text-muted-foreground">
+                          {(report._count?.comments || 0) > 0 && (
+                            <span className="inline-flex items-center gap-1 text-xs" title="Comentarios">
+                              <MessageSquare className="h-3.5 w-3.5 text-blue-500" />
+                              {report._count?.comments}
+                            </span>
+                          )}
+                          {(report._count?.reactions || 0) > 0 && (
+                            <span className="inline-flex items-center gap-1 text-xs" title="Reacciones">
+                              <ThumbsUp className="h-3.5 w-3.5 text-[#FF0C60]" />
+                              {report._count?.reactions}
+                            </span>
+                          )}
+                          {!(report._count?.comments || 0) && !(report._count?.reactions || 0) && (
+                            <span className="text-muted-foreground/40">—</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-3.5 text-sm text-muted-foreground">
+                        {report.priority}
                       </TableCell>
                       <TableCell
-                        className="pr-10 py-5 text-right"
+                        className="py-3.5 pr-4 text-right"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <div className="flex justify-end items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                           <TooltipProvider>
                             {report.status !== "resolved" && (
                               <Tooltip>
@@ -874,24 +826,19 @@ export function ReportesClient() {
                 </TableBody>
               </Table>
             </div>
-            {reports.length === 0 && (
-              <div className="py-32 text-center">
-                <div className="w-24 h-24 bg-muted/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-border border-dashed ring-8 ring-muted/5">
-                  <Zap className="w-12 h-12 text-muted-foreground/30" />
-                </div>
-                <h3 className="text-xl font-bold text-foreground/50 tracking-tight">
-                  Sin resultados
-                </h3>
-                <p className="text-muted-foreground font-semibold text-xs mt-2 tracking-normal">
-                  No se encontraron reportes que coincidan con los filtros
+            {reports.length === 0 && !loading && (
+              <div className="py-16 text-center">
+                <Zap className="mx-auto mb-3 h-10 w-10 text-muted-foreground/30" />
+                <p className="text-sm font-medium text-foreground">Sin resultados</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Prueba con otros filtros o crea un reporte nuevo.
                 </p>
               </div>
             )}
           </Card>
 
-          {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4 px-2">
+            <div className="flex flex-col gap-3 px-1 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-xs text-muted-foreground">
                 Mostrando {reports.length} de {total} reportes (página {page} de {totalPages})
               </p>
@@ -940,22 +887,13 @@ export function ReportesClient() {
               </div>
             </div>
           )}
-        </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="mt-16 mb-20 bg-card/10 p-6 md:p-10 rounded-md border border-border border-dashed"
-        >
-          <div className="flex items-center gap-4 mb-8">
-            <div className="w-1.5 h-8 bg-[#FF0C60] rounded-full" />
-            <h2 className="text-2xl font-bold text-foreground tracking-tight">
-              Historial de Notificaciones
-            </h2>
-          </div>
+        <Card className="rounded-xl border border-border/60 bg-card/80 p-4 shadow-sm">
+          <h2 className="mb-4 text-sm font-semibold text-foreground">
+            Historial de correos
+          </h2>
           <EmailHistoryCard />
-        </motion.div>
+        </Card>
       </div>
     </div>
   );
@@ -976,53 +914,50 @@ function EmailHistoryCard() {
   }, []);
 
   if (loading)
-    return <div className="text-slate-500 text-sm">Cargando historial...</div>;
+    return <p className="text-sm text-muted-foreground">Cargando historial…</p>;
 
   if (emails.length === 0)
     return (
-      <Card className="bg-card/50 backdrop-blur-xl border border-border p-8 text-center rounded-md">
-        <p className="text-muted-foreground">
-          No hay registros de correos enviados recientemente.
-        </p>
-      </Card>
+      <p className="py-6 text-center text-sm text-muted-foreground">
+        No hay correos enviados recientemente.
+      </p>
     );
 
   return (
-    <Card className="bg-card/50 backdrop-blur-xl border border-border overflow-hidden rounded-md ring-1 ring-border">
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader className="bg-muted/10">
-            <TableRow className="border-border hover:bg-transparent">
-              <TableHead className="text-muted-foreground font-semibold text-[10px] tracking-tight pl-6">
-                Asunto
-              </TableHead>
-              <TableHead className="text-muted-foreground font-semibold text-[10px] tracking-tight">
-                Destinatario
-              </TableHead>
-              <TableHead className="text-muted-foreground font-semibold text-[10px] tracking-tight">
-                Fecha
-              </TableHead>
-              <TableHead className="text-right text-muted-foreground font-semibold text-[10px] tracking-tight pr-6">
-                Estado
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {emails.map((email) => (
-              <TableRow
-                key={email.id}
-                className="border-border hover:bg-muted/20 transition-colors"
-              >
-                <TableCell className="pl-6 py-4 text-foreground font-medium">
-                  {email.subject}
-                </TableCell>
-                <TableCell className="py-4 text-muted-foreground text-sm">
-                  {Array.isArray(email.to) ? email.to.join(", ") : email.to}
-                </TableCell>
-                <TableCell className="py-4 text-muted-foreground text-xs">
-                  {new Date(email.created_at).toLocaleString()}
-                </TableCell>
-                <TableCell className="py-4 pr-6 text-right">
+    <div className="overflow-x-auto rounded-lg border border-border/50">
+      <Table>
+        <TableHeader className="border-b border-border/60 bg-muted/20">
+          <TableRow className="hover:bg-transparent">
+            <TableHead className="h-10 pl-4 text-xs font-medium text-muted-foreground">
+              Asunto
+            </TableHead>
+            <TableHead className="h-10 text-xs font-medium text-muted-foreground">
+              Destinatario
+            </TableHead>
+            <TableHead className="h-10 text-xs font-medium text-muted-foreground">
+              Fecha
+            </TableHead>
+            <TableHead className="h-10 pr-4 text-right text-xs font-medium text-muted-foreground">
+              Estado
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {emails.map((email) => (
+            <TableRow
+              key={email.id}
+              className="border-border/40 hover:bg-muted/20"
+            >
+              <TableCell className="py-3 pl-4 text-sm font-medium">
+                {email.subject}
+              </TableCell>
+              <TableCell className="py-3 text-sm text-muted-foreground">
+                {Array.isArray(email.to) ? email.to.join(", ") : email.to}
+              </TableCell>
+              <TableCell className="py-3 text-xs text-muted-foreground">
+                {new Date(email.created_at).toLocaleString()}
+              </TableCell>
+              <TableCell className="py-3 pr-4 text-right">
                   <Badge
                     variant="outline"
                     className={`
@@ -1052,9 +987,8 @@ function EmailHistoryCard() {
                 </TableCell>
               </TableRow>
             ))}
-          </TableBody>
-        </Table>
-      </div>
-    </Card>
+        </TableBody>
+      </Table>
+    </div>
   );
 }

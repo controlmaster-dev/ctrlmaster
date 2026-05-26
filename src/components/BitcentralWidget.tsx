@@ -258,81 +258,121 @@ export function BitcentralWidget({
       .toUpperCase();
   };
 
+  const statusBadge = (info: {
+    isOverride?: boolean;
+    isRotation?: boolean;
+  }) => {
+    if (info.isOverride) {
+      return (
+        <span className="rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">
+          Cambio manual
+        </span>
+      );
+    }
+    if (info.isRotation) {
+      return (
+        <span className="rounded-md bg-violet-500/10 px-1.5 py-0.5 text-[10px] font-medium text-violet-600 dark:text-violet-400">
+          Rotativo
+        </span>
+      );
+    }
+    return (
+      <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+        Regular
+      </span>
+    );
+  };
+
+  const goToCurrentWeek = () => {
+    setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }));
+  };
+
+  const isCurrentWeek = isSameDay(
+    weekStart,
+    startOfWeek(new Date(), { weekStartsOn: 1 })
+  );
+
   return (
-    <Card className="bg-card backdrop-blur-md md:backdrop-blur-xl border-border shadow-sm overflow-hidden ring-1 ring-border rounded-xl relative">
-      <CardHeader className="p-4 border-b border-border flex flex-row items-center justify-between space-y-0 shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center border border-blue-500/20 shadow-[0_0_10px_rgba(59,130,246,0.1)]">
-            <CalIcon className="w-4 h-4 text-blue-500" />
+    <Card className="relative overflow-hidden rounded-xl border border-border/60 bg-card/80 shadow-sm">
+      <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0 border-b border-border/50 px-4 py-3">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
+            <CalIcon className="h-4 w-4" />
           </div>
-          <span className="font-semibold text-foreground text-sm tracking-tight">
-            Pauta Bitcentral
-          </span>
+          <div className="min-w-0">
+            <span className="text-sm font-semibold text-foreground">Pauta Bitcentral</span>
+            <p className="text-[11px] text-muted-foreground">Turnos de la semana</p>
+          </div>
         </div>
         {!isReadOnly && (
-          <div className="flex items-center gap-1">
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
             <Button
               variant="ghost"
               size="icon"
-              className="h-6 w-6 text-muted-foreground hover:text-blue-400 hover:bg-blue-500/10"
+              className="h-8 w-8 text-muted-foreground"
               onClick={() => setIsConfigOpen(true)}
-              title="Configurar Horario Base"
+              title="Horario base"
             >
-              <Settings className="w-3 h-3" />
+              <Settings className="h-4 w-4" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="h-6 w-6 text-muted-foreground hover:text-yellow-400 hover:bg-yellow-500/10"
+              className="h-8 w-8 text-muted-foreground"
               onClick={() => setIsManageEventsOpen(true)}
-              title="Gestionar Eventos"
+              title="Eventos especiales"
             >
-              <Edit2 className="w-3 h-3" />
+              <Edit2 className="h-4 w-4" />
             </Button>
-            <div className="flex items-center bg-muted/20 rounded-lg p-0.5 border border-border ml-2">
+            {!isCurrentWeek && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 px-2 text-[11px]"
+                onClick={goToCurrentWeek}
+              >
+                Hoy
+              </Button>
+            )}
+            <div className="flex items-center rounded-lg border border-border/60 bg-muted/30 p-0.5">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                className="h-7 w-7"
                 onClick={() => setWeekStart(addDays(weekStart, -7))}
+                aria-label="Semana anterior"
               >
-                <ChevronLeft className="w-3 h-3" />
+                <ChevronLeft className="h-4 w-4" />
               </Button>
-              <span className="text-[10px] font-mono text-muted-foreground px-2 min-w-[80px] text-center select-none">
-                {format(weekStart, "d MMM", { locale: es })} -{" "}
+              <span className="min-w-[88px] select-none px-1 text-center text-[11px] font-medium text-foreground">
+                {format(weekStart, "d MMM", { locale: es })} –{" "}
                 {format(addDays(weekStart, 6), "d MMM", { locale: es })}
               </span>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                className="h-7 w-7"
                 onClick={() => setWeekStart(addDays(weekStart, 7))}
+                aria-label="Semana siguiente"
               >
-                <ChevronRight className="w-3 h-3" />
+                <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           </div>
         )}
       </CardHeader>
-      <CardContent className="p-3">
-        <div className="flex flex-col gap-2">
+      <CardContent className="p-2">
+        <div className="flex flex-col gap-1">
           {isLoading
             ? Array.from({ length: 7 }).map((_, i) => (
                 <div
                   key={i}
-                  className="flex items-center gap-3 p-3 border-l-[3px] border-transparent bg-muted/10 animate-pulse rounded-lg"
+                  className="flex animate-pulse items-center gap-2 rounded-lg px-2 py-2.5"
                 >
-                  <div className="flex flex-col items-center justify-center w-12 shrink-0 gap-1">
-                    <div className="h-2 w-6 bg-muted rounded" />
-                    <div className="h-4 w-4 bg-muted rounded" />
-                  </div>
-                  <div className="h-8 w-px bg-border/50" />
-                  <div className="flex-1 flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-muted" />
-                    <div className="flex flex-col gap-1.5 w-full">
-                      <div className="h-3 w-24 bg-muted rounded" />
-                      <div className="h-2 w-16 bg-muted rounded" />
-                    </div>
+                  <div className="h-9 w-9 shrink-0 rounded-md bg-muted" />
+                  <div className="flex-1 space-y-1.5">
+                    <div className="h-3 w-28 rounded bg-muted" />
+                    <div className="h-2.5 w-16 rounded bg-muted" />
                   </div>
                 </div>
               ))
@@ -352,29 +392,23 @@ export function BitcentralWidget({
                   return (
                     <div
                       key={toISO(date)}
-                      className="group flex items-center gap-3 p-3 transition-all border-l-[3px] bg-yellow-500/5 border-yellow-500"
+                      className="flex items-center gap-2.5 rounded-lg border border-amber-500/25 bg-amber-500/5 px-2 py-2"
                     >
-                      <div className="flex flex-col items-center justify-center w-12 shrink-0">
-                        <span className="text-[9px] font-bold text-yellow-600/70 tracking-tight">
+                      <div className="flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                        <span className="text-[9px] font-semibold uppercase leading-none">
                           {format(date, "EEE", { locale: es })}
                         </span>
-                        <span className="text-lg font-light leading-none mt-0.5 text-yellow-500">
+                        <span className="text-sm font-semibold leading-none">
                           {format(date, "d")}
                         </span>
                       </div>
-                      <div className="h-8 w-px bg-yellow-500/20" />
-                      <div className="flex-1 flex items-center gap-3 min-w-0">
-                        <div className="h-8 w-8 rounded-full flex items-center justify-center text-[10px] font-bold border transition-colors bg-yellow-500/10 text-yellow-500 border-yellow-500/30">
-                          ★
-                        </div>
-                        <div className="flex flex-col min-w-0">
-                          <span className="text-sm font-bold truncate text-yellow-500">
-                            {info.name}
-                          </span>
-                          <span className="text-[10px] text-yellow-600/70 font-medium">
-                            Sin horario definido
-                          </span>
-                        </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-amber-700 dark:text-amber-300">
+                          {info.name}
+                        </p>
+                        <span className="mt-0.5 inline-block rounded-md bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400">
+                          Evento especial
+                        </span>
                       </div>
                     </div>
                   );
@@ -383,73 +417,56 @@ export function BitcentralWidget({
                 return (
                   <div
                     key={toISO(date)}
-                    className={`group flex items-center gap-3 p-3 transition-all border-l-[3px] ${
+                    role={!isReadOnly ? "button" : undefined}
+                    tabIndex={!isReadOnly ? 0 : undefined}
+                    className={`group flex items-center gap-2.5 rounded-lg px-2 py-2 transition-colors ${
                       isTodayStr
-                        ? "bg-blue-500/5 border-blue-500 shadow-inner"
-                        : "hover:bg-muted/30 border-transparent hover:border-border"
+                        ? "bg-blue-500/8 ring-1 ring-blue-500/25"
+                        : "hover:bg-muted/40"
                     } ${!isReadOnly ? "cursor-pointer" : ""}`}
                     onClick={() => !isReadOnly && setSelectedDate(date)}
+                    onKeyDown={(e) => {
+                      if (!isReadOnly && (e.key === "Enter" || e.key === " ")) {
+                        e.preventDefault();
+                        setSelectedDate(date);
+                      }
+                    }}
                   >
-                    <div className="flex flex-col items-center justify-center w-12 shrink-0">
-                      <span className="text-[9px] font-bold text-muted-foreground tracking-tight">
+                    <div
+                      className={`flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-md ${
+                        isTodayStr
+                          ? "bg-blue-600 text-white"
+                          : "bg-muted/50 text-muted-foreground"
+                      }`}
+                    >
+                      <span className="text-[9px] font-semibold uppercase leading-none">
                         {format(date, "EEE", { locale: es })}
                       </span>
-                      <span
-                        className={`text-lg font-light leading-none mt-0.5 ${
-                          isTodayStr ? "text-blue-400 font-normal" : "text-foreground"
-                        }`}
-                      >
+                      <span className="text-sm font-semibold leading-none">
                         {format(date, "d")}
                       </span>
                     </div>
 
-                    <div className="h-8 w-px bg-border" />
-
-                    <div className="flex-1 flex items-center gap-3 min-w-0">
+                    <div className="flex min-w-0 flex-1 items-center gap-2">
                       <div
-                        className={`h-8 w-8 rounded-full flex items-center justify-center text-[10px] font-bold border transition-colors ${
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
                           isTodayStr
-                            ? "bg-blue-600 text-white border-blue-400 shadow-[0_0_10px_rgba(37,99,235,0.2)]"
-                            : "bg-secondary text-muted-foreground border-border group-hover:border-foreground/20"
+                            ? "bg-blue-600 text-white"
+                            : "bg-muted text-muted-foreground"
                         }`}
                       >
                         {getInitials(info.name)}
                       </div>
-                      <div className="flex flex-col min-w-0">
-                        <span
-                          className={`text-sm font-medium truncate ${
-                            isTodayStr ? "text-foreground" : "text-foreground"
-                          }`}
-                        >
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-foreground">
                           {info.name}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          {info.isOverride ? (
-                            <span className="flex items-center gap-1.5 text-[10px] text-yellow-500 font-medium">
-                              <span className="w-1.5 h-1.5 rounded-full bg-yellow-500 shadow-[0_0_5px_rgba(234,179,8,0.5)]" />{" "}
-                              Cambio manual
-                            </span>
-                          ) : info.isRotation ? (
-                            <span className="flex items-center gap-1.5 text-[10px] text-purple-500 font-medium">
-                              <span className="w-1.5 h-1.5 rounded-full bg-purple-500 shadow-[0_0_5px_rgba(168,85,247,0.5)]" />{" "}
-                              Rotativo
-                            </span>
-                          ) : (
-                            <span className="text-[10px] text-slate-600 font-medium flex items-center gap-1.5">
-                              <span className="w-1 h-1 rounded-full bg-slate-700" />{" "}
-                              Regular
-                            </span>
-                          )}
-                        </div>
+                        </p>
+                        <div className="mt-0.5">{statusBadge(info)}</div>
                       </div>
                     </div>
 
                     {!isReadOnly && (
-                      <div className="pr-2 opacity-0 group-hover:opacity-100 transition-opacity transform group-hover:translate-x-0 translate-x-2 duration-300">
-                        <div className="p-1.5 rounded-md bg-muted text-foreground hover:bg-blue-500 hover:text-white hover:shadow-[0_0_10px_rgba(59,130,246,0.5)] transition-all">
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </div>
-                      </div>
+                      <Edit2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground/40 opacity-0 transition-opacity group-hover:opacity-100" />
                     )}
                   </div>
                 );
