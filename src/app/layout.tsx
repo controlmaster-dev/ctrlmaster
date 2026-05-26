@@ -1,5 +1,6 @@
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { PautaReminderProvider } from "@/contexts/PautaReminderContext";
 import { AuthWrapper } from "@/components/AuthWrapper";
 import { ThemeProvider } from "@/components/theme-provider";
 import { MobileInstallPrompt } from "@/components/MobileInstallPrompt";
@@ -46,11 +47,13 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            <AuthWrapper>
-              {children}
-              <MobileInstallPrompt />
-              <Toaster />
-            </AuthWrapper>
+            <PautaReminderProvider>
+              <AuthWrapper>
+                {children}
+                <MobileInstallPrompt />
+                <Toaster />
+              </AuthWrapper>
+            </PautaReminderProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

@@ -1,10 +1,11 @@
 "use client";
 
 import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
+import { pageContainerClass } from "@/lib/page-layout";
 
 export default function Loading() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className={`${pageContainerClass} min-h-screen bg-background`}>
       <DashboardSkeleton />
     </div>
   );

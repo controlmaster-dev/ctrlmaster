@@ -50,6 +50,7 @@ import { WeeklyTrendChart } from "@/components/dashboard/WeeklyTrendChart";
 import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
 import { BirthdayWidget } from "@/components/BirthdayWidget";
 import { STATUS_COLORS, STATUS_LABELS } from "@/config/constants";
+import { pageContainerClass } from "@/lib/page-layout";
 
 import {
   useDashboardStats,
@@ -291,7 +292,7 @@ export function DashboardClient() {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="relative z-10 mx-auto max-w-[1600px] space-y-6 p-4 pt-20 md:space-y-8 md:p-8 md:pt-8"
+        className={pageContainerClass}
       >
         {!hasHydratedOnce && isPageLoading ? (
           <DashboardSkeleton />

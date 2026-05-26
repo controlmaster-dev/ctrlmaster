@@ -22,6 +22,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Operator, Shift } from "@/lib/types";
 import { toast } from "sonner";
 import { OperadoresCardsSkeleton } from "@/components/skeletons/OperadoresCardsSkeleton";
+import { pageHeaderBarClass, pageMainClass } from "@/lib/page-layout";
 
 interface Prediction {
   nextOperator: Operator;
@@ -340,7 +341,7 @@ export default function OperatorsPage() {
 
       <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-xl">
         <div className="h-0.5 bg-[#FF0C60]" aria-hidden />
-        <div className="mx-auto flex h-14 max-w-[1600px] items-center justify-between gap-3 px-4 md:px-8">
+        <div className={`${pageHeaderBarClass} h-14`}>
           <Link href="/" className="flex items-center gap-2.5 hover:opacity-90">
             <Image
               src="https://res.cloudinary.com/dtgpm5idm/image/upload/v1760034292/cropped-logo-3D-preview-192x192_c8yd8r.png"
@@ -464,7 +465,7 @@ export default function OperatorsPage() {
         </div>
       </header>
 
-      <main className="relative z-10 mx-auto max-w-[1600px] space-y-6 px-4 py-6 md:space-y-8 md:px-8 md:py-8">
+      <main className={pageMainClass}>
         <header className="space-y-5 border-b border-border/60 pb-6">
           <div>
             <p className="text-sm text-muted-foreground">Equipo de control</p>

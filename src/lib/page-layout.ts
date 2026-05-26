@@ -1,0 +1,23 @@
+/** Ancho máximo y márgenes laterales compartidos en páginas de la app */
+
+export const PAGE_MAX_WIDTH = "max-w-[2200px]";
+
+export const pageContainerClass = [
+  "relative z-10 mx-auto w-full",
+  PAGE_MAX_WIDTH,
+  "space-y-6 px-3 pt-20 pb-20",
+  "md:space-y-8 md:px-4 md:pt-8",
+].join(" ");
+
+export const pageHeaderBarClass = [
+  "mx-auto flex w-full",
+  PAGE_MAX_WIDTH,
+  "items-center justify-between gap-3 px-3 md:px-4",
+].join(" ");
+
+export const pageMainClass = [
+  "relative z-10 mx-auto w-full",
+  PAGE_MAX_WIDTH,
+  "space-y-6 px-3 py-6",
+  "md:space-y-8 md:px-4 md:py-8",
+].join(" ");

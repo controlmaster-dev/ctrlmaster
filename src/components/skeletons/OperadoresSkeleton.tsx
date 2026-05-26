@@ -1,11 +1,12 @@
 import { Skeleton } from "@/components/ui/skeleton";
+import { pageHeaderBarClass, pageMainClass } from "@/lib/page-layout";
 
 export function OperadoresSkeleton() {
   return (
     <div className="relative min-h-screen overflow-hidden bg-background pb-20">
       <div className="sticky top-0 z-40 border-b border-border bg-background/90">
         <div className="h-0.5 bg-[#FF0C60]" />
-        <div className="mx-auto flex h-14 max-w-[1600px] items-center justify-between px-4 md:px-8">
+        <div className={`${pageHeaderBarClass} h-14`}>
           <Skeleton className="h-7 w-36 rounded-lg" />
           <div className="flex gap-2">
             <Skeleton className="h-9 w-9 rounded-lg" />
@@ -14,7 +15,7 @@ export function OperadoresSkeleton() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-[1600px] space-y-6 px-4 py-6 md:space-y-8 md:px-8 md:py-8">
+      <div className={pageMainClass}>
         <div className="space-y-4 border-b border-border/60 pb-6">
           <Skeleton className="h-4 w-28" />
           <Skeleton className="h-9 w-64 max-w-full rounded-lg" />

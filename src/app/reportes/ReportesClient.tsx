@@ -53,6 +53,7 @@ import { SuccessModal } from "@/components/SuccessModal";
 import Link from "next/link";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { ReportDetailModal } from "@/components/ReportDetailModal";
+import { pageContainerClass } from "@/lib/page-layout";
 
 interface Report {
   id: string;
@@ -407,7 +408,7 @@ export function ReportesClient() {
         }
       />
 
-      <div className="relative z-10 mx-auto max-w-[1600px] space-y-6 p-4 pt-20 md:space-y-8 md:p-8 md:pt-8">
+      <div className={pageContainerClass}>
         <header className="flex flex-col gap-5 border-b border-border/60 pb-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
             <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">

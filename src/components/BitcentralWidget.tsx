@@ -8,7 +8,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Edit2,
-  Bell,
   Settings,
 } from "lucide-react";
 import { startOfWeek, addDays, format, isSameDay } from "date-fns";
@@ -148,54 +147,6 @@ export function BitcentralWidget({
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weekStart]);
-
-  useEffect(() => {
-    if (isLoading || isReadOnly) return;
-
-    const checkReminder = () => {
-      const now = new Date();
-      let targetDate = new Date(now);
-
-      if (now.getHours() >= 2) {
-        targetDate = addDays(now, 1);
-      }
-
-      const info = getDisplayInfo(targetDate);
-
-      if ("isEvent" in info && info.isEvent) {
-        toast.dismiss("shift-reminder");
-        return;
-      }
-
-      const dateLabel = format(targetDate, "EEEE", { locale: es });
-      const formattedDateLabel =
-        dateLabel.charAt(0).toUpperCase() + dateLabel.slice(1);
-
-      toast("Recordatorio de Pauta", {
-        description: (
-          <span>
-            <span className="text-foreground font-semibold">{info.name}</span>
-            , toca preparar la playlist del{" "}
-            <span className="text-yellow-600 dark:text-yellow-500 font-bold">
-              {formattedDateLabel}
-            </span>
-            .
-          </span>
-        ),
-        icon: <Bell className="w-5 h-5 text-yellow-500" />,
-        id: "shift-reminder",
-        duration: Infinity,
-        position: "bottom-center",
-        className: "mb-20 md:mb-0",
-      });
-    };
-
-    if (overrides !== undefined && events !== undefined) {
-      checkReminder();
-    }
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [today, events, overrides, baseSchedule, isLoading]);
 
   const handleOverride = async (userId: string) => {
     if (!selectedDate || isNaN(selectedDate.getTime())) return;

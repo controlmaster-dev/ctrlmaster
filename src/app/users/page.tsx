@@ -48,7 +48,7 @@ export default function UsersPage() {
       className="min-h-screen p-4"
       style={{ background: "hsl(240,10%,3.9%)" }}
     >
-      <div className="space-y-6 max-w-7xl mx-auto text-white">
+      <div className="relative z-10 mx-auto w-full max-w-[2200px] space-y-6 px-3 pt-20 pb-20 text-white md:px-4 md:pt-6">
         <div className="flex items-center space-x-4">
           <Link href="/">
             <Button

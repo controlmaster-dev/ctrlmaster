@@ -834,7 +834,7 @@ export default function ConfigurationPage() {
           </DialogContent>
         </Dialog>
 
-        <div className="max-w-[1600px] mx-auto p-4 md:p-10 pt-20 md:pt-6 space-y-8">
+        <div className="relative z-10 mx-auto w-full max-w-[2200px] space-y-8 px-3 pt-20 pb-20 md:px-4 md:pt-6">
           <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6">
             <div>
               <h1 className="text-3xl md:text-4xl font-semibold text-foreground tracking-tight flex items-center gap-2">

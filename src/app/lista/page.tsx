@@ -110,7 +110,7 @@ export default function ProgramValidatorPage() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-background text-foreground flex flex-col font-sans selection:bg-[#FF0C60] selection:text-white pt-20 md:pt-6 px-4 md:px-8 pb-6 max-w-[1800px] mx-auto gap-6">
+    <div className="mx-auto flex min-h-screen w-full max-w-[2200px] flex-col gap-6 bg-background px-3 pb-6 pt-20 font-sans text-foreground selection:bg-[#FF0C60] selection:text-white md:px-4 md:pt-6">
       <header className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shrink-0">
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 bg-[#FF0C60] rounded-md shadow-lg shadow-[#FF0C60]/20 flex items-center justify-center text-white">

@@ -1,8 +1,9 @@
 import { Skeleton } from "@/components/ui/skeleton";
+import { pageContainerClass } from "@/lib/page-layout";
 
 export function ReportesSkeleton() {
   return (
-    <div className="relative mx-auto min-h-screen max-w-[1600px] space-y-6 overflow-hidden p-4 pb-20 pt-20 md:space-y-8 md:p-8 md:pt-8">
+    <div className={`${pageContainerClass} min-h-screen overflow-hidden`}>
       <div className="flex flex-col justify-between gap-5 border-b border-border/60 pb-6 lg:flex-row lg:items-center">
         <div className="space-y-2">
           <Skeleton className="h-8 w-64 rounded-lg md:h-9" />

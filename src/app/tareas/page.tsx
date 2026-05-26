@@ -79,7 +79,7 @@ export default function TasksPage() {
           />
         </div>
 
-        <div className="p-4 md:p-8 pt-20 md:pt-6 max-w-[1600px] mx-auto relative z-10">
+        <div className="relative z-10 mx-auto w-full max-w-[2200px] space-y-8 px-3 pt-20 pb-20 md:px-4 md:pt-6">
           <div className="flex items-center justify-between mb-8">
             <h1 className="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-white via-white to-slate-500 tracking-tighter">
               {activeTab === "manage" ? "Gestión de Equipos" : "Mis Tareas"}
@@ -151,7 +151,7 @@ export default function TasksPage() {
           style={{ animationDuration: "7000ms" }}
         />
       </div>
-      <div className="p-4 md:p-8 pt-20 md:pt-6 relative z-10">
+      <div className="relative z-10 mx-auto w-full max-w-[2200px] px-3 pt-20 pb-20 md:px-4 md:pt-6">
         <OperatorView user={user} />
       </div>
     </div>

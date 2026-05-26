@@ -36,6 +36,7 @@ import {
 
 import { generateReportPDF } from "@/utils/pdfGenerator";
 import Link from "next/link";
+import { pageContainerClass } from "@/lib/page-layout";
 
 export default function ReportsPage() {
   const [reports, setReports] = useState<any[]>([]);
@@ -129,7 +130,7 @@ export default function ReportsPage() {
     "bg-white/0 backdrop-blur-3xl border border-white/20 shadow-lg text-white";
 
   return (
-    <div className="space-y-6 p-4 pt-20 md:pt-6">
+    <div className={pageContainerClass}>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-white">
         <div className="flex items-center space-x-4">
           <Link href="/">
