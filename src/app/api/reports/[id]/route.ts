@@ -57,7 +57,7 @@ export async function GET(
     }
 
     // Comment reactions in one query (if any comments)
-    const commentIds = comments.map((c: { id: string }) => c.id);
+    const commentIds = comments.map((c) => String(c.id));
     let commentsWithReactions = comments.map((c) => ({ ...c, reactions: [] as unknown[] }));
 
     if (commentIds.length > 0) {

@@ -1,11 +1,21 @@
 const KEY = "cm_configuracion_v1";
 const TTL_MS = 5 * 60 * 1000;
 
+export interface SecurityCode {
+  id: string;
+  code: string;
+  status: "available" | "used" | "expired";
+  createdAt: string;
+  expiresAt: string;
+  createdById?: string;
+  usedById?: string | null;
+}
+
 export interface ConfiguracionBundle {
   weekStart: string;
   users: unknown[];
   reports: unknown[];
-  securityCodes: unknown[];
+  securityCodes: SecurityCode[];
   fetchedAt: number;
 }
 

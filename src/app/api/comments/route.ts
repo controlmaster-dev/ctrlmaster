@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
       authorName: author?.name || '',
       authorEmail: author?.email || '',
       commentContent: content,
-      mentionedUserIds,
+      mentionedUserIds: mentionedUserIds ?? undefined,
     });
 
     return NextResponse.json(commentWithAuthor, { status: 201 });

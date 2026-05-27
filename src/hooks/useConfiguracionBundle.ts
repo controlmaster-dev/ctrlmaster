@@ -5,6 +5,7 @@ import {
   getConfiguracionCache,
   setConfiguracionCache,
   invalidateConfiguracionCache,
+  type SecurityCode,
 } from "@/lib/configuracionCache";
 import { invalidateOperadoresCache } from "@/lib/operadoresCache";
 
@@ -20,7 +21,7 @@ function parseReports(data: unknown): unknown[] {
 export function useConfiguracionBundle(weekStart: string, enabled: boolean) {
   const [users, setUsers] = useState<unknown[]>([]);
   const [reports, setReports] = useState<unknown[]>([]);
-  const [securityCodes, setSecurityCodes] = useState<unknown[]>([]);
+  const [securityCodes, setSecurityCodes] = useState<SecurityCode[]>([]);
   const [isReady, setIsReady] = useState(false);
   const mountedRef = useRef(true);
 
@@ -28,7 +29,7 @@ export function useConfiguracionBundle(weekStart: string, enabled: boolean) {
     (bundle: {
       users: unknown[];
       reports: unknown[];
-      securityCodes: unknown[];
+      securityCodes: SecurityCode[];
     }) => {
       setUsers(bundle.users);
       setReports(bundle.reports);
@@ -57,7 +58,9 @@ export function useConfiguracionBundle(weekStart: string, enabled: boolean) {
 
         const nextUsers = Array.isArray(usersData) ? usersData : [];
         const nextReports = parseReports(reportsData);
-        const nextCodes = Array.isArray(codesData) ? codesData : [];
+        const nextCodes: SecurityCode[] = Array.isArray(codesData)
+          ? (codesData as SecurityCode[])
+          : [];
 
         apply({ users: nextUsers, reports: nextReports, securityCodes: nextCodes });
         setConfiguracionCache({
