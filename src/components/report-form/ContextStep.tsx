@@ -29,7 +29,7 @@ export function ContextStep({ formData, toggleSystem, toggleCategory }: ContextS
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.2 }}
-      className="space-y-8"
+      className="flex min-h-0 flex-1 flex-col space-y-6 md:space-y-8"
     >
       <FormStepHeader
         title="Contexto del"
@@ -37,12 +37,12 @@ export function ContextStep({ formData, toggleSystem, toggleCategory }: ContextS
         description="Indica qué sistemas están afectados y el tipo de incidencia."
       />
 
-      <div className="space-y-6">
-        <section className="space-y-3">
+      <div className="grid flex-1 gap-6 lg:grid-cols-2 lg:gap-8">
+        <section className="flex flex-col space-y-3 rounded-xl border border-border/60 bg-card/40 p-4 md:p-5 lg:min-h-[280px]">
           <p className="text-xs font-medium text-muted-foreground">
             Sistemas afectados
           </p>
-          <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+          <div className="grid flex-1 grid-cols-2 gap-2 sm:gap-3">
             {SYSTEMS.map((sys) => {
               const isSelected = formData.priority.includes(sys);
               return (
@@ -51,7 +51,7 @@ export function ContextStep({ formData, toggleSystem, toggleCategory }: ContextS
                   type="button"
                   onClick={() => toggleSystem(sys)}
                   className={cn(
-                    "h-11 rounded-lg border text-sm transition-colors",
+                    "min-h-[3.25rem] rounded-lg border text-sm transition-colors sm:min-h-14",
                     isSelected
                       ? "border-[#FF0C60] bg-[#FF0C60] text-white"
                       : "border-border/60 bg-card text-muted-foreground hover:border-[#FF0C60]/40 hover:text-foreground"
@@ -64,12 +64,12 @@ export function ContextStep({ formData, toggleSystem, toggleCategory }: ContextS
           </div>
         </section>
 
-        <section className="space-y-3">
+        <section className="flex flex-col space-y-3 rounded-xl border border-border/60 bg-card/40 p-4 md:p-5 lg:min-h-[280px]">
           <p className="text-xs font-medium text-muted-foreground">
             Tipo de incidencia
           </p>
-          <div className="rounded-xl border border-border/60 bg-card/80 p-4">
-            <div className="flex flex-wrap gap-2">
+          <div className="flex flex-1 flex-col">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3">
               {CATEGORIES.map((cat) => {
                 const active = formData.categories.includes(cat);
                 return (
@@ -78,7 +78,7 @@ export function ContextStep({ formData, toggleSystem, toggleCategory }: ContextS
                     type="button"
                     onClick={() => toggleCategory(cat)}
                     className={cn(
-                      "rounded-md border px-3 py-2 text-xs transition-colors",
+                      "min-h-11 rounded-md border px-3 py-2.5 text-xs transition-colors sm:text-sm",
                       active
                         ? "border-[#FF0C60] bg-[#FF0C60] text-white"
                         : "border-border/60 bg-muted/25 text-muted-foreground hover:text-foreground"
@@ -89,7 +89,7 @@ export function ContextStep({ formData, toggleSystem, toggleCategory }: ContextS
                 );
               })}
             </div>
-            <p className="mt-3 text-xs text-muted-foreground">
+            <p className="mt-auto pt-3 text-xs text-muted-foreground">
               Puedes elegir varias categorías.
             </p>
           </div>

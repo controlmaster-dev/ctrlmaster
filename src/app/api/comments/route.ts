@@ -1,22 +1,16 @@
-/**
- * Comments API route with input validation and typed error handling.
- */
-
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import sql from '@/lib/db';
 import { sendEmail } from '@/lib/email';
 import { ApiError, ValidationError } from '@/lib/errors';
 import { z } from 'zod';
-
 
 const createCommentSchema = z.object({
   reportId: z.string().min(1, 'ID de reporte es requerido'),
   authorId: z.string().min(1, 'ID de autor es requerido'),
   content: z.string().min(1, 'El contenido del comentario es requerido').max(2000),
-  parentId: z.string().optional(),
-  mentionedUserIds: z.array(z.string()).optional(),
+  parentId: z.string().nullable().optional(),
+  mentionedUserIds: z.array(z.string()).nullable().optional(),
 });
-
 
 const BRAND_COLOR = '#FF0C60';
 const CARD_COLOR = '#18181b';
@@ -88,7 +82,6 @@ function buildEmailTemplate(
   `;
 }
 
-
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -100,23 +93,30 @@ export async function POST(req: NextRequest) {
 
     const { reportId, authorId, content, parentId, mentionedUserIds } = result.data;
 
-    // Create comment and include author details in one query
-    const newComment = await prisma.comment.create({
-      data: { reportId, authorId, content, parentId },
-      include: { author: true },
-    });
+    const [newComment] = await sql`
+      INSERT INTO "Comment" ("id", "reportId", "authorId", "content", "parentId", "createdAt")
+      VALUES (gen_random_uuid(), ${reportId}, ${authorId}, ${content}, ${parentId || null}, ${new Date().toISOString()})
+      RETURNING *
+    `;
 
-    // Send notifications asynchronously (fire-and-forget, don't block response)
+    // Fetch author
+    const [author] = await sql`
+      SELECT * FROM "User" WHERE "id" = ${authorId} LIMIT 1
+    `;
+
+    const commentWithAuthor = { ...newComment, author };
+
+    // Fire-and-forget notifications
     void sendCommentNotifications({
       reportId,
       authorId,
-      authorName: newComment.author.name,
-      authorEmail: newComment.author.email,
+      authorName: author?.name || '',
+      authorEmail: author?.email || '',
       commentContent: content,
       mentionedUserIds,
     });
 
-    return NextResponse.json(newComment, { status: 201 });
+    return NextResponse.json(commentWithAuthor, { status: 201 });
   } catch (error) {
     if (error instanceof ValidationError) {
       return NextResponse.json({ error: error.message, details: error.details }, { status: 400 });
@@ -129,7 +129,6 @@ export async function POST(req: NextRequest) {
   }
 }
 
-
 interface NotificationPayload {
   reportId: string;
   authorId: string;
@@ -139,24 +138,22 @@ interface NotificationPayload {
   mentionedUserIds?: string[];
 }
 
-/**
- * Sends email notifications to the report owner and any mentioned users.
- * This runs fire-and-forget — errors are logged but do not affect the API response.
- */
 async function sendCommentNotifications(payload: NotificationPayload): Promise<void> {
   const { reportId, authorId, authorName, authorEmail, commentContent, mentionedUserIds } = payload;
 
-  const report = await prisma.report.findUnique({
-    where: { id: reportId },
-    include: { operator: true },
-  });
+  const [report] = await sql`
+    SELECT r.*, u."email" AS "operatorEmail"
+    FROM "Report" r
+    JOIN "User" u ON u."id" = r."operatorId"
+    WHERE r."id" = ${reportId}
+    LIMIT 1
+  `;
 
   if (!report) return;
 
   const reportUrl = `https://enlacecr.dev/reportes?id=${reportId}`;
   const shortId = reportId.slice(0, 8);
 
-  // Notify report owner (if different from commenter)
   if (report.operatorEmail && authorEmail !== report.operatorEmail) {
     try {
       await sendEmail({
@@ -175,13 +172,14 @@ async function sendCommentNotifications(payload: NotificationPayload): Promise<v
     }
   }
 
-  // Notify mentioned users
   if (mentionedUserIds && mentionedUserIds.length > 0) {
     for (const userId of mentionedUserIds) {
       if (userId === authorId) continue;
 
       try {
-        const userToNotify = await prisma.user.findUnique({ where: { id: userId } });
+        const [userToNotify] = await sql`
+          SELECT * FROM "User" WHERE "id" = ${userId} LIMIT 1
+        `;
         if (userToNotify?.email) {
           await sendEmail({
             to: userToNotify.email,

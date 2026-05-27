@@ -21,8 +21,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Operator, Shift } from "@/lib/types";
 import { toast } from "sonner";
-import { OperadoresCardsSkeleton } from "@/components/skeletons/OperadoresCardsSkeleton";
+import { OperadoresPageSkeleton } from "@/components/skeletons/OperadoresPageSkeleton";
 import { pageHeaderBarClass, pageMainClass } from "@/lib/page-layout";
+import { getSundayWeekStart } from "@/lib/weekUtils";
+import { useOperadoresBundle, useOperadoresWeek } from "@/hooks/useOperadoresBundle";
 
 interface Prediction {
   nextOperator: Operator;
@@ -41,28 +43,16 @@ interface SpecialEvent {
 export default function OperatorsPage() {
   const { user } = useAuth();
 
-  const getInitialWeekStart = () => {
-    const now = new Date();
-    const day = now.getDay();
-    const diff = now.getDate() - day;
-    const sunday = new Date(now.setDate(diff));
-    const year = sunday.getFullYear();
-    const month = String(sunday.getMonth() + 1).padStart(2, "0");
-    const d = String(sunday.getDate()).padStart(2, "0");
-    return `${year}-${month}-${d}`;
-  };
-
-  const [currentRealWeek] = useState(getInitialWeekStart());
-  const [modalWeekStart, setModalWeekStart] = useState(getInitialWeekStart());
-  const [operators, setOperators] = useState<Operator[]>([]);
-  const [modalOperators, setModalOperators] = useState<Operator[]>([]);
-  const [allUsers, setAllUsers] = useState<Operator[]>([]);
+  const [currentRealWeek] = useState(getSundayWeekStart);
+  const [modalWeekStart, setModalWeekStart] = useState(getSundayWeekStart);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
-  const [loading, setLoading] = useState(true);
   const [weeksDuration, setWeeksDuration] = useState(4);
-  const [specialEvents, setSpecialEvents] = useState<SpecialEvent[]>([]);
-  const [isModalLoading, setIsModalLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  const { operators, specialEvents, isReady } = useOperadoresBundle(currentRealWeek);
+  const { operators: modalOperators, isReady: modalReady } =
+    useOperadoresWeek(modalWeekStart);
+  const eventsList = specialEvents as SpecialEvent[];
 
   // ─── helpers ──────────────────────────────────────────────────────────────
 
@@ -82,95 +72,6 @@ export default function OperatorsPage() {
     const h = hour % 12 || 12;
     return `${h}${ampm}`;
   };
-
-  const sortOperators = (data: Operator[]) =>
-    data.sort((a, b) => {
-      const aAvail = !!a.shifts?.some(s => {
-        const now = new Date();
-        const currentDay = now.getDay();
-        const currentHour = now.getHours() + now.getMinutes() / 60;
-        const end = s.end === 0 ? 24 : s.end;
-        return s.days.includes(currentDay) && currentHour >= s.start && currentHour < end;
-      });
-      const bAvail = !!b.shifts?.some(s => {
-        const now = new Date();
-        const currentDay = now.getDay();
-        const currentHour = now.getHours() + now.getMinutes() / 60;
-        const end = s.end === 0 ? 24 : s.end;
-        return s.days.includes(currentDay) && currentHour >= s.start && currentHour < end;
-      });
-
-      if (aAvail && !bAvail) return -1;
-      if (!aAvail && bAvail) return 1;
-      return 0;
-    });
-
-  // ─── data fetching ────────────────────────────────────────────────────────
-
-  useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        const res = await fetch("/api/special-events");
-        if (res.ok) setSpecialEvents(await res.json());
-      } catch (e) {
-        console.error("Error fetching special events:", e);
-      }
-    };
-    fetchEvents();
-  }, []);
-
-  useEffect(() => {
-    const fetchMainOperators = async () => {
-      try {
-        const res = await fetch(`/api/users?weekStart=${currentRealWeek}`, { cache: "no-store" });
-        if (!res.ok) throw new Error("Error fetching main users");
-        const data = await res.json();
-        setOperators(sortOperators(data));
-        calculatePredictions(data);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const fetchAllUsers = async () => {
-      try {
-        const res = await fetch("/api/users");
-        if (res.ok) setAllUsers(await res.json());
-      } catch (e) {
-        console.error("Error fetching all users:", e);
-      }
-    };
-
-    fetchAllUsers();
-    fetchMainOperators();
-
-    const timer = setInterval(() => {
-      fetchMainOperators();
-      fetchAllUsers();
-    }, 60000);
-
-    return () => clearInterval(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentRealWeek]);
-
-  useEffect(() => {
-    const fetchModalOperators = async () => {
-      setIsModalLoading(true);
-      try {
-        const res = await fetch(`/api/users?weekStart=${modalWeekStart}`, { cache: "no-store" });
-        if (!res.ok) throw new Error("Error fetching modal users");
-        const data = await res.json();
-        setModalOperators(sortOperators(data));
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setTimeout(() => setIsModalLoading(false), 300);
-      }
-    };
-    fetchModalOperators();
-  }, [modalWeekStart]);
 
   // ─── predictions ──────────────────────────────────────────────────────────
 
@@ -240,6 +141,15 @@ export default function OperatorsPage() {
     setPredictions(uniquePredictions);
   };
 
+  useEffect(() => {
+    if (operators.length > 0) {
+      calculatePredictions(operators);
+    } else {
+      setPredictions([]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [operators]);
+
   // ─── shift stats ──────────────────────────────────────────────────────────
 
   const getCurrentShiftStats = (op: Operator) => {
@@ -271,10 +181,10 @@ export default function OperatorsPage() {
   };
 
   const getActiveEvent = (): SpecialEvent | null => {
-    if (!specialEvents || specialEvents.length === 0) return null;
+    if (!eventsList.length) return null;
     const now = new Date();
     return (
-      specialEvents.find((e) => {
+      eventsList.find((e) => {
         if (!e.isActive) return false;
         return now >= new Date(e.startDate) && now <= new Date(e.endDate);
       }) ?? null
@@ -440,7 +350,7 @@ export default function OperatorsPage() {
                     operators={modalOperators}
                     currentWeekStart={modalWeekStart}
                     onWeekChange={setModalWeekStart}
-                    isLoading={isModalLoading}
+                    isLoading={!modalReady}
                   />
                 </div>
               </DialogContent>
@@ -466,6 +376,10 @@ export default function OperatorsPage() {
       </header>
 
       <main className={pageMainClass}>
+        {!isReady ? (
+          <OperadoresPageSkeleton />
+        ) : (
+        <>
         <header className="space-y-5 border-b border-border/60 pb-6">
           <div>
             <p className="text-sm text-muted-foreground">Equipo de control</p>
@@ -477,7 +391,7 @@ export default function OperatorsPage() {
             </p>
           </div>
 
-          {!loading && predictions.length > 0 && (
+          {predictions.length > 0 && (
             <div>
               <p className="mb-2 text-xs font-medium text-muted-foreground">
                 Próximos en turno
@@ -511,13 +425,11 @@ export default function OperatorsPage() {
 
         <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-4 lg:gap-8">
           <div className="lg:col-span-1 lg:sticky lg:top-20">
-            <AllDayWidget operators={operators} specialEvents={specialEvents} />
+            <AllDayWidget operators={operators} specialEvents={eventsList} />
           </div>
 
           <div className="lg:col-span-3">
-            {loading ? (
-              <OperadoresCardsSkeleton />
-            ) : operators.length === 0 ? (
+            {operators.length === 0 ? (
               <div className="rounded-xl border border-dashed border-border/60 py-16 text-center">
                 <p className="text-sm font-medium text-foreground">
                   No hay operadores configurados
@@ -557,6 +469,8 @@ export default function OperatorsPage() {
             )}
           </div>
         </div>
+        </>
+        )}
       </main>
     </div>
   );

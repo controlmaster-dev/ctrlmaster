@@ -3,7 +3,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import sql from '@/lib/db';
 import { sendEmail } from '@/lib/email';
 import { loginSchema } from '@/lib/validation';
 import { verifyPassword } from '@/lib/crypto';
@@ -17,7 +17,6 @@ import { EMAIL_CONFIG } from '@/config/constants';
  * Get country from IP address
  */
 async function getCountryFromIp(ip: string): Promise<string> {
-  // Skip localhost and private IPs
   const privateIps = ['::1', '127.0.0.1'];
   const privateRanges = ['192.168.', '10.', '172.16.'];
 
@@ -27,7 +26,7 @@ async function getCountryFromIp(ip: string): Promise<string> {
 
   try {
     const geoRes = await fetchWithTimeout(`http://ip-api.com/json/${ip}`, {
-      timeout: 5000, // 5 second timeout
+      timeout: 5000,
     });
     const geoData = await geoRes.json();
 
@@ -35,7 +34,6 @@ async function getCountryFromIp(ip: string): Promise<string> {
       return geoData.country;
     }
   } catch (error) {
-    // Silently fail - don't expose errors to client
     console.error('GeoIP lookup failed:', error);
   }
 
@@ -73,26 +71,23 @@ async function sendSecurityAlert(user: { name: string; email: string }, country:
       `,
     });
   } catch (error) {
-    // Log error but don't fail the login process
     console.error('Failed to send security alert email:', error);
   }
 }
 
 /**
  * POST /api/auth/login
- * Authenticate user and return session data
  */
 export async function POST(req: NextRequest) {
   try {
-    // Apply rate limiting
     const rateLimitResult = await withRateLimit('AUTH')(req);
     if (rateLimitResult.isRateLimited) {
       return NextResponse.json(
-        { 
+        {
           error: 'Demasiados intentos. Por favor espera unos minutos.',
           retryAfter: rateLimitResult.reset,
         },
-        { 
+        {
           status: 429,
           headers: {
             'X-RateLimit-Limit': rateLimitResult.limit.toString(),
@@ -103,7 +98,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Parse and validate request body
     const body = await req.json();
     const validationResult = loginSchema.safeParse(body);
 
@@ -113,45 +107,35 @@ export async function POST(req: NextRequest) {
 
     const { email, password } = validationResult.data;
 
-    // Find user by email or username
-    const user = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { email: email },
-          { username: email },
-        ],
-      },
-    });
+    const [user] = await sql`
+      SELECT * FROM "User"
+      WHERE "email" = ${email} OR "username" = ${email}
+      LIMIT 1
+    `;
 
     if (!user) {
       throw new AuthenticationError('Credenciales inválidas');
     }
 
-    // Verify password
     const isValidPassword = await verifyPassword(password, user.password);
 
     if (!isValidPassword) {
       throw new AuthenticationError('Credenciales inválidas');
     }
 
-    // Get IP address
     const forwardedFor = req.headers.get('x-forwarded-for');
     const ip = forwardedFor ? forwardedFor.split(',')[0].trim() : 'Unknown';
 
-    // Get country from IP
     const country = await getCountryFromIp(ip);
 
-    // Update last login information
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        lastLogin: new Date(),
-        lastLoginIP: ip,
-        lastLoginCountry: country,
-      },
-    });
+    await sql`
+      UPDATE "User"
+      SET "lastLogin" = NOW(),
+          "lastLoginIP" = ${ip},
+          "lastLoginCountry" = ${country}
+      WHERE "id" = ${user.id}
+    `;
 
-    // Send security alert for foreign login
     if (isForeignLogin(country)) {
       await sendSecurityAlert(
         { name: user.name, email: user.email },
@@ -160,44 +144,36 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Return user data (excluding password)
-    const { password: _, ...userData } = user;
+    const token = await createToken(user.id);
 
-    // Create session token
-    const token = await createToken(userData.id);
-
-    // Create response with user data
     const response = NextResponse.json({
-      id: userData.id,
-      name: userData.name,
-      email: userData.email,
-      username: userData.username,
-      role: userData.role,
-      avatar: userData.image,
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      username: user.username,
+      role: user.role,
+      avatar: user.image,
     });
 
-    // Set secure HTTP-only cookie with session token
     response.cookies.set('auth-token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 60 * 60 * 24, // 24 hours
+      maxAge: 60 * 60 * 24,
       path: '/',
     });
 
-    // Set user ID cookie (non-sensitive, needed for middleware)
-    response.cookies.set('user-id', userData.id, {
+    response.cookies.set('user-id', user.id, {
       httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 60 * 60 * 24, // 24 hours
+      maxAge: 60 * 60 * 24,
       path: '/',
     });
 
     return response;
 
   } catch (error) {
-    // Handle known error types
     if (error instanceof ValidationError) {
       return NextResponse.json(
         { error: error.message, details: error.details },
@@ -219,7 +195,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Handle unknown errors
     console.error('Login error:', error);
     return NextResponse.json(
       { error: 'Error en el servidor' },

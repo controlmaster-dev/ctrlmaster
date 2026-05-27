@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 interface StatsCardProps {
   title: string;
@@ -8,7 +8,15 @@ interface StatsCardProps {
   icon: React.ReactNode;
   valueColor?: string;
   variant?: "default" | "success" | "warning" | "danger";
+  className?: string;
 }
+
+const iconTint = {
+  default: "text-muted-foreground",
+  success: "text-muted-foreground",
+  warning: "text-muted-foreground",
+  danger: "text-muted-foreground",
+};
 
 export function StatsCard({
   title,
@@ -17,43 +25,45 @@ export function StatsCard({
   icon,
   valueColor = "text-foreground",
   variant = "default",
+  className,
 }: StatsCardProps) {
-  const variants = {
-    default: "border-blue-500/25 bg-blue-500/5",
-    success: "border-emerald-500/25 bg-emerald-500/5",
-    warning: "border-orange-500/25 bg-orange-500/5",
-    danger: "border-rose-500/25 bg-rose-500/5",
-  };
-
-  const iconColors = {
-    default: "text-blue-500 bg-blue-500/10",
-    success: "text-emerald-500 bg-emerald-500/10",
-    warning: "text-orange-500 bg-orange-500/10",
-    danger: "text-rose-500 bg-rose-500/10",
-  };
-
   return (
-    <Card
-      className={`overflow-hidden rounded-xl border bg-card/80 shadow-sm ${variants[variant]}`}
+    <div
+      className={cn(
+        "rounded-sm border border-border/60 bg-card p-4 shadow-sm",
+        className
+      )}
     >
-      <CardContent className="flex items-center gap-4 p-4">
-        <div className={`shrink-0 rounded-lg p-2.5 ${iconColors[variant]}`}>{icon}</div>
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-xs font-medium text-muted-foreground">{title}</p>
+          <div className="flex items-center gap-2">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+              {title}
+            </p>
             {variant === "danger" && value > 0 && (
-              <span className="relative flex h-2 w-2 shrink-0">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-rose-500" />
-              </span>
+              <span className="dash-keep-round relative flex h-2 w-2 shrink-0 rounded-full bg-rose-500/80" />
             )}
           </div>
-          <p className={`mt-0.5 text-2xl font-semibold tabular-nums leading-none ${valueColor}`}>
+          <p
+            className={cn(
+              "mt-2 text-3xl font-semibold tabular-nums tracking-tight md:text-4xl",
+              valueColor
+            )}
+          >
             {value}
           </p>
-          <p className="mt-1 text-[11px] text-muted-foreground">{subtitle}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>
         </div>
-      </CardContent>
-    </Card>
+
+        <div
+          className={cn(
+            "flex h-10 w-10 shrink-0 items-center justify-center rounded-sm border border-border/60 bg-muted/30",
+            iconTint[variant]
+          )}
+        >
+          {icon}
+        </div>
+      </div>
+    </div>
   );
 }

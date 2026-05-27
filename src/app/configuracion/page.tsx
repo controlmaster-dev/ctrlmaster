@@ -59,27 +59,17 @@ import {
 import { LoginMap } from "@/components/LoginMap";
 import { ActiveUsersWidget } from "@/components/ActiveUsersWidget";
 import { SpecialEventsManager } from "@/components/SpecialEventsManager";
+import { ConfiguracionSkeleton } from "@/components/skeletons/ConfiguracionSkeleton";
+import { useConfiguracionBundle } from "@/hooks/useConfiguracionBundle";
+import { isConfigAdmin } from "@/lib/adminAccess";
+import { getSundayWeekStart } from "@/lib/weekUtils";
 
 export default function ConfigurationPage() {
   const router = useRouter();
-  const [users, setUsers] = useState<any[]>([]);
-  const [reports, setReports] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [activeTab, setActiveTab] = useState("users");
 
-  const getInitialWeekStart = () => {
-    const now = new Date();
-    const day = now.getDay();
-    const diff = now.getDate() - day;
-    const sunday = new Date(now.setDate(diff));
-
-    const year = sunday.getFullYear();
-    const month = String(sunday.getMonth() + 1).padStart(2, "0");
-    const d = String(sunday.getDate()).padStart(2, "0");
-    return `${year}-${month}-${d}`;
-  };
-  const [currentWeekStart, setCurrentWeekStart] = useState(getInitialWeekStart());
+  const [currentWeekStart, setCurrentWeekStart] = useState(getSundayWeekStart);
   const [scheduleMode, setScheduleMode] = useState("weekly");
 
   const [modal, setModal] = useState({
@@ -102,8 +92,15 @@ export default function ConfigurationPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [error, setError] = useState("");
-  const [securityCodes, setSecurityCodes] = useState<any[]>([]);
   const [codesLoading, setCodesLoading] = useState(false);
+
+  const {
+    users,
+    reports,
+    securityCodes,
+    isReady,
+    refresh,
+  } = useConfiguracionBundle(currentWeekStart, isAdmin);
 
   useEffect(() => {
     const savedUser = localStorage.getItem("enlace-user");
@@ -113,13 +110,7 @@ export default function ConfigurationPage() {
     }
     const user = JSON.parse(savedUser);
 
-    const allowedEmails = ["knunez@enlace.org", "rjimenez@enlace.org"];
-    const allowedUsernames = ["knunez", "rjimenez"];
-
-    const email = user?.email || "";
-    const username = user?.username || "";
-
-    if (!allowedEmails.includes(email) && !allowedUsernames.includes(username)) {
+    if (!isConfigAdmin(user)) {
       router.push("/");
       return;
     }
@@ -128,24 +119,10 @@ export default function ConfigurationPage() {
   }, [router]);
 
   useEffect(() => {
-    if (isAdmin) {
-      fetchData();
-      fetchCodes();
-
-      const interval = setInterval(fetchData, 30000);
-      return () => clearInterval(interval);
-    }
-  }, [isAdmin, currentWeekStart]);
-
-  const fetchCodes = async () => {
-    try {
-      const res = await fetch("/api/auth/registration-codes");
-      const data = await res.json();
-      if (Array.isArray(data)) setSecurityCodes(data);
-    } catch (e) {
-      console.error("Error fetching codes", e);
-    }
-  };
+    if (!isAdmin) return;
+    const interval = setInterval(() => void refresh(), 30000);
+    return () => clearInterval(interval);
+  }, [isAdmin, refresh]);
 
   const generateCode = async () => {
     setCodesLoading(true);
@@ -159,7 +136,7 @@ export default function ConfigurationPage() {
         body: JSON.stringify({ createdById: user.id }),
       });
       if (!res.ok) throw new Error("Error generando código");
-      await fetchCodes();
+      await refresh();
     } catch (e) {
       console.error("Error generating code", e);
     } finally {
@@ -170,7 +147,7 @@ export default function ConfigurationPage() {
   const deleteCode = async (id: string) => {
     try {
       await fetch(`/api/auth/registration-codes?id=${id}`, { method: "DELETE" });
-      await fetchCodes();
+      await refresh();
     } catch (e) {
       console.error("Error deleting code", e);
     }
@@ -184,26 +161,6 @@ export default function ConfigurationPage() {
       setTimeout(() => {
         el.textContent = code;
       }, 1500);
-    }
-  };
-
-  const fetchData = async () => {
-    try {
-      const [usersRes, reportsRes] = await Promise.all([
-        fetch(`/api/users?weekStart=${currentWeekStart}`),
-        fetch("/api/reports"),
-      ]);
-      const usersData = await usersRes.json();
-      const reportsData = await reportsRes.json();
-
-      if (Array.isArray(usersData)) setUsers(usersData);
-      // Support both old array format and new paginated format
-      if (Array.isArray(reportsData)) setReports(reportsData);
-      else if (reportsData.reports && Array.isArray(reportsData.reports)) setReports(reportsData.reports);
-    } catch (e) {
-      console.error("Error fetching data", e);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -277,7 +234,7 @@ export default function ConfigurationPage() {
 
       if (!res.ok) throw new Error("Error guardando usuario");
 
-      await fetchData();
+      await refresh();
       cancelEdit();
       setModal((prev) => ({ ...prev, isOpen: false }));
     } catch (err) {
@@ -307,7 +264,7 @@ export default function ConfigurationPage() {
       type: "danger",
       action: async () => {
         await fetch(`/api/users?id=${id}`, { method: "DELETE" });
-        await fetchData();
+        await refresh();
         setModal((prev) => ({ ...prev, isOpen: false }));
       },
     });
@@ -327,8 +284,7 @@ export default function ConfigurationPage() {
           });
           if (res.ok) {
             // Force immediate refetch
-            await fetchData();
-            setReports(prev => prev.filter(r => r.id !== id));
+            await refresh();
             toast.success("Reporte eliminado");
           } else {
             toast.error("Error al eliminar el reporte");
@@ -364,22 +320,34 @@ export default function ConfigurationPage() {
 
       if (!res.ok) throw new Error("Error actualizando horario");
 
-      await fetchData();
+      await refresh();
     } catch (err) {
       console.error("Failed to save schedule", err);
     }
   };
 
-  if (!isAdmin && loading)
+  if (!isAdmin)
     return (
       <div className="min-h-screen bg-background flex items-center justify-center text-foreground">
         Verificando...
       </div>
     );
-  if (!isAdmin) return null;
+
+  if (!isReady) {
+    return (
+      <div className="min-h-screen relative overflow-hidden bg-background text-foreground pb-20">
+        <div className="relative z-10">
+          <ConfiguracionSkeleton />
+        </div>
+      </div>
+    );
+  }
+
+  const usersList = users as any[];
+  const reportsList = reports as any[];
 
   const renderUserGrid = (title: string, roleFilter: (r: string) => boolean, icon: any) => {
-    const filteredUsers = users.filter((u) => roleFilter(u.role));
+    const filteredUsers = usersList.filter((u) => roleFilter(u.role));
     if (filteredUsers.length === 0) return null;
 
     return (
@@ -923,33 +891,33 @@ export default function ConfigurationPage() {
               >
                 <div className="space-y-8">
                   <div className="flex flex-col gap-6">
-                    <LoginMap users={users} />
-                    <ActiveUsersWidget users={users} />
+                    <LoginMap users={usersList} />
+                    <ActiveUsersWidget users={usersList} />
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {[
                       {
                         label: "Equipo Total",
-                        value: users.length,
+                        value: usersList.length,
                         icon: Shield,
                         color: "text-blue-500",
                       },
                       {
                         label: "Coordinadores",
-                        value: users.filter((u) => u.role === "BOSS").length,
+                        value: usersList.filter((u) => u.role === "BOSS").length,
                         icon: Crown,
                         color: "text-amber-500",
                       },
                       {
                         label: "Ingenieros",
-                        value: users.filter((u) => u.role === "ENGINEER").length,
+                        value: usersList.filter((u) => u.role === "ENGINEER").length,
                         icon: Wrench,
                         color: "text-purple-500",
                       },
                       {
                         label: "Operadores",
-                        value: users.filter(
+                        value: usersList.filter(
                           (u) => !["BOSS", "ENGINEER"].includes(u.role || "")
                         ).length,
                         icon: Shield,
@@ -1056,7 +1024,7 @@ export default function ConfigurationPage() {
                       <div className="absolute top-0 left-0 w-full h-1 bg-primary z-20 animate-pulse" />
                     )}
                     <WeeklyCalendar
-                      operators={users.map((u) => ({
+                      operators={usersList.map((u) => ({
                         id: u.id,
                         name: u.name,
                         email: u.email || "",
@@ -1283,7 +1251,7 @@ export default function ConfigurationPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody className="divide-y divide-border">
-                        {reports.map((report) => (
+                        {reportsList.map((report) => (
                           <TableRow
                             key={report.id}
                             className="border-none hover:bg-muted/20 transition-all duration-200 group"

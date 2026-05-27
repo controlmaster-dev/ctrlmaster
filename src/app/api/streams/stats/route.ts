@@ -1,19 +1,15 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import sql from '@/lib/db';
 import { subDays } from 'date-fns';
 
 export async function GET() {
   try {
-
     const since = subDays(new Date(), 1);
 
-    const metrics = await prisma.streamMetric.findMany({
-      where: {
-        createdAt: {
-          gte: since
-        }
-      }
-    });
+    const metrics = await sql`
+      SELECT * FROM "StreamMetric"
+      WHERE "createdAt" >= ${since.toISOString()}
+    `;
 
     const aggregation: Record<string, any> = {};
 

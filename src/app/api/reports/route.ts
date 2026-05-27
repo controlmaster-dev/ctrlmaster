@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import sql from '@/lib/db';
 import { createReportSchema, updateReportSchema } from '@/lib/validation';
 import { ValidationError, ApiError } from '@/lib/errors';
 import { validateApiAuth } from '@/lib/apiAuth';
@@ -7,7 +7,6 @@ import { sendWhatsApp } from '@/lib/whatsapp';
 
 export async function GET(req: NextRequest) {
   try {
-    // Validate authentication
     const authResult = await validateApiAuth(req);
     if (authResult instanceof NextResponse) return authResult;
 
@@ -16,7 +15,6 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(Number(searchParams.get('limit')) || 50, 200);
     const skip = (page - 1) * limit;
 
-    // Server-side filters
     const status = searchParams.get('status');
     const priority = searchParams.get('priority');
     const operator = searchParams.get('operator');
@@ -25,74 +23,73 @@ export async function GET(req: NextRequest) {
     const dateFrom = searchParams.get('dateFrom');
     const dateTo = searchParams.get('dateTo');
 
-    const where: any = {};
-
-    if (status && status !== 'all') where.status = status;
-    if (priority && priority !== 'all') where.priority = priority;
-    if (category && category !== 'all') where.category = category;
-    if (operator) {
-      where.OR = [
-        { operatorName: { contains: operator, mode: 'insensitive' } },
-        { operatorEmail: { contains: operator, mode: 'insensitive' } },
-      ];
-    }
-    if (search) {
-      where.AND = [
-        ...(where.OR ? [where] : []),
-        {
-          OR: [
-            { problemDescription: { contains: search, mode: 'insensitive' } },
-            { operatorName: { contains: search, mode: 'insensitive' } },
-            { id: { contains: search, mode: 'insensitive' } },
-          ],
-        },
-      ];
-      // Remove top-level OR since we moved it into AND
-      if (operator) delete where.OR;
-    }
-    if (dateFrom || dateTo) {
-      where.createdAt = {};
-      if (dateFrom) where.createdAt.gte = new Date(dateFrom);
-      if (dateTo) where.createdAt.lte = new Date(dateTo);
-    }
-
-    const [reports, total] = await Promise.all([
-      prisma.report.findMany({
-        where,
-        take: limit,
-        skip,
-        orderBy: { createdAt: 'desc' },
-        select: {
-          id: true,
-          operatorName: true,
-          operatorEmail: true,
-          problemDescription: true,
-          category: true,
-          priority: true,
-          status: true,
-          createdAt: true,
-          dateStarted: true,
-          dateResolved: true,
-          emailStatus: true,
-          emailRecipients: true,
-          _count: {
-            select: { comments: true, reactions: true },
-          },
-        },
-      }),
-      prisma.report.count({ where }),
+    const [reports, totalResult] = await Promise.all([
+      sql`
+        SELECT
+          r."id",
+          r."operatorName",
+          r."operatorEmail",
+          r."problemDescription",
+          r."category",
+          r."priority",
+          r."status",
+          r."createdAt",
+          r."dateStarted",
+          r."dateResolved",
+          r."emailStatus",
+          r."emailRecipients",
+          (SELECT COUNT(*) FROM "Comment" c WHERE c."reportId" = r."id")::int AS "commentCount",
+          (SELECT COUNT(*) FROM "Reaction" re WHERE re."reportId" = r."id")::int AS "reactionCount"
+        FROM "Report" r
+        WHERE 1=1
+        ${status && status !== 'all' ? sql`AND r."status" = ${status}` : sql``}
+        ${priority && priority !== 'all' ? sql`AND r."priority" = ${priority}` : sql``}
+        ${category && category !== 'all' ? sql`AND r."category" = ${category}` : sql``}
+        ${operator ? sql`AND (r."operatorName" ILIKE ${'%' + operator + '%'} OR r."operatorEmail" ILIKE ${'%' + operator + '%'})` : sql``}
+        ${search ? sql`AND (r."problemDescription" ILIKE ${'%' + search + '%'} OR r."operatorName" ILIKE ${'%' + search + '%'} OR r."id"::text ILIKE ${'%' + search + '%'})` : sql``}
+        ${dateFrom ? sql`AND r."createdAt" >= ${new Date(dateFrom).toISOString()}` : sql``}
+        ${dateTo ? sql`AND r."createdAt" <= ${new Date(dateTo).toISOString()}` : sql``}
+        ORDER BY r."createdAt" DESC
+        LIMIT ${limit} OFFSET ${skip}
+      `,
+      sql`
+        SELECT COUNT(*)::int AS count FROM "Report" r
+        WHERE 1=1
+        ${status && status !== 'all' ? sql`AND r."status" = ${status}` : sql``}
+        ${priority && priority !== 'all' ? sql`AND r."priority" = ${priority}` : sql``}
+        ${category && category !== 'all' ? sql`AND r."category" = ${category}` : sql``}
+        ${operator ? sql`AND (r."operatorName" ILIKE ${'%' + operator + '%'} OR r."operatorEmail" ILIKE ${'%' + operator + '%'})` : sql``}
+        ${search ? sql`AND (r."problemDescription" ILIKE ${'%' + search + '%'} OR r."operatorName" ILIKE ${'%' + search + '%'} OR r."id"::text ILIKE ${'%' + search + '%'})` : sql``}
+        ${dateFrom ? sql`AND r."createdAt" >= ${new Date(dateFrom).toISOString()}` : sql``}
+        ${dateTo ? sql`AND r."createdAt" <= ${new Date(dateTo).toISOString()}` : sql``}
+      `,
     ]);
 
+    const total = totalResult[0]?.count ?? 0;
+
+    // Map to match old Prisma shape (_count wrapper)
+    const mapped = reports.map((r: any) => ({
+      id: r.id,
+      operatorName: r.operatorName,
+      operatorEmail: r.operatorEmail,
+      problemDescription: r.problemDescription,
+      category: r.category,
+      priority: r.priority,
+      status: r.status,
+      createdAt: r.createdAt,
+      dateStarted: r.dateStarted,
+      dateResolved: r.dateResolved,
+      emailStatus: r.emailStatus,
+      emailRecipients: r.emailRecipients,
+      _count: { comments: r.commentCount, reactions: r.reactionCount },
+    }));
+
     return NextResponse.json({
-      reports,
+      reports: mapped,
       total,
       page,
       limit,
       totalPages: Math.ceil(total / limit),
-    }, {
-      headers: {
-        'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120',
-      },
     });
   } catch (error) {
     if (error instanceof ApiError) {
@@ -108,7 +105,6 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    // Validate authentication
     const authResult = await validateApiAuth(req);
     if (authResult instanceof NextResponse) return authResult;
 
@@ -131,38 +127,40 @@ export async function POST(req: NextRequest) {
       emailRecipients,
       dateStarted,
       dateResolved,
-      attachments
+      attachments,
     } = result.data;
 
-    const newReport = await prisma.report.create({
-      data: {
-        operatorId,
-        operatorName,
-        operatorEmail: operatorEmail || "",
-        problemDescription,
-        category,
-        priority,
-        status: status as any,
-        emailStatus: (emailStatus as any) || 'none',
-        emailRecipients,
-        dateStarted: new Date(dateStarted),
-        dateResolved: dateResolved ? new Date(dateResolved) : null,
-        attachments: attachments
-          ? {
-              create: attachments.map((attachment: any) => ({
-                url: attachment.url,
-                type: attachment.type,
-                data: attachment.data,
-              })),
-            }
-          : undefined,
-      },
-      include: {
-        attachments: true,
-      },
-    });
+    const [newReport] = await sql`
+      INSERT INTO "Report" (
+        "operatorId", "operatorName", "operatorEmail",
+        "problemDescription", "category", "priority",
+        "status", "emailStatus", "emailRecipients",
+        "dateStarted", "dateResolved"
+      )
+      VALUES (
+        ${operatorId}, ${operatorName}, ${operatorEmail || ''},
+        ${problemDescription}, ${category}, ${priority},
+        ${status}, ${emailStatus || 'none'}, ${emailRecipients || null},
+        ${new Date(dateStarted).toISOString()},
+        ${dateResolved ? new Date(dateResolved).toISOString() : null}
+      )
+      RETURNING *
+    `;
 
-    return NextResponse.json(newReport, { status: 201 });
+    // Insert attachments if provided
+    const createdAttachments: any[] = [];
+    if (attachments && attachments.length > 0) {
+      for (const att of attachments) {
+        const [created] = await sql`
+          INSERT INTO "Attachment" ("url", "type", "data", "reportId")
+          VALUES (${att.url}, ${att.type}, ${att.data || null}, ${newReport.id})
+          RETURNING *
+        `;
+        createdAttachments.push(created);
+      }
+    }
+
+    return NextResponse.json({ ...newReport, attachments: createdAttachments }, { status: 201 });
 
   } catch (error) {
     if (error instanceof ValidationError) {
@@ -181,7 +179,6 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    // Validate authentication
     const authResult = await validateApiAuth(req);
     if (authResult instanceof NextResponse) return authResult;
 
@@ -195,8 +192,7 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    // Check if report exists
-    const exists = await prisma.report.findUnique({ where: { id } });
+    const [exists] = await sql`SELECT "id" FROM "Report" WHERE "id" = ${id} LIMIT 1`;
     if (!exists) {
       return NextResponse.json(
         { error: 'Reporte no encontrado' },
@@ -204,7 +200,7 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    await prisma.report.delete({ where: { id } });
+    await sql`DELETE FROM "Report" WHERE "id" = ${id}`;
 
     return NextResponse.json({ success: true, id });
   } catch (error) {
@@ -218,7 +214,6 @@ export async function DELETE(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
-    // Validate authentication
     const authResult = await validateApiAuth(req);
     if (authResult instanceof NextResponse) return authResult;
 
@@ -236,7 +231,7 @@ export async function PATCH(req: NextRequest) {
     if (status) {
       updateData.status = status;
       if (status === 'resolved' && !dateResolved) {
-        updateData.dateResolved = new Date();
+        updateData.dateResolved = new Date().toISOString();
       }
     }
 
@@ -244,10 +239,18 @@ export async function PATCH(req: NextRequest) {
       updateData.dateResolved = dateResolved;
     }
 
-    const updatedReport = await prisma.report.update({
-      where: { id },
-      data: updateData,
-    });
+    // Build dynamic UPDATE
+    const fields = Object.keys(updateData);
+    if (fields.length === 0) {
+      return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
+    }
+
+    const [updatedReport] = await sql`
+      UPDATE "Report"
+      SET ${sql(updateData)}
+      WHERE "id" = ${id}
+      RETURNING *
+    `;
 
     return NextResponse.json(updatedReport);
 

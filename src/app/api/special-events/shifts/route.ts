@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import sql from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,15 +10,21 @@ export async function GET(req: NextRequest) {
 
     if (!eventId) return NextResponse.json({ error: "Event ID required" }, { status: 400 });
 
-    const shifts = await prisma.specialEventShift.findMany({
-      where: { eventId },
-      include: { user: { select: { name: true, image: true } } }
-    });
+    const shifts = await sql`
+      SELECT ses.*,
+             json_build_object('name', u."name", 'image', u."image") AS "user"
+      FROM "SpecialEventShift" ses
+      JOIN "User" u ON u."id" = ses."userId"
+      WHERE ses."eventId" = ${eventId}
+    `;
 
     return NextResponse.json(shifts);
 
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : String(error) },
+      { status: 500 }
+    );
   }
 }
 
@@ -31,30 +37,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid data" }, { status: 400 });
     }
 
-    await prisma.$transaction(async (tx: any) => {
-      await tx.specialEventShift.deleteMany({
-        where: {
-          eventId,
-          userId
-        }
-      });
+    await sql.begin(async (tx) => {
+      await tx`
+        DELETE FROM "SpecialEventShift"
+        WHERE "eventId" = ${eventId} AND "userId" = ${userId}
+      `;
 
       if (shifts.length > 0) {
-        await tx.specialEventShift.createMany({
-          data: shifts.map((s: any) => ({
-            eventId,
-            userId,
-            date: s.date,
-            start: s.start,
-            end: s.end
-          }))
-        });
+        for (const s of shifts) {
+          await tx`
+            INSERT INTO "SpecialEventShift" ("eventId", "userId", "date", "start", "end")
+            VALUES (${eventId}, ${userId}, ${s.date}, ${s.start}, ${s.end})
+          `;
+        }
       }
     });
 
     return NextResponse.json({ success: true });
 
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : String(error) },
+      { status: 500 }
+    );
   }
 }

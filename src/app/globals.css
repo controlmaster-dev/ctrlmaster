@@ -122,6 +122,31 @@
       linear-gradient(to right, hsl(var(--foreground) / 0.01) 1px, transparent 1px),
       linear-gradient(to bottom, hsl(var(--foreground) / 0.01) 1px, transparent 1px);
   }
+
+  /* Dashboard / inicio: esquinas casi cuadradas (anula --radius global de 10px) */
+  .dashboard-ui {
+    --radius: 2px;
+  }
+
+  .dashboard-ui .rounded-full:not(.dash-keep-round),
+  .dashboard-ui [class*="rounded-full"]:not(.dash-keep-round) {
+    border-radius: 2px !important;
+  }
+
+  .dashboard-ui .rounded-xl,
+  .dashboard-ui .rounded-2xl,
+  .dashboard-ui .rounded-3xl,
+  .dashboard-ui .rounded-lg,
+  .dashboard-ui .rounded-md {
+    border-radius: 2px;
+  }
+
+  .dashboard-ui button,
+  .dashboard-ui [role="button"],
+  .dashboard-ui input,
+  .dashboard-ui select {
+    border-radius: 2px;
+  }
 }
 
 @layer utilities {

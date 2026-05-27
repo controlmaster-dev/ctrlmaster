@@ -1,9 +1,5 @@
-/**
- * Schedule API route with input validation and typed error handling.
- */
-
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import sql from '@/lib/db';
 import { ApiError, ValidationError } from '@/lib/errors';
 import { z } from 'zod';
 
@@ -23,7 +19,6 @@ export async function GET(req: NextRequest) {
     const start = searchParams.get('start');
     const end = searchParams.get('end');
 
-    // Return empty if no range provided (non-breaking)
     if (!start || !end) return NextResponse.json([]);
 
     const result = getScheduleSchema.safeParse({ start, end });
@@ -31,16 +26,14 @@ export async function GET(req: NextRequest) {
       throw new ValidationError('Parámetros de fecha inválidos', result.error.issues);
     }
 
-    const overrides = await prisma.workSchedule.findMany({
-      where: {
-        date: {
-          gte: new Date(result.data.start),
-          lte: new Date(result.data.end),
-        },
-        isOverride: true,
-      },
-      include: { user: true },
-    });
+    const overrides = await sql`
+      SELECT ws.*, row_to_json(u.*) AS "user"
+      FROM "WorkSchedule" ws
+      JOIN "User" u ON u."id" = ws."userId"
+      WHERE ws."date" >= ${result.data.start}::date
+        AND ws."date" <= ${result.data.end}::date
+        AND ws."isOverride" = TRUE
+    `;
 
     return NextResponse.json(overrides);
   } catch (error) {
@@ -55,7 +48,6 @@ export async function GET(req: NextRequest) {
   }
 }
 
-
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -66,19 +58,19 @@ export async function POST(req: NextRequest) {
     }
 
     const { date, userId } = result.data;
-    const parsedDate = new Date(date);
 
-    // Special "reset" sentinel — clears overrides for a given date
     if (userId === 'reset') {
-      await prisma.workSchedule.deleteMany({ where: { date: parsedDate } });
+      await sql`DELETE FROM "WorkSchedule" WHERE "date" = ${date}::date`;
       return NextResponse.json({ success: true });
     }
 
-    const override = await prisma.workSchedule.upsert({
-      where: { date: parsedDate },
-      update: { userId, isOverride: true },
-      create: { date: parsedDate, userId, isOverride: true },
-    });
+    const [override] = await sql`
+      INSERT INTO "WorkSchedule" ("date", "userId", "isOverride")
+      VALUES (${date}::date, ${userId}, TRUE)
+      ON CONFLICT ("date")
+      DO UPDATE SET "userId" = EXCLUDED."userId", "isOverride" = TRUE
+      RETURNING *
+    `;
 
     return NextResponse.json(override);
   } catch (error) {

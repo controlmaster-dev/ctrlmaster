@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import sql from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,15 +15,15 @@ function generateCode(): string {
 // GET - List all registration codes (admin only)
 export async function GET() {
     try {
-        const codes = await prisma.registrationCode.findMany({
-            orderBy: { createdAt: 'desc' },
-        });
+        const codes = await sql`
+            SELECT * FROM "RegistrationCode" ORDER BY "createdAt" DESC
+        `;
 
         const mapped = codes.map((c: any) => {
             const now = new Date();
             let status: string = 'available';
             if (c.usedById) status = 'used';
-            else if (c.expiresAt < now) status = 'expired';
+            else if (new Date(c.expiresAt) < now) status = 'expired';
 
             return { ...c, status };
         });
@@ -47,23 +47,22 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'createdById is required' }, { status: 400 });
         }
 
-        // Generate unique code
         let code = generateCode();
         let attempts = 0;
         while (attempts < 10) {
-            const existing = await prisma.registrationCode.findUnique({ where: { code } });
+            const [existing] = await sql`
+                SELECT "id" FROM "RegistrationCode" WHERE "code" = ${code} LIMIT 1
+            `;
             if (!existing) break;
             code = generateCode();
             attempts++;
         }
 
-        const registrationCode = await prisma.registrationCode.create({
-            data: {
-                code,
-                createdById,
-                expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
-            },
-        });
+        const [registrationCode] = await sql`
+            INSERT INTO "RegistrationCode" ("code", "createdById", "expiresAt")
+            VALUES (${code}, ${createdById}, ${new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()})
+            RETURNING *
+        `;
 
         return NextResponse.json(registrationCode);
     } catch (error) {
@@ -84,7 +83,7 @@ export async function DELETE(req: Request) {
             return NextResponse.json({ error: 'Code ID required' }, { status: 400 });
         }
 
-        await prisma.registrationCode.delete({ where: { id } });
+        await sql`DELETE FROM "RegistrationCode" WHERE "id" = ${id}`;
 
         return NextResponse.json({ success: true });
     } catch (error) {

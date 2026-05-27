@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import sql from '@/lib/db';
 import { validateApiAuth, requireRole } from '@/lib/apiAuth';
 
 export const dynamic = 'force-dynamic';
@@ -9,9 +9,9 @@ export async function GET(req: NextRequest) {
     const authResult = await validateApiAuth(req);
     if (authResult instanceof NextResponse) return authResult;
 
-    const credentials = await prisma.credential.findMany({
-      orderBy: { createdAt: 'desc' }
-    });
+    const credentials = await sql`
+      SELECT * FROM "Credential" ORDER BY "createdAt" DESC
+    `;
     return NextResponse.json(credentials);
   } catch (error) {
     console.error('Error fetching credentials:', error);
@@ -25,7 +25,6 @@ export async function POST(req: NextRequest) {
     if (authResult instanceof NextResponse) return authResult;
     const { user } = authResult;
 
-    // Engineers and admins can create credentials
     const roleCheck = requireRole(user, ['ENGINEER', 'ADMIN', 'BOSS']);
     if (roleCheck instanceof NextResponse) return roleCheck;
 
@@ -36,15 +35,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const newCredential = await prisma.credential.create({
-      data: {
-        service,
-        category: category || 'General',
-        username,
-        password,
-        notes
-      }
-    });
+    const [newCredential] = await sql`
+      INSERT INTO "Credential" ("service", "category", "username", "password", "notes")
+      VALUES (${service}, ${category || 'General'}, ${username}, ${password}, ${notes || null})
+      RETURNING *
+    `;
     return NextResponse.json(newCredential);
   } catch (error) {
     console.error('Error creating credential:', error);
@@ -58,7 +53,6 @@ export async function DELETE(req: NextRequest) {
     if (authResult instanceof NextResponse) return authResult;
     const { user } = authResult;
 
-    // Engineers and admins can delete credentials
     const roleCheck = requireRole(user, ['ENGINEER', 'ADMIN', 'BOSS']);
     if (roleCheck instanceof NextResponse) return roleCheck;
 
@@ -69,9 +63,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'ID required' }, { status: 400 });
     }
 
-    await prisma.credential.delete({
-      where: { id }
-    });
+    await sql`DELETE FROM "Credential" WHERE "id" = ${id}`;
 
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -86,7 +78,6 @@ export async function PUT(req: NextRequest) {
     if (authResult instanceof NextResponse) return authResult;
     const { user } = authResult;
 
-    // Engineers and admins can update credentials
     const roleCheck = requireRole(user, ['ENGINEER', 'ADMIN', 'BOSS']);
     if (roleCheck instanceof NextResponse) return roleCheck;
 
@@ -99,16 +90,17 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'ID required' }, { status: 400 });
     }
 
-    const updated = await prisma.credential.update({
-      where: { id },
-      data: {
-        service,
-        category: category || 'General',
-        username,
-        password,
-        notes
-      }
-    });
+    const [updated] = await sql`
+      UPDATE "Credential"
+      SET
+        "service" = COALESCE(${service || null}, "service"),
+        "category" = COALESCE(${category || 'General'}, "category"),
+        "username" = COALESCE(${username || null}, "username"),
+        "password" = COALESCE(${password || null}, "password"),
+        "notes" = COALESCE(${notes ?? null}, "notes")
+      WHERE "id" = ${id}
+      RETURNING *
+    `;
 
     return NextResponse.json(updated);
   } catch (error) {

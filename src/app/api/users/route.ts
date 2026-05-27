@@ -1,9 +1,5 @@
-/**
- * Users API route with input validation and typed error handling.
- */
-
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import sql from '@/lib/db';
 import { ApiError, ValidationError } from '@/lib/errors';
 import { toZonedTime, formatInTimeZone } from 'date-fns-tz';
 import { z } from 'zod';
@@ -77,7 +73,6 @@ function formatHour(hour: number): string {
   return `${h}${ampm}`;
 }
 
-// Legacy fallback schedules (used when user has no DB schedule defined)
 const LEGACY_SCHEDULES: Record<string, { shifts: Shift[]; label: string }> = {
   Gabriel: { shifts: [{ days: [0, 1, 2, 3, 4], start: 6, end: 18 }], label: 'Dom-Jue 6am-6pm' },
   Diego: { shifts: [{ days: [1, 2], start: 0, end: 6 }, { days: [3, 4], start: 18, end: 24 }, { days: [6], start: 6, end: 12 }], label: 'Mixto' },
@@ -90,13 +85,25 @@ const LEGACY_SCHEDULES: Record<string, { shifts: Shift[]; label: string }> = {
 
 export async function GET(request: NextRequest) {
   try {
-    // Allow unauthenticated GET for public pages like /operadores
-    // (no validateApiAuth call here)
+    const users = await sql`
+      SELECT * FROM "User"
+      ORDER BY "role" ASC, "name" ASC
+    `;
 
-    const users = await prisma.user.findMany({
-      include: { _count: { select: { reports: true } } },
-      orderBy: [{ role: 'asc' }, { name: 'asc' }],
-    });
+    // Get report count for each user
+    const userIds = users.map((u: any) => u.id);
+    let reportCounts: Record<string, number> = {};
+    if (userIds.length > 0) {
+      const counts = await sql`
+        SELECT "operatorId", COUNT(*)::int AS count
+        FROM "Report"
+        WHERE "operatorId" = ANY(${userIds})
+        GROUP BY "operatorId"
+      `;
+      for (const c of counts) {
+        reportCounts[c.operatorId] = c.count;
+      }
+    }
 
     const now = new Date();
     const dayStr = formatInTimeZone(now, TIMEZONE, 'i');
@@ -116,13 +123,17 @@ export async function GET(request: NextRequest) {
       ? new Date().toISOString().split('T')[0]
       : weekEnd.toISOString().split('T')[0];
 
-    // Fetch active special event if any
-    const activeEvent = await prisma.specialEvent.findFirst({
-      where: { isActive: true, startDate: { lte: weekEndStr }, endDate: { gte: currentWeekStart } },
-    });
+    // Fetch active special event
+    const [activeEvent] = await sql`
+      SELECT * FROM "SpecialEvent"
+      WHERE "isActive" = TRUE
+        AND "startDate" <= ${weekEndStr}
+        AND "endDate" >= ${currentWeekStart}
+      LIMIT 1
+    `;
 
     const eventShifts = activeEvent
-      ? await prisma.specialEventShift.findMany({ where: { eventId: activeEvent.id } })
+      ? await sql`SELECT * FROM "SpecialEventShift" WHERE "eventId" = ${activeEvent.id}`
       : [];
 
     const mappedUsers = users.map((user: any) => {
@@ -152,7 +163,7 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      // 2. Check temp schedule from DB
+      // 2. Check temp schedule
       if (shifts.length === 0 && user.tempSchedule) {
         try {
           const parsed = JSON.parse(user.tempSchedule);
@@ -166,28 +177,23 @@ export async function GET(request: NextRequest) {
               isTempSchedule = true;
             }
           }
-        } catch {
-          // Ignore malformed JSON
-        }
+        } catch { /* ignore */ }
       }
 
-      // 3. Check permanent schedule from DB
+      // 3. Check permanent schedule
       if (!isTempSchedule && shifts.length === 0 && user.schedule) {
         try {
           const parsedShifts = JSON.parse(user.schedule);
           if (Array.isArray(parsedShifts) && parsedShifts.length > 0) shifts = parsedShifts;
-        } catch {
-          // Ignore malformed JSON
-        }
+        } catch { /* ignore */ }
       }
 
-      // 4. Fallback to legacy hardcoded schedules
+      // 4. Fallback
       if (!isTempSchedule && shifts.length === 0) {
         const key = Object.keys(LEGACY_SCHEDULES).find((k) => normalize(user.name).includes(normalize(k)));
         if (key) shifts = LEGACY_SCHEDULES[key].shifts;
       }
 
-      // Determine availability
       if (shifts.length > 0) {
         const currentShift = shifts.find((shift) => {
           const shiftEnd = shift.end === 0 ? 24 : shift.end;
@@ -195,7 +201,6 @@ export async function GET(request: NextRequest) {
         });
         isAvailable = !!currentShift;
 
-        // Build schedule label
         if (isTempSchedule) {
           scheduleLabel = shifts.length === 0
             ? 'Vacaciones'
@@ -214,7 +219,6 @@ export async function GET(request: NextRequest) {
         scheduleLabel = 'Vacaciones';
       }
 
-      // Build default shifts for calendar display
       let defaultShifts: Shift[] = [];
       if (user.schedule) {
         try {
@@ -232,7 +236,7 @@ export async function GET(request: NextRequest) {
       return {
         ...userInfo,
         avatar: user.image,
-        reportCount: user._count.reports,
+        reportCount: reportCounts[user.id] || 0,
         isAvailable,
         scheduleLabel,
         shifts,
@@ -253,11 +257,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    // Validate authentication
     const authResult = await validateApiAuth(req);
     if (authResult instanceof NextResponse) return authResult;
 
-    // Only ADMIN, BOSS, and ENGINEER can create users
     const roleResult = requireRole(authResult.user, ['ADMIN', 'BOSS', 'ENGINEER']);
     if (roleResult instanceof NextResponse) return roleResult;
 
@@ -270,20 +272,21 @@ export async function POST(req: NextRequest) {
 
     const { name, email, password, role, image, birthday, schedule } = result.data;
 
-    // Hash password before storing
     const hashedPassword = await hashPassword(password);
 
-    const newUser = await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-        role: role as any,
-        image: image ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`,
-        birthday,
-        schedule: schedule ? JSON.stringify(schedule) : null,
-      },
-    });
+    const [newUser] = await sql`
+      INSERT INTO "User" ("name", "email", "password", "role", "image", "birthday", "schedule")
+      VALUES (
+        ${name},
+        ${email},
+        ${hashedPassword},
+        ${role},
+        ${image ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`},
+        ${birthday || null},
+        ${schedule ? JSON.stringify(schedule) : null}
+      )
+      RETURNING *
+    `;
 
     const { password: _, ...safeUser } = newUser;
     return NextResponse.json(safeUser, { status: 201 });
@@ -301,11 +304,9 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
-    // Validate authentication
     const authResult = await validateApiAuth(req);
     if (authResult instanceof NextResponse) return authResult;
 
-    // Only ADMIN, BOSS, and ENGINEER can update users
     const roleResult = requireRole(authResult.user, ['ADMIN', 'BOSS', 'ENGINEER']);
     if (roleResult instanceof NextResponse) return roleResult;
 
@@ -321,7 +322,9 @@ export async function PATCH(req: NextRequest) {
     let finalTempScheduleString: string | undefined = undefined;
 
     if (tempSchedule !== undefined) {
-      const currentUser = await prisma.user.findUnique({ where: { id }, select: { tempSchedule: true } });
+      const [currentUser] = await sql`
+        SELECT "tempSchedule" FROM "User" WHERE "id" = ${id} LIMIT 1
+      `;
       let scheduleMap: Record<string, Shift[]> = {};
 
       if (currentUser?.tempSchedule) {
@@ -344,18 +347,19 @@ export async function PATCH(req: NextRequest) {
       finalTempScheduleString = JSON.stringify(scheduleMap);
     }
 
-    const updatedUser = await prisma.user.update({
-      where: { id },
-      data: {
-        name,
-        email,
-        role: role as any,
-        image,
-        birthday,
-        schedule: schedule ? JSON.stringify(schedule) : undefined,
-        tempSchedule: finalTempScheduleString !== undefined ? finalTempScheduleString : undefined,
-      },
-    });
+    const [updatedUser] = await sql`
+      UPDATE "User"
+      SET
+        "name" = COALESCE(${name || null}, "name"),
+        "email" = COALESCE(${email || null}, "email"),
+        "role" = COALESCE(${role || null}, "role"),
+        "image" = COALESCE(${image ?? null}, "image"),
+        "birthday" = COALESCE(${birthday ?? null}, "birthday"),
+        "schedule" = ${schedule !== undefined ? (schedule ? JSON.stringify(schedule) : null) : sql`"schedule"`},
+        "tempSchedule" = ${finalTempScheduleString !== undefined ? finalTempScheduleString : sql`"tempSchedule"`}
+      WHERE "id" = ${id}
+      RETURNING *
+    `;
 
     const { password: _, ...safeUser } = updatedUser;
     return NextResponse.json(safeUser);
@@ -373,11 +377,9 @@ export async function PATCH(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    // Validate authentication
     const authResult = await validateApiAuth(req);
     if (authResult instanceof NextResponse) return authResult;
 
-    // Only ADMIN and BOSS can delete users
     const roleResult = requireRole(authResult.user, ['ADMIN', 'BOSS']);
     if (roleResult instanceof NextResponse) return roleResult;
 
@@ -389,7 +391,7 @@ export async function DELETE(req: NextRequest) {
       throw new ValidationError('ID de usuario inválido', result.error.issues);
     }
 
-    await prisma.user.delete({ where: { id: result.data.id } });
+    await sql`DELETE FROM "User" WHERE "id" = ${result.data.id}`;
 
     return NextResponse.json({ success: true });
   } catch (error) {

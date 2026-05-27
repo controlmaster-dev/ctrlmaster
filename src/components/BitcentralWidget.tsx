@@ -14,6 +14,14 @@ import { startOfWeek, addDays, format, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
 import { getBitcentralUser } from "@/lib/schedule";
 import {
+  getBitcentralCache,
+  invalidateBitcentralCache,
+  prefetchBitcentralWeek,
+  type BitcentralBaseDay,
+  type BitcentralEvent,
+  type BitcentralOverride,
+} from "@/lib/bitcentralCache";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -38,24 +46,20 @@ export function BitcentralWidget({
   isReadOnly = false,
 }: BitcentralWidgetProps) {
   const [today, setToday] = useState(new Date());
-  const [weekStart, setWeekStart] = useState(
+  const [weekStart, setWeekStart] = useState(() =>
     startOfWeek(new Date(), { weekStartsOn: 1 })
   );
-  const [overrides, setOverrides] = useState<
-    Array<{ date: string; user: { name: string } }>
-  >([]);
-  const [events, setEvents] = useState<
-    Array<{
-      id: string;
-      name: string;
-      isActive: boolean;
-      startDate: string;
-      endDate: string;
-    }>
-  >([]);
-  const [baseSchedule, setBaseSchedule] = useState<
-    Array<{ dayOfWeek: number; user?: { name: string; id: string }; userId: string }>
-  >([]);
+  const initialCache =
+    typeof window !== "undefined" ? getBitcentralCache(weekStart) : null;
+  const [overrides, setOverrides] = useState<BitcentralOverride[]>(
+    initialCache?.overrides ?? []
+  );
+  const [events, setEvents] = useState<BitcentralEvent[]>(
+    initialCache?.events ?? []
+  );
+  const [baseSchedule, setBaseSchedule] = useState<BitcentralBaseDay[]>(
+    initialCache?.baseSchedule ?? []
+  );
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isManageEventsOpen, setIsManageEventsOpen] = useState(false);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
@@ -64,31 +68,41 @@ export function BitcentralWidget({
   const [newEventStart, setNewEventStart] = useState(new Date());
   const [newEventEnd, setNewEventEnd] = useState(new Date());
 
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!initialCache);
+  const hasShownData = React.useRef(!!initialCache);
 
-  const fetchData = async () => {
-    setIsLoading(true);
-    if (!weekStart || isNaN(weekStart.getTime())) return;
-    const end = addDays(weekStart, 8);
+  const applyBundle = React.useCallback(
+    (bundle: {
+      overrides: BitcentralOverride[];
+      events: BitcentralEvent[];
+      baseSchedule: BitcentralBaseDay[];
+    }) => {
+      setOverrides(bundle.overrides);
+      setEvents(bundle.events);
+      setBaseSchedule(bundle.baseSchedule);
+      hasShownData.current = true;
+    },
+    []
+  );
 
-    try {
-      const [overridesRes, eventsRes, configRes] = await Promise.all([
-        fetch(
-          `/api/schedule?start=${weekStart.toISOString()}&end=${end.toISOString()}`
-        ),
-        fetch("/api/special-events"),
-        fetch("/api/schedule/config"),
-      ]);
+  const fetchData = React.useCallback(
+    async (silent = false) => {
+      if (!weekStart || isNaN(weekStart.getTime())) return;
 
-      if (overridesRes.ok) setOverrides(await overridesRes.json());
-      if (eventsRes.ok) setEvents(await eventsRes.json());
-      if (configRes.ok) setBaseSchedule(await configRes.json());
-    } catch (error) {
-      console.error("Error fetching schedule data:", error);
-    } finally {
+      const cached = getBitcentralCache(weekStart);
+      if (cached) {
+        applyBundle(cached);
+        setIsLoading(false);
+      } else if (!silent && !hasShownData.current) {
+        setIsLoading(true);
+      }
+
+      const bundle = await prefetchBitcentralWeek(weekStart);
+      if (bundle) applyBundle(bundle);
       setIsLoading(false);
-    }
-  };
+    },
+    [weekStart, applyBundle]
+  );
 
   const baseScheduleMap = baseSchedule.reduce((acc, curr) => {
     if (curr.user) {
@@ -129,7 +143,8 @@ export function BitcentralWidget({
   };
 
   useEffect(() => {
-    fetchData();
+    hasShownData.current = false;
+    void fetchData(false);
 
     const interval = setInterval(() => {
       const now = new Date();
@@ -140,13 +155,12 @@ export function BitcentralWidget({
       });
 
       if (now.getMinutes() % 5 === 0 && now.getSeconds() < 10) {
-        fetchData();
+        void fetchData(true);
       }
     }, 60000);
 
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weekStart]);
+  }, [weekStart, fetchData]);
 
   const handleOverride = async (userId: string) => {
     if (!selectedDate || isNaN(selectedDate.getTime())) return;
@@ -155,7 +169,8 @@ export function BitcentralWidget({
       body: JSON.stringify({ date: selectedDate.toISOString(), userId }),
     });
     if (res.ok) {
-      fetchData();
+      invalidateBitcentralCache(weekStart);
+      void fetchData(true);
       setSelectedDate(null);
     }
   };
@@ -173,7 +188,8 @@ export function BitcentralWidget({
     });
 
     if (res.ok) {
-      fetchData();
+      invalidateBitcentralCache();
+      void fetchData(true);
       setNewEventName("");
       setIsManageEventsOpen(false);
     }
@@ -181,17 +197,21 @@ export function BitcentralWidget({
 
   const handleDeleteEvent = async (id: string) => {
     const res = await fetch(`/api/special-events?id=${id}`, { method: "DELETE" });
-    if (res.ok) fetchData();
+    if (res.ok) {
+      invalidateBitcentralCache();
+      void fetchData(true);
+    }
   };
 
-  const handleSaveConfig = async (newSchedule: any[]) => {
+  const handleSaveConfig = async (newSchedule: BitcentralBaseDay[]) => {
     const res = await fetch("/api/schedule/config", {
       method: "POST",
       body: JSON.stringify({ schedule: newSchedule }),
     });
     if (res.ok) {
       toast.success("Horario base actualizado");
-      fetchData();
+      invalidateBitcentralCache();
+      void fetchData(true);
       setIsConfigOpen(false);
     } else {
       toast.error("Error al actualizar horario");
@@ -215,20 +235,20 @@ export function BitcentralWidget({
   }) => {
     if (info.isOverride) {
       return (
-        <span className="rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">
+        <span className="rounded-sm bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">
           Cambio manual
         </span>
       );
     }
     if (info.isRotation) {
       return (
-        <span className="rounded-md bg-violet-500/10 px-1.5 py-0.5 text-[10px] font-medium text-violet-600 dark:text-violet-400">
+        <span className="rounded-sm bg-violet-500/10 px-1.5 py-0.5 text-[10px] font-medium text-violet-600 dark:text-violet-400">
           Rotativo
         </span>
       );
     }
     return (
-      <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+      <span className="rounded-sm bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
         Regular
       </span>
     );
@@ -244,10 +264,10 @@ export function BitcentralWidget({
   );
 
   return (
-    <Card className="relative overflow-hidden rounded-xl border border-border/60 bg-card/80 shadow-sm">
+    <Card className="relative overflow-hidden rounded-sm border border-border/60 bg-card/80 shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0 border-b border-border/50 px-4 py-3">
         <div className="flex min-w-0 items-center gap-2.5">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-blue-500/10 text-blue-600 dark:text-blue-400">
             <CalIcon className="h-4 w-4" />
           </div>
           <div className="min-w-0">
@@ -285,11 +305,12 @@ export function BitcentralWidget({
                 Hoy
               </Button>
             )}
-            <div className="flex items-center rounded-lg border border-border/60 bg-muted/30 p-0.5">
+            <div className="flex items-center rounded-sm border border-border/60 bg-muted/30 p-0.5">
               <Button
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7"
+                onMouseEnter={() => void prefetchBitcentralWeek(addDays(weekStart, -7))}
                 onClick={() => setWeekStart(addDays(weekStart, -7))}
                 aria-label="Semana anterior"
               >
@@ -303,6 +324,7 @@ export function BitcentralWidget({
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7"
+                onMouseEnter={() => void prefetchBitcentralWeek(addDays(weekStart, 7))}
                 onClick={() => setWeekStart(addDays(weekStart, 7))}
                 aria-label="Semana siguiente"
               >
@@ -318,9 +340,9 @@ export function BitcentralWidget({
             ? Array.from({ length: 7 }).map((_, i) => (
                 <div
                   key={i}
-                  className="flex animate-pulse items-center gap-2 rounded-lg px-2 py-2.5"
+                  className="flex animate-pulse items-center gap-2 rounded-sm px-2 py-2.5"
                 >
-                  <div className="h-9 w-9 shrink-0 rounded-md bg-muted" />
+                  <div className="h-9 w-9 shrink-0 rounded-sm bg-muted" />
                   <div className="flex-1 space-y-1.5">
                     <div className="h-3 w-28 rounded bg-muted" />
                     <div className="h-2.5 w-16 rounded bg-muted" />
@@ -343,9 +365,9 @@ export function BitcentralWidget({
                   return (
                     <div
                       key={toISO(date)}
-                      className="flex items-center gap-2.5 rounded-lg border border-amber-500/25 bg-amber-500/5 px-2 py-2"
+                      className="flex items-center gap-2.5 rounded-sm border border-amber-500/25 bg-amber-500/5 px-2 py-2"
                     >
-                      <div className="flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                      <div className="flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-sm bg-amber-500/15 text-amber-600 dark:text-amber-400">
                         <span className="text-[9px] font-semibold uppercase leading-none">
                           {format(date, "EEE", { locale: es })}
                         </span>
@@ -357,7 +379,7 @@ export function BitcentralWidget({
                         <p className="truncate text-sm font-medium text-amber-700 dark:text-amber-300">
                           {info.name}
                         </p>
-                        <span className="mt-0.5 inline-block rounded-md bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400">
+                        <span className="mt-0.5 inline-block rounded-sm bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400">
                           Evento especial
                         </span>
                       </div>
@@ -370,7 +392,7 @@ export function BitcentralWidget({
                     key={toISO(date)}
                     role={!isReadOnly ? "button" : undefined}
                     tabIndex={!isReadOnly ? 0 : undefined}
-                    className={`group flex items-center gap-2.5 rounded-lg px-2 py-2 transition-colors ${
+                    className={`group flex items-center gap-2.5 rounded-sm px-2 py-2 transition-colors ${
                       isTodayStr
                         ? "bg-blue-500/8 ring-1 ring-blue-500/25"
                         : "hover:bg-muted/40"
@@ -384,7 +406,7 @@ export function BitcentralWidget({
                     }}
                   >
                     <div
-                      className={`flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-md ${
+                      className={`flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-sm ${
                         isTodayStr
                           ? "bg-blue-600 text-white"
                           : "bg-muted/50 text-muted-foreground"
@@ -400,7 +422,7 @@ export function BitcentralWidget({
 
                     <div className="flex min-w-0 flex-1 items-center gap-2">
                       <div
-                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-sm text-[10px] font-bold ${
                           isTodayStr
                             ? "bg-blue-600 text-white"
                             : "bg-muted text-muted-foreground"
@@ -426,7 +448,7 @@ export function BitcentralWidget({
       </CardContent>
 
       <Dialog open={isConfigOpen} onOpenChange={setIsConfigOpen}>
-        <DialogContent className="bg-background/95 backdrop-blur-2xl border border-border shadow-xl sm:rounded-xl max-w-lg">
+        <DialogContent className="bg-background/95 backdrop-blur-2xl border border-border shadow-xl sm:rounded-sm max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-foreground">
               <Settings className="w-5 h-5 text-blue-500" />
@@ -472,7 +494,7 @@ export function BitcentralWidget({
                 return (
                   <div
                     key={dayIndex}
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border"
+                    className="flex items-center justify-between p-3 rounded-sm bg-muted/30 border border-border"
                   >
                     <span className="capitalize font-medium text-sm w-24 text-foreground">
                       {dayName}
@@ -528,7 +550,7 @@ export function BitcentralWidget({
           if (!o) setSelectedDate(null);
         }}
       >
-        <DialogContent className="bg-background/95 backdrop-blur-2xl border border-border shadow-xl sm:rounded-xl">
+        <DialogContent className="bg-background/95 backdrop-blur-2xl border border-border shadow-xl sm:rounded-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-foreground">
               <Edit2 className="w-5 h-5 text-blue-500" />
@@ -539,7 +561,7 @@ export function BitcentralWidget({
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-4">
-            <div className="p-4 rounded-xl bg-muted/50 border border-border">
+            <div className="p-4 rounded-sm bg-muted/50 border border-border">
               <p className="text-sm text-muted-foreground mb-3">
                 Selecciona quién cubrirá este turno (Modo Vacaciones/Cambio):
               </p>
@@ -573,21 +595,21 @@ export function BitcentralWidget({
       </Dialog>
 
       <Dialog open={isManageEventsOpen} onOpenChange={setIsManageEventsOpen}>
-        <DialogContent className="bg-background/95 backdrop-blur-2xl border border-border shadow-xl sm:rounded-xl">
+        <DialogContent className="bg-background/95 backdrop-blur-2xl border border-border shadow-xl sm:rounded-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-yellow-500">
               ★ Gestionar Eventos Especiales
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-6 pt-4">
-            <div className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20 space-y-4">
+            <div className="p-4 rounded-sm bg-yellow-500/10 border border-yellow-500/20 space-y-4">
               <h4 className="text-sm font-semibold text-yellow-600 dark:text-yellow-400">
                 Nuevo Evento
               </h4>
               <div className="grid gap-3">
                 <input
                   placeholder="Nombre (ej. Maratónica)"
-                  className="w-full bg-background border border-input rounded-lg h-9 px-3 text-sm text-foreground focus:outline-none focus:border-yellow-500/50 placeholder:text-muted-foreground"
+                  className="w-full bg-background border border-input rounded-sm h-9 px-3 text-sm text-foreground focus:outline-none focus:border-yellow-500/50 placeholder:text-muted-foreground"
                   value={newEventName}
                   onChange={(e) => setNewEventName(e.target.value)}
                 />
@@ -596,7 +618,7 @@ export function BitcentralWidget({
                     <label className="text-xs text-muted-foreground">Inicio</label>
                     <input
                       type="date"
-                      className="w-full bg-background border border-input rounded-lg h-9 px-3 text-sm text-foreground"
+                      className="w-full bg-background border border-input rounded-sm h-9 px-3 text-sm text-foreground"
                       value={newEventStart ? format(newEventStart, "yyyy-MM-dd") : ""}
                       onChange={(e) =>
                         setNewEventStart(new Date(e.target.value + "T12:00:00"))
@@ -607,7 +629,7 @@ export function BitcentralWidget({
                     <label className="text-xs text-muted-foreground">Fin</label>
                     <input
                       type="date"
-                      className="w-full bg-background border border-input rounded-lg h-9 px-3 text-sm text-foreground"
+                      className="w-full bg-background border border-input rounded-sm h-9 px-3 text-sm text-foreground"
                       value={newEventEnd ? format(newEventEnd, "yyyy-MM-dd") : ""}
                       onChange={(e) =>
                         setNewEventEnd(new Date(e.target.value + "T12:00:00"))
@@ -632,7 +654,7 @@ export function BitcentralWidget({
                 {events.map((event) => (
                   <div
                     key={event.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-border"
+                    className="flex items-center justify-between p-3 rounded-sm bg-muted/50 border border-border"
                   >
                     <div>
                       <div className="font-medium text-foreground text-sm">

@@ -1,14 +1,13 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import sql from '@/lib/db';
 
 export async function GET() {
   try {
-
-    const count = await prisma.user.count();
+    const [result] = await sql`SELECT COUNT(*)::int AS count FROM "User"`;
     return NextResponse.json({
       status: "success",
       message: "Database connection successful",
-      userCount: count,
+      userCount: result.count,
       env: process.env.NODE_ENV,
       dbUrlProvided: !!process.env.DATABASE_URL
     });

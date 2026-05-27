@@ -4,14 +4,25 @@ import * as React from "react";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { ReportSocials } from "@/components/ReportSocials";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { User as UserIcon, Tag, Activity, Eye, ArrowLeft } from "lucide-react";
+import {
+  User as UserIcon,
+  Tag,
+  Calendar,
+  Eye,
+  ArrowLeft,
+  Paperclip,
+  MessageSquare,
+  CheckCircle2,
+  Clock,
+  AlertCircle,
+} from "lucide-react";
+import { getReportDetailCache, prefetchReportDetail } from "@/lib/reportDetailCache";
+import { cn } from "@/lib/utils";
 
 interface ReportDetailModalProps {
   isOpen: boolean;
@@ -19,6 +30,60 @@ interface ReportDetailModalProps {
   report: any;
   currentUser: any;
   onUpdate: () => void;
+  initialDetail?: any | null;
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const base =
+    "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold";
+  if (status === "resolved") {
+    return (
+      <span className={`${base} bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/30`}>
+        <CheckCircle2 className="h-3.5 w-3.5" />
+        Resuelto
+      </span>
+    );
+  }
+  if (status === "pending") {
+    return (
+      <span className={`${base} bg-amber-500/15 text-amber-400 ring-1 ring-amber-500/30`}>
+        <Clock className="h-3.5 w-3.5" />
+        Pendiente
+      </span>
+    );
+  }
+  return (
+    <span className={`${base} bg-muted text-muted-foreground ring-1 ring-border`}>
+      <AlertCircle className="h-3.5 w-3.5" />
+      {status}
+    </span>
+  );
+}
+
+function MetaItem({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-start gap-3 rounded-xl border border-border/60 bg-muted/20 px-4 py-3 min-w-0">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+        <Icon className="h-4 w-4" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          {label}
+        </p>
+        <p className="mt-0.5 text-sm font-medium text-foreground capitalize truncate">
+          {value}
+        </p>
+      </div>
+    </div>
+  );
 }
 
 export function ReportDetailModal({
@@ -27,190 +92,257 @@ export function ReportDetailModal({
   report,
   currentUser,
   onUpdate,
+  initialDetail,
 }: ReportDetailModalProps) {
-  const [users, setUsers] = React.useState<any[]>([]);
-
-  React.useEffect(() => {
-    if (isOpen) {
-      fetch("/api/users")
-        .then((res) => res.json())
-        .then((data) => setUsers(data))
-        .catch(console.error);
-    }
-  }, [isOpen]);
-
   const [fullReport, setFullReport] = React.useState<any>(null);
-  const [loading, setLoading] = React.useState(false);
+  const [loadingSocials, setLoadingSocials] = React.useState(false);
+
+  const loadDetail = React.useCallback(async (reportId: string, silent = false) => {
+    if (!silent) setLoadingSocials(true);
+    try {
+      const data = await prefetchReportDetail(reportId);
+      if (data) setFullReport(data);
+    } catch (err) {
+      console.error("Failed to load report details", err);
+    } finally {
+      if (!silent) setLoadingSocials(false);
+    }
+  }, []);
+
+  const refreshDetail = React.useCallback(() => {
+    if (report?.id) loadDetail(report.id);
+  }, [report?.id, loadDetail]);
 
   React.useEffect(() => {
-    if (isOpen && report) {
-      setLoading(true);
-
-      fetch(`/api/reports/${report.id}`)
-        .then((res) => res.json())
-        .then((data) => {
-          setFullReport(data);
-        })
-        .catch((err) => console.error("Failed to load report details", err))
-        .finally(() => setLoading(false));
-
-      if (currentUser) {
-        fetch("/api/reports/view", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ reportId: report.id, userId: currentUser.id }),
-        }).catch(console.error);
-      }
-    } else {
+    if (!isOpen || !report?.id) {
       setFullReport(null);
+      setLoadingSocials(false);
+      return;
     }
-  }, [isOpen, report, currentUser]);
 
-  const displayReport = fullReport || report;
+    const cached =
+      initialDetail?.id === report.id
+        ? initialDetail
+        : getReportDetailCache(report.id);
 
-  if (!displayReport) return null;
+    if (cached) {
+      setFullReport(cached);
+      setLoadingSocials(false);
+      loadDetail(report.id, true);
+    } else {
+      loadDetail(report.id);
+    }
+
+    if (currentUser) {
+      fetch("/api/reports/view", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reportId: report.id, userId: currentUser.id }),
+      }).catch(console.error);
+    }
+  }, [isOpen, report?.id, currentUser, loadDetail, initialDetail]);
+
+  React.useEffect(() => {
+    if (isOpen && initialDetail?.id === report?.id) {
+      setFullReport(initialDetail);
+      setLoadingSocials(false);
+    }
+  }, [isOpen, initialDetail, report?.id]);
+
+  const handleSocialUpdate = React.useCallback(() => {
+    refreshDetail();
+    onUpdate();
+  }, [refreshDetail, onUpdate]);
+
+  const displayReport = fullReport?.id ? fullReport : report;
+
+  if (!displayReport?.id) return null;
+
+  const shortId = String(displayReport.id).slice(0, 6);
+  const createdAt = new Date(displayReport.createdAt);
+  const hasAttachments =
+    displayReport.attachments && displayReport.attachments.length > 0;
+  const hasViews = displayReport.views && displayReport.views.length > 0;
+
+  const openAttachment = (file: { data?: string; url?: string }) => {
+    const src = file.data || file.url;
+    if (!src) return;
+    if (src.startsWith("data:") || src.startsWith("http") || src.startsWith("/")) {
+      const win = window.open();
+      if (win) {
+        win.document.write(
+          `<iframe src="${src}" frameborder="0" style="border:0;top:0;left:0;bottom:0;right:0;width:100%;height:100%;" allowfullscreen></iframe>`
+        );
+      }
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
         onOpenAutoFocus={(e) => e.preventDefault()}
-        className="fixed !left-0 !top-0 !right-0 !bottom-0 !z-[50000] !w-[100vw] !h-[100dvh] !max-w-none !rounded-none !border-0 !translate-x-0 !translate-y-0 p-0 gap-0 bg-background/95 backdrop-blur-xl text-foreground shadow-none duration-300 md:!left-[50%] md:!top-[50%] md:!translate-x-[-50%] md:!translate-y-[-50%] md:!w-full md:!max-w-4xl md:!h-auto md:!max-h-[85vh] md:!rounded-3xl md:!border md:!border-border md:shadow-2xl overflow-hidden flex flex-col box-border ring-0 md:ring-1 md:ring-border"
+        className={cn(
+          "fixed !z-[50000] flex flex-col gap-0 overflow-hidden p-0",
+          "!left-0 !top-0 !right-0 !bottom-0 !w-[100vw] !h-[100dvh] !max-w-none !rounded-none !border-0",
+          "!translate-x-0 !translate-y-0 bg-background shadow-none",
+          "md:!left-1/2 md:!top-1/2 md:!-translate-x-1/2 md:!-translate-y-1/2",
+          "md:!w-[min(96vw,72rem)] md:!h-[min(92dvh,900px)] md:!max-h-[92dvh]",
+          "md:rounded-2xl md:border md:border-border md:shadow-2xl md:ring-1 md:ring-border/50"
+        )}
       >
-        <div className="w-full h-full overflow-y-auto pb-32 md:p-6 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/50">
-          <div tabIndex={0} className="sr-only" aria-hidden="true" />
-          <DialogHeader className="p-4 md:p-0 bg-transparent border-b border-border md:border-none shadow-sm md:shadow-none relative mb-4 md:mb-0">
-            <div className="flex items-center gap-4 pr-2">
-              <div
-                onClick={onClose}
-                className="md:hidden p-2 -ml-2 rounded-full active:bg-muted text-muted-foreground cursor-pointer hover:text-foreground"
-              >
-                <ArrowLeft className="w-6 h-6" />
-              </div>
+        {/* Cabecera */}
+        <header className="shrink-0 border-b border-border bg-muted/30 px-4 py-4 md:px-8 md:py-5">
+          <div className="flex items-start gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="md:hidden mt-0.5 rounded-full p-2 text-muted-foreground hover:bg-muted hover:text-foreground"
+              aria-label="Volver"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
 
-              <div className="flex-1 min-w-0">
-                <DialogTitle className="text-lg md:text-2xl font-bold flex items-center gap-4 truncate text-foreground">
-                  <span>Reporte #{displayReport.id.slice(0, 6)}</span>
-                  <Badge
-                    variant="outline"
-                    className="hidden sm:inline-flex font-normal border-border text-muted-foreground"
-                  >
-                    {new Date(displayReport.createdAt).toLocaleDateString()}
-                  </Badge>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2 md:gap-3">
+                <DialogTitle className="text-xl font-bold tracking-tight md:text-2xl">
+                  Reporte #{shortId}
                 </DialogTitle>
-                <DialogDescription className="text-xs text-muted-foreground mt-1">
-                  Detalles completos e historial de seguimiento.
-                </DialogDescription>
+                <StatusBadge status={displayReport.status} />
               </div>
-            </div>
-          </DialogHeader>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2 p-4 md:p-0">
-            <div className="flex flex-col gap-6">
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <UserIcon className="w-4 h-4 text-primary" />
-                  <span className="font-medium text-foreground">
-                    {displayReport.operatorName}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Tag className="w-4 h-4 text-muted-foreground" />
-                  <span className="capitalize">{displayReport.category}</span>
-                  <span className="text-border">|</span>
-                  <span className="">{displayReport.priority}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Activity className="w-4 h-4 text-emerald-500" />
-                  <span className="capitalize">
-                    {displayReport.status === "resolved"
-                      ? "Resuelto"
-                      : displayReport.status}
-                  </span>
-                </div>
-              </div>
-
-              <div className="border-t pt-4 border-border">
-                {loading ? (
-                  <div className="text-center py-4 text-muted-foreground text-xs">
-                    Cargando comentarios...
-                  </div>
-                ) : (
-                  <ReportSocials
-                    reportId={displayReport.id}
-                    currentUser={currentUser}
-                    initialComments={displayReport.comments || []}
-                    initialReactions={displayReport.reactions || []}
-                    availableUsers={users}
-                    onUpdate={onUpdate}
-                  />
-                )}
-              </div>
-            </div>
-
-            <div className="bg-muted/30 p-3 rounded-lg border border-border h-full">
-              <h4 className="text-xs font-bold text-muted-foreground mb-2">
-                Descripción del problema
-              </h4>
-              <ScrollArea className="h-auto max-h-[500px] min-h-[200px] w-full rounded-md pr-4">
-                <p className="text-sm text-foreground leading-relaxed">
-                  {displayReport.problemDescription}
-                </p>
-              </ScrollArea>
-
-              {displayReport.attachments &&
-                displayReport.attachments.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-border">
-                    <h4 className="text-xs font-bold text-muted-foreground mb-2">
-                      Adjuntos
-                    </h4>
-                    <div className="flex gap-2 flex-wrap">
-                      {displayReport.attachments.map((file: any, idx: number) => (
-                        <div
-                          key={idx}
-                          className="relative w-24 h-24 bg-card rounded-lg overflow-hidden border border-border flex items-center justify-center group cursor-pointer hover:border-ring transition-colors"
-                          onClick={() => {
-                            const src = file.data || file.url;
-
-                            if (
-                              src.startsWith("data:") ||
-                              src.startsWith("http") ||
-                              src.startsWith("/")
-                            ) {
-                              const win = window.open();
-                              if (win)
-                                win.document.write(
-                                  '<iframe src="' +
-                                    src +
-                                    '" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>'
-                                );
-                            }
-                          }}
-                        >
-                          <div className="flex flex-col items-center">
-                            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center mb-1">
-                              <div className="w-0 h-0 border-t-[6px] border-t-transparent border-l-[10px] border-l-foreground border-b-[6px] border-b-transparent ml-1" />
-                            </div>
-                            <span className="text-[10px] text-muted-foreground">
-                              Video
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+              <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5" />
+                  {createdAt.toLocaleDateString("es-ES", {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })}
+                </span>
+                <span className="hidden text-border sm:inline">·</span>
+                <span className="text-xs text-muted-foreground/80">
+                  {createdAt.toLocaleTimeString("es-ES", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+              </p>
             </div>
           </div>
 
-          {displayReport.views && displayReport.views.length > 0 && (
-            <div className="mt-4 flex items-center gap-2 text-[10px] text-muted-foreground">
-              <Eye className="w-3 h-3" />
+          {/* Metadatos */}
+          <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3 md:mt-5 md:gap-3">
+            <MetaItem
+              icon={UserIcon}
+              label="Operador"
+              value={displayReport.operatorName}
+            />
+            <MetaItem
+              icon={Tag}
+              label="Categoría"
+              value={displayReport.category}
+            />
+            <MetaItem
+              icon={AlertCircle}
+              label="Prioridad"
+              value={displayReport.priority}
+            />
+          </div>
+
+          {hasViews && (
+            <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+              <Eye className="h-3.5 w-3.5 shrink-0" />
               <span>
-                Visto por:{" "}
-                {displayReport.views.map((v: any) => v.user.name).join(", ")}
+                Visto por{" "}
+                <span className="text-foreground/80">
+                  {displayReport.views.map((v: { user: { name: string } }) => v.user.name).join(", ")}
+                </span>
               </span>
             </div>
           )}
+        </header>
+
+        {/* Cuerpo: descripción | actividad */}
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden md:flex-row">
+          {/* Descripción */}
+          <section className="flex min-h-0 flex-col border-b border-border md:w-[44%] md:border-b-0 md:border-r">
+            <div className="flex shrink-0 items-center gap-2 border-b border-border/60 px-4 py-3 md:px-6">
+              <Paperclip className="h-4 w-4 text-muted-foreground" />
+              <h3 className="text-sm font-semibold text-foreground">
+                Descripción del problema
+              </h3>
+            </div>
+
+            <ScrollArea className="flex-1 px-4 py-4 md:px-6 md:py-5">
+              <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-foreground/95">
+                {displayReport.problemDescription}
+              </p>
+
+              {hasAttachments && (
+                <div className="mt-6 border-t border-border pt-5">
+                  <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Adjuntos ({displayReport.attachments.length})
+                  </p>
+                  <div className="flex flex-wrap gap-3">
+                    {displayReport.attachments.map((file: { data?: string; url?: string }, idx: number) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => openAttachment(file)}
+                        className="group flex h-28 w-28 flex-col items-center justify-center rounded-xl border border-border bg-muted/30 transition-colors hover:border-primary/40 hover:bg-muted/50"
+                      >
+                        <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary group-hover:bg-primary/20">
+                          <div className="ml-0.5 h-0 w-0 border-b-[7px] border-l-[12px] border-t-[7px] border-b-transparent border-l-current border-t-transparent" />
+                        </div>
+                        <span className="text-[11px] font-medium text-muted-foreground group-hover:text-foreground">
+                          Ver video
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </ScrollArea>
+          </section>
+
+          {/* Actividad */}
+          <section className="flex min-h-0 flex-1 flex-col bg-muted/10">
+            <div className="flex shrink-0 items-center gap-2 border-b border-border/60 px-4 py-3 md:px-6">
+              <MessageSquare className="h-4 w-4 text-primary" />
+              <h3 className="text-sm font-semibold text-foreground">
+                Actividad y comentarios
+              </h3>
+              {!loadingSocials &&
+                (displayReport.comments?.length > 0 ||
+                  displayReport.reactions?.length > 0) && (
+                  <Badge variant="secondary" className="ml-auto text-[10px] font-normal">
+                    {displayReport.comments?.length || 0} comentario
+                    {(displayReport.comments?.length || 0) !== 1 ? "s" : ""}
+                  </Badge>
+                )}
+            </div>
+
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-4 md:px-6 md:py-5">
+              {loadingSocials &&
+              !(fullReport?.comments?.length || fullReport?.reactions?.length) ? (
+                <div className="flex flex-1 items-center justify-center">
+                  <p className="text-sm text-muted-foreground animate-pulse">
+                    Cargando actividad...
+                  </p>
+                </div>
+              ) : (
+                <ReportSocials
+                  embedded
+                  reportId={displayReport.id}
+                  currentUser={currentUser}
+                  initialComments={displayReport.comments || []}
+                  initialReactions={displayReport.reactions || []}
+                  availableUsers={displayReport.mentionUsers || []}
+                  onUpdate={handleSocialUpdate}
+                />
+              )}
+            </div>
+          </section>
         </div>
       </DialogContent>
     </Dialog>

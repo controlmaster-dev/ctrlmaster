@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import { emailRateLimiter } from '@/lib/rateLimit';
-import prisma from '@/lib/prisma';
+import sql from '@/lib/db';
 
 export async function POST(req: NextRequest) {
   let reportId = "";
@@ -219,12 +219,9 @@ export async function POST(req: NextRequest) {
 
       console.log('✅ Correo enviado con ÉXITO vía Resend:', data.data?.id);
 
-      await prisma.report.update({
-        where: { id: reportId },
-        data: {
-          emailStatus: 'sent'
-        }
-      });
+      await sql`
+        UPDATE "Report" SET "emailStatus" = 'sent' WHERE "id" = ${reportId}
+      `;
 
       return NextResponse.json({ success: true, messageId: data.data?.id, provider: 'resend' });
 
@@ -278,26 +275,23 @@ export async function POST(req: NextRequest) {
 
     console.log('✅ Correo enviado con éxito vía Nodemailer:', info.messageId);
 
-    await prisma.report.update({
-      where: { id: reportId },
-      data: {
-        emailStatus: 'sent'
-      }
-    });
+    await sql`
+      UPDATE "Report" SET "emailStatus" = 'sent' WHERE "id" = ${reportId}
+    `;
 
     return NextResponse.json({ success: true, messageId: info.messageId });
   } catch (error: unknown) {
     console.error('❌ Error enviando correo vía Nodemailer:', error);
 
     if (reportId) {
-      await prisma.report.update({
-        where: { id: reportId },
-        data: {
-          emailStatus: 'failed'
-        }
-      });
+      await sql`
+        UPDATE "Report" SET "emailStatus" = 'failed' WHERE "id" = ${reportId}
+      `;
     }
 
-    return NextResponse.json({ success: false, error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
   }
 }

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { checkMultiviewStatus } from '@/lib/monitor';
-import prisma from '@/lib/prisma';
+import sql from '@/lib/db';
 
 export async function GET() {
   try {
@@ -8,43 +8,47 @@ export async function GET() {
     const result = await checkMultiviewStatus();
 
     if (result.status === 'ERROR' || result.status === 'WARNING') {
-      const admin = await prisma.user.findFirst({ 
-        where: { role: { in: ['BOSS', 'ADMIN'] } } 
-      });
+      const [admin] = await sql`
+        SELECT * FROM "User"
+        WHERE "role" IN ('BOSS', 'ADMIN')
+        LIMIT 1
+      `;
 
       if (admin) {
-        const recentReport = await prisma.report.findFirst({
-          where: {
-            dateStarted: { gt: new Date(Date.now() - 60 * 60 * 1000) }, // 1 hour buffer
-            operatorName: "Monitoreo Automático"
-          }
-        });
+        const [recentReport] = await sql`
+          SELECT "id" FROM "Report"
+          WHERE "dateStarted" > ${new Date(Date.now() - 60 * 60 * 1000).toISOString()}
+            AND "operatorName" = 'Monitoreo Automático'
+          LIMIT 1
+        `;
 
         if (!recentReport) {
-          await prisma.report.create({
-            data: {
-              operatorId: admin.id,
-              operatorName: "Monitoreo Automático",
-              operatorEmail: "bot@enlace.org",
-              problemDescription: `[ALERTA MULTIVIEW] ${result.details}`,
-              category: 'SISTEMA',
-              priority: 'ALTA', // Monitoring failures should be High
-              status: 'pending',
-              dateStarted: new Date()
-            }
-          });
+          await sql`
+            INSERT INTO "Report" (
+              "operatorId", "operatorName", "operatorEmail",
+              "problemDescription", "category", "priority",
+              "status", "dateStarted"
+            )
+            VALUES (
+              ${admin.id}, 'Monitoreo Automático', 'bot@enlace.org',
+              ${`[ALERTA MULTIVIEW] ${result.details}`},
+              'SISTEMA', 'ALTA', 'pending',
+              ${new Date().toISOString()}
+            )
+          `;
           console.log("[Cron] Report created.");
         } else {
           console.log("[Cron] Skipping report creation (active report exists).");
         }
-      } else {
-        console.warn("[Cron] No admin user found for sending monitoring alerts.");
       }
     }
 
     return NextResponse.json({ success: true, result });
   } catch (error: unknown) {
     console.error("[Cron] Monitor failed:", error);
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Internal server error" },
+      { status: 500 }
+    );
   }
 }

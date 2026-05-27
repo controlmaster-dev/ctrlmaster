@@ -54,6 +54,17 @@ import Link from "next/link";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { ReportDetailModal } from "@/components/ReportDetailModal";
 import { pageContainerClass } from "@/lib/page-layout";
+import {
+  getReportDetailCache,
+  prefetchReportDetail,
+  prefetchReportDetails,
+  invalidateReportDetailCache,
+} from "@/lib/reportDetailCache";
+import {
+  getReportesListCache,
+  setReportesListCache,
+  invalidateReportesListCache,
+} from "@/lib/reportesListCache";
 
 interface Report {
   id: string;
@@ -109,6 +120,7 @@ export function ReportesClient() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const [cachedDetail, setCachedDetail] = useState<any | null>(null);
 
   // Operator stats
   const [showStats, setShowStats] = useState(false);
@@ -134,22 +146,58 @@ export function ReportesClient() {
     return params.toString();
   }, [page, search, statusFilter, priorityFilter, operatorFilter, dateFrom, dateTo]);
 
-  const fetchReports = async () => {
-    setLoading(true);
+  const fetchGlobalStats = useCallback(async () => {
+    const [all, pending, resolved] = await Promise.all([
+      fetch("/api/reports?limit=1").then((r) => r.json()),
+      fetch("/api/reports?limit=1&status=pending").then((r) => r.json()),
+      fetch("/api/reports?limit=1&status=resolved").then((r) => r.json()),
+    ]);
+    return {
+      total: all.total ?? 0,
+      pending: pending.total ?? 0,
+      resolved: resolved.total ?? 0,
+    };
+  }, []);
+
+  const fetchReports = async (opts?: { silent?: boolean }) => {
+    const queryKey = buildQuery();
+    if (!opts?.silent) setLoading(true);
+
     try {
-      const query = buildQuery();
-      const res = await fetch(`/api/reports?${query}`);
-      const data = await res.json();
-      if (data.reports) {
-        setReports(data.reports);
-        setTotal(data.total || 0);
-        setTotalPages(data.totalPages || 1);
-      } else if (Array.isArray(data)) {
-        // Fallback for old array format
-        setReports(data);
-        setTotal(data.length);
-        setTotalPages(1);
+      const [listRes, stats] = await Promise.all([
+        fetch(`/api/reports?${queryKey}`).then((r) => r.json()),
+        fetchGlobalStats(),
+      ]);
+
+      let nextReports: Report[] = [];
+      let nextTotal = 0;
+      let nextTotalPages = 1;
+
+      if (listRes.reports) {
+        nextReports = listRes.reports;
+        nextTotal = listRes.total || 0;
+        nextTotalPages = listRes.totalPages || 1;
+        void prefetchReportDetails(listRes.reports.map((r: Report) => r.id));
+      } else if (Array.isArray(listRes)) {
+        nextReports = listRes;
+        nextTotal = listRes.length;
+        nextTotalPages = 1;
+        void prefetchReportDetails(listRes.map((r: Report) => r.id));
       }
+
+      setReports(nextReports);
+      setTotal(nextTotal);
+      setTotalPages(nextTotalPages);
+      setGlobalStats(stats);
+
+      setReportesListCache({
+        queryKey,
+        reports: nextReports,
+        total: nextTotal,
+        totalPages: nextTotalPages,
+        globalStats: stats,
+        fetchedAt: Date.now(),
+      });
     } catch (error) {
       console.error(error);
     } finally {
@@ -158,51 +206,47 @@ export function ReportesClient() {
     }
   };
 
-  const fetchGlobalStats = useCallback(async () => {
-    try {
-      const [all, pending, resolved] = await Promise.all([
-        fetch("/api/reports?limit=1").then((r) => r.json()),
-        fetch("/api/reports?limit=1&status=pending").then((r) => r.json()),
-        fetch("/api/reports?limit=1&status=resolved").then((r) => r.json()),
-      ]);
-      setGlobalStats({
-        total: all.total ?? 0,
-        pending: pending.total ?? 0,
-        resolved: resolved.total ?? 0,
-      });
-    } catch (e) {
-      console.error(e);
-    }
-  }, []);
-
   useEffect(() => {
-    fetchReports();
-    fetchGlobalStats();
+    const queryKey = buildQuery();
+    const cached = getReportesListCache(queryKey);
+    if (cached) {
+      setReports(cached.reports as Report[]);
+      setTotal(cached.total);
+      setTotalPages(cached.totalPages);
+      setGlobalStats(cached.globalStats);
+      setLoading(false);
+      setInitialLoad(false);
+      void prefetchReportDetails((cached.reports as Report[]).map((r) => r.id));
+      void fetchReports({ silent: true });
+    } else {
+      void fetchReports();
+    }
+
     const savedUser = localStorage.getItem("enlace-user");
     if (savedUser) setCurrentUser(JSON.parse(savedUser));
   }, [page, statusFilter, priorityFilter, operatorFilter, dateFrom, dateTo]);
 
-  useEffect(() => {
-    fetchGlobalStats();
-  }, [fetchGlobalStats]);
-
-  // Handle direct report link (?reportId=xxx)
+  // Handle direct report link (?reportId=xxx) — usa caché de precarga si existe
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const reportId = params.get("reportId");
-    if (reportId) {
-      fetch(`/api/reports/${reportId}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data && !data.error) {
-            setSelectedReport(data);
-            setDetailModalOpen(true);
-            // Clean up URL to avoid reopening on refresh/back
-            window.history.replaceState({}, '', window.location.pathname);
-          }
-        })
-        .catch(console.error);
+    if (!reportId) return;
+
+    const cached = getReportDetailCache(reportId);
+    if (cached) {
+      setSelectedReport(cached as Report);
+      setCachedDetail(cached);
+      setDetailModalOpen(true);
     }
+
+    prefetchReportDetail(reportId).then((data) => {
+      if (data) {
+        setSelectedReport(data as Report);
+        setCachedDetail(data);
+        setDetailModalOpen(true);
+      }
+      window.history.replaceState({}, "", window.location.pathname);
+    });
   }, []);
 
   // Debounced search
@@ -270,8 +314,15 @@ export function ReportesClient() {
   };
 
   const handleRowClick = (report: Report) => {
+    const cached = getReportDetailCache(report.id);
     setSelectedReport(report);
+    setCachedDetail(cached);
     setDetailModalOpen(true);
+    if (!cached) {
+      prefetchReportDetail(report.id).then((data) => {
+        if (data) setCachedDetail(data);
+      });
+    }
   };
 
   const handleResolve = async (id: string, e: React.MouseEvent) => {
@@ -284,8 +335,8 @@ export function ReportesClient() {
       });
       if (res.ok) {
         setModal({ isOpen: true, type: "success", message: "Reporte marcado como resuelto." });
-        fetchReports();
-        fetchGlobalStats();
+        invalidateReportesListCache();
+        fetchReports({ silent: true });
       } else throw new Error("Error al actualizar");
     } catch (error) {
       setModal({ isOpen: true, type: "error", message: "Error de servidor." });
@@ -381,10 +432,16 @@ export function ReportesClient() {
         onClose={() => {
           setDetailModalOpen(false);
           setSelectedReport(null);
+          setCachedDetail(null);
         }}
         report={selectedReport}
+        initialDetail={cachedDetail}
         currentUser={currentUser}
-        onUpdate={fetchReports}
+        onUpdate={() => {
+          if (selectedReport?.id) invalidateReportDetailCache(selectedReport.id);
+          invalidateReportesListCache();
+          fetchReports({ silent: true });
+        }}
       />
       <ProcessingModal
         isOpen={processing.isOpen}
@@ -671,6 +728,7 @@ export function ReportesClient() {
                     <TableRow
                       key={report.id}
                       className="group cursor-pointer border-border/40 transition-colors hover:bg-muted/20"
+                      onMouseEnter={() => prefetchReportDetail(report.id)}
                       onClick={() => handleRowClick(report)}
                     >
                       <TableCell className="py-3.5 pl-4">

@@ -17,7 +17,7 @@ export function DetailsStep({ formData, handleInputChange }: DetailsStepProps) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.2 }}
-      className="space-y-8"
+      className="flex min-h-0 flex-1 flex-col space-y-6 md:space-y-8"
     >
       <FormStepHeader
         title="Detalles"
@@ -25,24 +25,24 @@ export function DetailsStep({ formData, handleInputChange }: DetailsStepProps) {
         description="Describe qué pasó y cuándo ocurrió el incidente."
       />
 
-      <div className="space-y-6">
-        <section className="space-y-2">
+      <div className="grid flex-1 gap-6 lg:grid-cols-[1fr_minmax(280px,360px)] lg:gap-8">
+        <section className="flex min-h-[200px] flex-col space-y-2 lg:min-h-[min(50vh,420px)]">
           <p className="text-xs font-medium text-muted-foreground">
             Descripción del problema
           </p>
           <Textarea
             value={formData.problemDescription}
             onChange={(e) => handleInputChange("problemDescription", e.target.value)}
-            className="min-h-[140px] resize-none rounded-lg border-border/60 bg-card/80 p-4 text-sm focus-visible:ring-[#FF0C60]/30"
+            className="min-h-[180px] flex-1 resize-none rounded-lg border-border/60 bg-card/80 p-4 text-sm focus-visible:ring-[#FF0C60]/30 md:min-h-[220px] lg:min-h-0"
             placeholder="Ej.: se cayó el audio en el canal principal, mensaje de error en consola…"
           />
         </section>
 
-        <section className="space-y-3">
+        <section className="space-y-3 rounded-xl border border-border/60 bg-card/40 p-4 md:p-5 lg:self-start">
           <p className="text-xs font-medium text-muted-foreground">
             Fecha y hora del incidente
           </p>
-          <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-2">
             <button
               type="button"
               onClick={() => handleInputChange("isManualDate", false)}

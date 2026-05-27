@@ -1,18 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import sql from '@/lib/db';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { channel, type, value } = body;
 
-    const metric = await prisma.streamMetric.create({
-      data: {
-        channel,
-        type,
-        value
-      }
-    });
+    const [metric] = await sql`
+      INSERT INTO "StreamMetric" ("channel", "type", "value")
+      VALUES (${channel}, ${type}, ${value || null})
+      RETURNING *
+    `;
 
     return NextResponse.json(metric);
   } catch (error) {

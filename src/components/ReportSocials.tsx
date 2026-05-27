@@ -27,6 +27,8 @@ interface ReportSocialsProps {
   initialReactions: any[];
   availableUsers: any[];
   onUpdate: () => void;
+  /** Sin borde superior — para panel de actividad del modal */
+  embedded?: boolean;
 }
 
 export function ReportSocials({
@@ -36,6 +38,7 @@ export function ReportSocials({
   initialReactions,
   availableUsers,
   onUpdate,
+  embedded = false,
 }: ReportSocialsProps) {
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -104,16 +107,18 @@ export function ReportSocials({
     });
 
     try {
+      const body: Record<string, unknown> = {
+        reportId,
+        authorId: currentUser.id,
+        content: comment,
+      };
+      if (replyingTo) body.parentId = replyingTo;
+      if (mentionedIds.length > 0) body.mentionedUserIds = mentionedIds;
+
       await fetch("/api/comments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          reportId,
-          authorId: currentUser.id,
-          content: comment,
-          parentId: replyingTo,
-          mentionedUserIds: mentionedIds,
-        }),
+        body: JSON.stringify(body),
       });
       setComment("");
       setReplyingTo(null);
@@ -217,9 +222,15 @@ export function ReportSocials({
   };
 
   return (
-    <div className="space-y-6 mt-4 border-t border-slate-100 dark:border-white/5 pt-4">
+    <div
+      className={
+        embedded
+          ? "flex min-h-0 flex-1 flex-col gap-5"
+          : "mt-4 space-y-6 border-t border-slate-100 pt-4 dark:border-white/5"
+      }
+    >
       <TooltipProvider>
-        <div className="flex gap-2">
+        <div className="flex shrink-0 flex-wrap gap-2">
           {reactionCounts.map((r) => (
             <Tooltip key={r.label}>
               <TooltipTrigger asChild>
@@ -245,7 +256,13 @@ export function ReportSocials({
         </div>
       </TooltipProvider>
 
-      <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar p-2">
+      <div
+        className={
+          embedded
+            ? "min-h-0 flex-1 space-y-4 overflow-y-auto pr-1 custom-scrollbar"
+            : "max-h-[400px] space-y-4 overflow-y-auto p-2 pr-2 custom-scrollbar"
+        }
+      >
         {initialComments.length === 0 ? (
           <p className="text-sm text-slate-400 italic text-center py-4">
             Sin comentarios aún.
@@ -255,7 +272,7 @@ export function ReportSocials({
         )}
       </div>
 
-      <div className="relative">
+      <div className="relative shrink-0">
         {replyingTo && (
           <div className="text-xs text-slate-400 mb-2 flex justify-between">
             <span>Respondiendo...</span>

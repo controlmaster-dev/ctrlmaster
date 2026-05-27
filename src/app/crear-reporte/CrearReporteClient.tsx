@@ -75,36 +75,38 @@ export function CrearReporteClient() {
         </div>
       </aside>
 
-      <main className="relative z-10 flex flex-1 justify-center p-4 pb-24 pt-6 md:p-8 md:pt-10">
-        <div className="w-full max-w-2xl">
-          <AnimatePresence mode="wait">
-            {step === 0 && (
-              <ContextStep
-                key="step0"
-                formData={formData}
-                toggleSystem={toggleSystem}
-                toggleCategory={toggleCategory}
-              />
-            )}
-            {step === 1 && (
-              <DetailsStep
-                key="step1"
-                formData={formData}
-                handleInputChange={handleInputChange}
-              />
-            )}
-            {step === 2 && (
-              <EvidenceStep
-                key="step2"
-                formData={formData}
-                handleInputChange={handleInputChange}
-                handleFileUpload={handleFileUpload}
-                uploading={uploading}
-              />
-            )}
-          </AnimatePresence>
+      <main className="relative z-10 flex min-h-[calc(100dvh)] flex-1 flex-col overflow-y-auto md:h-screen md:min-h-0">
+        <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 py-6 pb-24 md:px-10 md:py-8 lg:max-w-6xl">
+          <div className="flex min-h-0 flex-1 flex-col">
+            <AnimatePresence mode="wait">
+              {step === 0 && (
+                <ContextStep
+                  key="step0"
+                  formData={formData}
+                  toggleSystem={toggleSystem}
+                  toggleCategory={toggleCategory}
+                />
+              )}
+              {step === 1 && (
+                <DetailsStep
+                  key="step1"
+                  formData={formData}
+                  handleInputChange={handleInputChange}
+                />
+              )}
+              {step === 2 && (
+                <EvidenceStep
+                  key="step2"
+                  formData={formData}
+                  handleInputChange={handleInputChange}
+                  handleFileUpload={handleFileUpload}
+                  uploading={uploading}
+                />
+              )}
+            </AnimatePresence>
+          </div>
 
-          <div className="mt-8 flex items-center justify-between border-t border-border/50 pt-6">
+          <div className="mt-auto flex shrink-0 items-center justify-between border-t border-border/50 pt-6 md:pt-8">
             {step > 0 ? (
               <Button type="button" variant="ghost" size="sm" onClick={prevStep}>
                 <ArrowLeft className="mr-1 h-4 w-4" />

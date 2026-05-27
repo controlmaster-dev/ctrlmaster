@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import sql from '@/lib/db';
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,13 +10,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "User ID required" }, { status: 400 });
     }
 
-    await prisma.user.update({
-      where: { id: userId },
-      data: {
-        currentPath: path,
-        lastActive: new Date()
-      }
-    });
+    await sql`
+      UPDATE "User"
+      SET "currentPath" = ${path || null}, "lastActive" = NOW()
+      WHERE "id" = ${userId}
+    `;
 
     return NextResponse.json({ success: true });
   } catch (error) {

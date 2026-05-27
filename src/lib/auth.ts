@@ -4,7 +4,7 @@
  */
 
 import { generateToken } from '@/lib/crypto';
-import prisma from '@/lib/prisma';
+import sql from '@/lib/db';
 
 /**
  * Session token configuration
@@ -13,59 +13,41 @@ const TOKEN_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
 
 /**
  * Generate a session token for a user
- *
- * @param userId - User ID
- * @returns Session token
  */
 export async function createToken(userId: string): Promise<string> {
   const token = generateToken(64);
   const expiresAt = new Date(Date.now() + TOKEN_EXPIRY);
 
-  // Store token in database
-  await prisma.sessionToken.create({
-    data: {
-      token,
-      userId,
-      expiresAt,
-      userAgent: '',
-      ipAddress: '',
-    },
-  });
+  await sql`
+    INSERT INTO "SessionToken" ("token", "userId", "expiresAt", "userAgent", "ipAddress")
+    VALUES (${token}, ${userId}, ${expiresAt.toISOString()}, '', '')
+  `;
 
   return token;
 }
 
 /**
  * Validate a session token
- *
- * @param userId - User ID
- * @param token - Session token
- * @returns True if token is valid
  */
 export async function validateToken(
   userId: string,
   token: string
 ): Promise<boolean> {
   try {
-    const sessionToken = await prisma.sessionToken.findUnique({
-      where: { token },
-    });
+    const [sessionToken] = await sql`
+      SELECT * FROM "SessionToken" WHERE "token" = ${token}
+    `;
 
     if (!sessionToken) {
       return false;
     }
 
-    // Check if token belongs to user
     if (sessionToken.userId !== userId) {
       return false;
     }
 
-    // Check if token is expired
-    if (sessionToken.expiresAt < new Date()) {
-      // Delete expired token
-      await prisma.sessionToken.delete({
-        where: { token },
-      });
+    if (new Date(sessionToken.expiresAt) < new Date()) {
+      await sql`DELETE FROM "SessionToken" WHERE "token" = ${token}`;
       return false;
     }
 
@@ -77,14 +59,10 @@ export async function validateToken(
 
 /**
  * Revoke a session token
- *
- * @param token - Session token to revoke
  */
 export async function revokeToken(token: string): Promise<void> {
   try {
-    await prisma.sessionToken.delete({
-      where: { token },
-    });
+    await sql`DELETE FROM "SessionToken" WHERE "token" = ${token}`;
   } catch {
     // Token may not exist, ignore
   }
@@ -92,36 +70,23 @@ export async function revokeToken(token: string): Promise<void> {
 
 /**
  * Revoke all tokens for a user
- *
- * @param userId - User ID
  */
 export async function revokeAllUserTokens(userId: string): Promise<void> {
-  await prisma.sessionToken.deleteMany({
-    where: { userId },
-  });
+  await sql`DELETE FROM "SessionToken" WHERE "userId" = ${userId}`;
 }
 
 /**
  * Clean up expired tokens
- * Should be called periodically (e.g., in a cron job)
  */
 export async function cleanupExpiredTokens(): Promise<number> {
-  const result = await prisma.sessionToken.deleteMany({
-    where: {
-      expiresAt: {
-        lt: new Date(),
-      },
-    },
-  });
-
+  const result = await sql`
+    DELETE FROM "SessionToken" WHERE "expiresAt" < NOW()
+  `;
   return result.count;
 }
 
 /**
  * Get user from session token
- *
- * @param token - Session token
- * @returns User object or null
  */
 export async function getUserFromToken(token: string | undefined) {
   if (!token) {
@@ -129,25 +94,31 @@ export async function getUserFromToken(token: string | undefined) {
   }
 
   try {
-    const sessionToken = await prisma.sessionToken.findUnique({
-      where: { token },
-      include: { user: true },
-    });
+    const rows = await sql`
+      SELECT u."id", u."name", u."email", u."username", u."role",
+             u."image", u."phone", u."lastLogin", u."lastLoginIP",
+             u."lastLoginCountry", u."currentPath", u."lastActive",
+             u."birthday", u."schedule", u."tempSchedule", u."createdAt",
+             st."expiresAt" as "tokenExpiresAt"
+      FROM "SessionToken" st
+      JOIN "User" u ON u."id" = st."userId"
+      WHERE st."token" = ${token}
+    `;
 
-    if (!sessionToken) {
+    if (rows.length === 0) {
       return null;
     }
 
-    // Check if token is expired
-    if (sessionToken.expiresAt < new Date()) {
-      await prisma.sessionToken.delete({
-        where: { token },
-      });
+    const row = rows[0];
+
+    if (new Date(row.tokenExpiresAt) < new Date()) {
+      await sql`DELETE FROM "SessionToken" WHERE "token" = ${token}`;
       return null;
     }
 
-    const { password, ...userWithoutPassword } = sessionToken.user;
-    return userWithoutPassword;
+    // Exclude password from the returned user object
+    const { tokenExpiresAt, ...user } = row;
+    return user;
   } catch {
     return null;
   }

@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import sql from '@/lib/db';
 
 export async function GET() {
   try {
-    const schedule = await prisma.weeklySchedule.findMany({
-      include: { user: true }
-    });
+    const schedule = await sql`
+      SELECT ws.*, row_to_json(u.*) AS "user"
+      FROM "WeeklySchedule" ws
+      JOIN "User" u ON u."id" = ws."userId"
+    `;
     return NextResponse.json(schedule);
   } catch (error) {
     console.error('Error fetching schedule config:', error);
@@ -22,24 +24,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid format' }, { status: 400 });
     }
 
-    const operations = [];
-
-    for (const item of schedule) {
-      if (item.userId === "REMOVE") {
-        operations.push(prisma.weeklySchedule.deleteMany({
-          where: { dayOfWeek: item.dayOfWeek }
-        }));
-      } else {
-        operations.push(prisma.weeklySchedule.upsert({
-          where: { dayOfWeek: item.dayOfWeek },
-          update: { userId: item.userId },
-          create: { dayOfWeek: item.dayOfWeek, userId: item.userId }
-        }));
-      }
-    }
-
-    if (operations.length > 0) {
-      await prisma.$transaction(operations);
+    if (schedule.length > 0) {
+      await sql.begin(async (tx) => {
+        for (const item of schedule) {
+          if (item.userId === "REMOVE") {
+            await tx`DELETE FROM "WeeklySchedule" WHERE "dayOfWeek" = ${item.dayOfWeek}`;
+          } else {
+            await tx`
+              INSERT INTO "WeeklySchedule" ("dayOfWeek", "userId")
+              VALUES (${item.dayOfWeek}, ${item.userId})
+              ON CONFLICT ("dayOfWeek")
+              DO UPDATE SET "userId" = EXCLUDED."userId"
+            `;
+          }
+        }
+      });
     }
 
     return NextResponse.json({ success: true });

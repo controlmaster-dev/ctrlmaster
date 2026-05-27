@@ -35,8 +35,9 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  // Code splitting optimization
-  webpack: (config, { isServer }) => {
+  // Code splitting optimization (production only — skip in dev for speed)
+  webpack: (config, { isServer, dev }) => {
+    if (dev) return config;
     if (!isServer) {
       // Split vendor chunks for better caching
       config.optimization.splitChunks = {

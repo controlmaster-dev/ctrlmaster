@@ -27,7 +27,7 @@ export function EvidenceStep({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.2 }}
-      className="space-y-8"
+      className="flex min-h-0 flex-1 flex-col space-y-6 md:space-y-8"
     >
       <FormStepHeader
         title="Evidencia y"
@@ -35,12 +35,12 @@ export function EvidenceStep({
         description="Adjunta capturas si las tienes y confirma cómo quieres notificar el reporte."
       />
 
-      <div className="space-y-6">
-        <section className="space-y-3">
+      <div className="grid flex-1 gap-6 lg:grid-cols-2 lg:gap-8">
+        <section className="flex flex-col space-y-3 rounded-xl border border-border/60 bg-card/40 p-4 md:p-5">
           <p className="text-xs font-medium text-muted-foreground">
             Archivos adjuntos (opcional)
           </p>
-          <div className="space-y-2">
+          <div className="flex flex-1 flex-col space-y-2">
             {formData.attachments.map((file, idx) => (
               <div
                 key={idx}
@@ -70,7 +70,7 @@ export function EvidenceStep({
               </div>
             ))}
 
-            <label className="flex h-28 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-border/60 bg-card/50 transition-colors hover:border-[#FF0C60]/50 hover:bg-[#FF0C60]/5">
+            <label className="flex min-h-[140px] flex-1 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-border/60 bg-card/50 transition-colors hover:border-[#FF0C60]/50 hover:bg-[#FF0C60]/5 lg:min-h-[200px]">
               <Upload className="mb-2 h-5 w-5 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">
                 {uploading ? "Subiendo…" : "Seleccionar archivos"}
@@ -81,7 +81,8 @@ export function EvidenceStep({
           </div>
         </section>
 
-        <section className="space-y-3 rounded-xl border border-border/60 bg-card/80 p-4">
+        <div className="flex flex-col gap-6">
+        <section className="space-y-3 rounded-xl border border-border/60 bg-card/80 p-4 md:p-5">
           <div className="flex items-start gap-3 opacity-60">
             <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border border-[#FF0C60] bg-[#FF0C60]/20">
               <Check className="h-3 w-3 text-[#FF0C60]" />
@@ -157,6 +158,7 @@ export function EvidenceStep({
             )}
           </AnimatePresence>
         </section>
+        </div>
       </div>
     </motion.div>
   );

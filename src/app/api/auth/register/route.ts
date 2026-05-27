@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import sql from '@/lib/db';
 import { withRateLimit } from '@/lib/rateLimitEnhanced';
 
 export async function POST(req: NextRequest) {
     try {
-        // Apply rate limiting
         const rateLimitResult = await withRateLimit('AUTH')(req);
         if (rateLimitResult.isRateLimited) {
             return NextResponse.json(
@@ -16,7 +15,6 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const { name, email, password, confirmPassword, securityCode } = body;
 
-        // Validate all fields
         if (!name || !email || !password || !securityCode) {
             return NextResponse.json(
                 { error: 'Todos los campos son requeridos' },
@@ -38,10 +36,11 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // Validate security code
-        const registrationCode = await prisma.registrationCode.findUnique({
-            where: { code: securityCode.toUpperCase().trim() },
-        });
+        const [registrationCode] = await sql`
+            SELECT * FROM "RegistrationCode"
+            WHERE "code" = ${securityCode.toUpperCase().trim()}
+            LIMIT 1
+        `;
 
         if (!registrationCode) {
             return NextResponse.json(
@@ -57,22 +56,19 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        if (registrationCode.expiresAt < new Date()) {
+        if (new Date(registrationCode.expiresAt) < new Date()) {
             return NextResponse.json(
                 { error: 'Este código ha expirado. Solicite uno nuevo al administrador' },
                 { status: 401 }
             );
         }
 
-        // Check if email already exists
-        const existingUser = await prisma.user.findFirst({
-            where: {
-                OR: [
-                    { email: email.toLowerCase().trim() },
-                    { username: email.toLowerCase().trim() },
-                ],
-            },
-        });
+        const [existingUser] = await sql`
+            SELECT * FROM "User"
+            WHERE "email" = ${email.toLowerCase().trim()}
+               OR "username" = ${email.toLowerCase().trim()}
+            LIMIT 1
+        `;
 
         if (existingUser) {
             return NextResponse.json(
@@ -81,32 +77,20 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // Generate username from email
         const username = email.split('@')[0].toLowerCase();
-
-        // Generate avatar URL
         const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff&bold=true&size=128`;
 
-        // Create user
-        const newUser = await prisma.user.create({
-            data: {
-                name: name.trim(),
-                email: email.toLowerCase().trim(),
-                username,
-                password,
-                role: 'OPERATOR',
-                image: avatarUrl,
-            },
-        });
+        const [newUser] = await sql`
+            INSERT INTO "User" ("name", "email", "username", "password", "role", "image")
+            VALUES (${name.trim()}, ${email.toLowerCase().trim()}, ${username}, ${password}, 'OPERATOR', ${avatarUrl})
+            RETURNING *
+        `;
 
-        // Mark code as used
-        await prisma.registrationCode.update({
-            where: { id: registrationCode.id },
-            data: {
-                usedById: newUser.id,
-                usedAt: new Date(),
-            },
-        });
+        await sql`
+            UPDATE "RegistrationCode"
+            SET "usedById" = ${newUser.id}, "usedAt" = NOW()
+            WHERE "id" = ${registrationCode.id}
+        `;
 
         console.log('New user registered:', newUser.name, newUser.email);
 

@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
+import { AppDataPrefetch } from "@/components/AppDataPrefetch";
 import LoginPage from "@/app/login/page";
 
 export function AuthWrapper({ children }: { children: React.ReactNode }) {
@@ -53,6 +54,7 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen text-foreground relative flex flex-col">
       <div className="grid-background" />
+      <AppDataPrefetch />
       <Navbar />
       <main className="w-full flex-1 relative z-10">{children}</main>
     </div>

@@ -10,6 +10,14 @@ import { toast } from "sonner";
 import type { Report } from "@/types/report";
 import type { User } from "@/types/auth";
 import { UI_CONFIG, STORAGE_KEYS } from "@/config/constants";
+import { prefetchReportDetails } from "@/lib/reportDetailCache";
+import { prefetchBitcentralNearby } from "@/lib/bitcentralCache";
+import {
+  getDashboardCache,
+  setDashboardCache,
+  invalidateDashboardCache,
+  type DashboardBundle,
+} from "@/lib/dashboardCache";
 
 // Global refetch registry - allows any component to trigger a refetch in others
 type RefetchCallback = () => void;
@@ -57,8 +65,192 @@ export interface Comment {
   createdAt: string;
   author: { name: string; image?: string };
   reportId: string;
+  report?: { id?: string; problemDescription?: string };
 }
 
+function prefetchReportDetailsFromReports(allReports: Report[]) {
+  const sorted = [...allReports].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+  const recentIds = sorted.slice(0, UI_CONFIG.RECENT_REPORTS_LIMIT).map((r) => r.id);
+  const pendingIds = sorted
+    .filter((r) => r.status === "pending")
+    .slice(0, 3)
+    .map((r) => r.id);
+  void prefetchReportDetails([...new Set([...recentIds, ...pendingIds])]);
+}
+
+function deriveStats(reports: Report[]): DashboardStats {
+  const today = new Date().toDateString();
+  return {
+    totalReports: reports.length,
+    pendingReports: reports.filter((r) => r.status === "pending").length,
+    resolvedReports: reports.filter((r) => r.status === "resolved").length,
+    criticalReports: reports.filter(
+      (r) =>
+        (r.priority === "Enlace" || r.priority === "Todos") && r.status !== "resolved"
+    ).length,
+    reportsToday: reports.filter(
+      (r) => new Date(r.createdAt).toDateString() === today
+    ).length,
+    averageResolutionTime: 0,
+  };
+}
+
+function deriveChartData(reports: Report[]): ChartData {
+  const days: string[] = [];
+  const values: number[] = [];
+  for (let i = UI_CONFIG.CHART_DAYS - 1; i >= 0; i--) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    const dayName = date.toLocaleDateString("es-CR", { weekday: "short" });
+    days.push(dayName.charAt(0).toUpperCase() + dayName.slice(1));
+    const dayStr = date.toDateString();
+    values.push(
+      reports.filter((r) => new Date(r.createdAt).toDateString() === dayStr).length
+    );
+  }
+  return { labels: days, values };
+}
+
+function deriveRecentReports(reports: Report[]): Report[] {
+  return [...reports]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, UI_CONFIG.RECENT_REPORTS_LIMIT);
+}
+
+/**
+ * Carga paralela de todo el dashboard + caché de sesión.
+ * La UI espera a `isReady` y muestra el contenido completo de una vez.
+ */
+export function useDashboardBundle() {
+  const [reports, setReports] = useState<Report[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [whatsappHealth, setWhatsappHealth] = useState<unknown | null>(null);
+  const [isReady, setIsReady] = useState(false);
+  const mountedRef = useRef(true);
+
+  const applyBundle = useCallback((bundle: DashboardBundle) => {
+    setReports(bundle.reports);
+    setUsers(bundle.users);
+    setComments(bundle.comments ?? []);
+    setWhatsappHealth(bundle.whatsappHealth ?? null);
+  }, []);
+
+  const fetchAll = useCallback(async (silent = false) => {
+    if (!silent) setIsReady(false);
+
+    try {
+      const [reportsRes, usersRes, commentsRes, waRes] = await Promise.all([
+        fetch("/api/reports?limit=50"),
+        fetch("/api/users"),
+        fetch("/api/comments/recent"),
+        fetch("/api/proxy/whatsapp"),
+      ]);
+
+      const reportsData = await reportsRes.json();
+      const usersData = await usersRes.json();
+      const commentsData = await commentsRes.json();
+      let waData: unknown = null;
+      try {
+        waData = await waRes.json();
+      } catch {
+        waData = null;
+      }
+
+      const reportsList: Report[] = Array.isArray(reportsData)
+        ? reportsData
+        : reportsData.reports || [];
+      const allReports = reportsList.filter(
+        (r: Report) => r.operatorName !== "Monitoreo Automático"
+      );
+      const usersList: User[] = Array.isArray(usersData) ? usersData : [];
+      const commentsList: Comment[] = Array.isArray(commentsData) ? commentsData : [];
+      const wa =
+        waData && typeof waData === "object" && "success" in (waData as object)
+          ? waData
+          : null;
+
+      if (!mountedRef.current) return;
+
+      const bundle: DashboardBundle = {
+        reports: allReports,
+        users: usersList,
+        comments: commentsList,
+        whatsappHealth: wa,
+        fetchedAt: Date.now(),
+      };
+
+      applyBundle(bundle);
+      setDashboardCache(bundle);
+      setIsReady(true);
+
+      prefetchReportDetailsFromReports(allReports);
+      const reportIds = commentsList
+        .map((c) => c.reportId || c.report?.id)
+        .filter((id): id is string => !!id);
+      if (reportIds.length > 0) void prefetchReportDetails(reportIds);
+      void prefetchBitcentralNearby();
+    } catch {
+      if (!mountedRef.current) return;
+      if (!silent) setIsReady(true);
+    }
+  }, [applyBundle]);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    const cached = getDashboardCache();
+    if (cached) {
+      applyBundle(cached);
+      setIsReady(true);
+      prefetchReportDetailsFromReports(cached.reports);
+      void prefetchBitcentralNearby();
+      void fetchAll(true);
+    } else {
+      void fetchAll(false);
+    }
+
+    const refetch = () => {
+      invalidateDashboardCache();
+      void fetchAll(true);
+    };
+    registerRefetch("dashboard", refetch);
+    registerRefetch("reports", refetch);
+
+    const waInterval = setInterval(() => {
+      fetch("/api/proxy/whatsapp")
+        .then((r) => r.json())
+        .then((data) => {
+          if (mountedRef.current && data && typeof data === "object") {
+            setWhatsappHealth(data);
+          }
+        })
+        .catch(() => {});
+    }, 60000);
+
+    return () => {
+      mountedRef.current = false;
+      unregisterRefetch("dashboard", refetch);
+      unregisterRefetch("reports", refetch);
+      clearInterval(waInterval);
+    };
+  }, [applyBundle, fetchAll]);
+
+  const stats = useMemo(() => deriveStats(reports), [reports]);
+  const recentReports = useMemo(() => deriveRecentReports(reports), [reports]);
+  const chartData = useMemo(() => deriveChartData(reports), [reports]);
+
+  return {
+    stats,
+    recentReports,
+    chartData,
+    users,
+    comments,
+    whatsappHealth,
+    isReady,
+  };
+}
 
 export function useDashboardStats() {
   const [reports, setReports] = useState<Report[]>([]);
@@ -80,6 +272,18 @@ export function useDashboardStats() {
           (r: Report) => r.operatorName !== "Monitoreo Automático"
         );
         setReports(allReports);
+
+        const sorted = [...allReports].sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        const recentIds = sorted
+          .slice(0, UI_CONFIG.RECENT_REPORTS_LIMIT)
+          .map((r) => r.id);
+        const pendingIds = sorted
+          .filter((r) => r.status === "pending")
+          .slice(0, 3)
+          .map((r) => r.id);
+        void prefetchReportDetails([...new Set([...recentIds, ...pendingIds])]);
       })
       .catch((err) => {
         if (err.name !== 'AbortError') {
@@ -192,7 +396,13 @@ export function useRecentComments() {
     fetch("/api/comments/recent")
       .then((res) => res.json())
       .then((data) => {
-        if (Array.isArray(data)) setComments(data);
+        if (Array.isArray(data)) {
+          setComments(data);
+          const reportIds = data
+            .map((c: Comment) => c.reportId || (c as { report?: { id?: string } }).report?.id)
+            .filter((id): id is string => !!id);
+          if (reportIds.length > 0) void prefetchReportDetails(reportIds);
+        }
       })
       .catch(() => {
         // Errors handled by error boundary upstream
@@ -274,8 +484,9 @@ export function useResolveReport(
           credentials: "include",
         });
         if (res.ok) {
-          // Trigger refetch across all components listening
-          triggerRefetch('reports');
+          invalidateDashboardCache();
+          triggerRefetch("dashboard");
+          triggerRefetch("reports");
           onSuccess("¡Incidencia resuelta!");
           setTimeout(() => window.location.reload(), 1500);
         } else {

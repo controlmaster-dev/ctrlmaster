@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import sql from '@/lib/db';
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,34 +10,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
-    const existing = await prisma.commentReaction.findUnique({
-      where: {
-        authorId_commentId_emoji: {
-          authorId,
-          commentId,
-          emoji
-        }
-      }
-    });
+    const [existing] = await sql`
+      SELECT * FROM "CommentReaction"
+      WHERE "authorId" = ${authorId}
+        AND "commentId" = ${commentId}
+        AND "emoji" = ${emoji}
+      LIMIT 1
+    `;
 
     if (existing) {
-      await prisma.commentReaction.delete({
-        where: { id: existing.id }
-      });
+      await sql`DELETE FROM "CommentReaction" WHERE "id" = ${existing.id}`;
       return NextResponse.json({ action: 'removed' });
     } else {
-      await prisma.commentReaction.create({
-        data: {
-          commentId,
-          authorId,
-          emoji
-        }
-      });
+      await sql`
+        INSERT INTO "CommentReaction" ("commentId", "authorId", "emoji")
+        VALUES (${commentId}, ${authorId}, ${emoji})
+      `;
       return NextResponse.json({ action: 'added' });
     }
 
   } catch (error: unknown) {
     console.error('Error in comment reaction:', error);
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
   }
 }

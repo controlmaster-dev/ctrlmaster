@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import sql from '@/lib/db';
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,25 +10,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
-    await prisma.reportView.upsert({
-      where: {
-        userId_reportId: {
-          userId,
-          reportId
-        }
-      },
-      update: {
-        viewedAt: new Date()
-      },
-      create: {
-        userId,
-        reportId
-      }
-    });
+    await sql`
+      INSERT INTO "ReportView" ("userId", "reportId")
+      VALUES (${userId}, ${reportId})
+      ON CONFLICT ("userId", "reportId")
+      DO UPDATE SET "viewedAt" = NOW()
+    `;
 
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
     console.error('Error recording report view:', error);
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Internal server error" },
+      { status: 500 }
+    );
   }
 }

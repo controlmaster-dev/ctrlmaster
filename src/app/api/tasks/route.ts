@@ -1,13 +1,7 @@
-/**
- * Tasks API route with input validation and typed error handling.
- */
-
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import sql from '@/lib/db';
 import { ApiError, ValidationError } from '@/lib/errors';
 import { z } from 'zod';
-import { format } from 'date-fns';
-
 
 const getTasksSchema = z.object({
   userId: z.string().min(1, 'ID de usuario es requerido'),
@@ -36,7 +30,6 @@ const deleteTaskSchema = z.object({
   id: z.string().min(1, 'ID de tarea es requerido'),
 });
 
-
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -51,10 +44,12 @@ export async function GET(req: NextRequest) {
 
     const { userId, date } = result.data;
 
-    const tasks = await prisma.task.findMany({
-      where: { userId, ...(date ? { scheduledDate: date } : {}) },
-      orderBy: { createdAt: 'desc' },
-    });
+    const tasks = await sql`
+      SELECT * FROM "Task"
+      WHERE "userId" = ${userId}
+      ${date ? sql`AND "scheduledDate" = ${date}` : sql``}
+      ORDER BY "createdAt" DESC
+    `;
 
     return NextResponse.json(tasks, {
       headers: {
@@ -74,7 +69,6 @@ export async function GET(req: NextRequest) {
   }
 }
 
-
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -86,23 +80,21 @@ export async function POST(req: NextRequest) {
 
     const { userId, tasks, dates } = result.data;
 
-    // Create one task per (date × task) combination in a single transaction
-    const operations = dates.flatMap((dateStr) =>
-      tasks.map((t) =>
-        prisma.task.create({
-          data: {
-            title: t.title,
-            deadline: t.deadline,
-            priority: t.priority,
-            userId,
-            scheduledDate: dateStr,
-            status: 'PENDING',
-          },
-        })
-      )
-    );
-
-    const created = await prisma.$transaction(operations);
+    // Create all tasks in a transaction
+    const created = await sql.begin(async (tx) => {
+      const results = [];
+      for (const dateStr of dates) {
+        for (const t of tasks) {
+          const [task] = await tx`
+            INSERT INTO "Task" ("title", "deadline", "priority", "userId", "scheduledDate", "status")
+            VALUES (${t.title}, ${t.deadline || null}, ${t.priority}, ${userId}, ${dateStr}, 'PENDING')
+            RETURNING *
+          `;
+          results.push(task);
+        }
+      }
+      return results;
+    });
 
     return NextResponse.json(created, { status: 201 });
   } catch (error) {
@@ -117,7 +109,6 @@ export async function POST(req: NextRequest) {
   }
 }
 
-
 export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json();
@@ -129,19 +120,24 @@ export async function PATCH(req: NextRequest) {
 
     const { id, status, comment } = result.data;
 
-    const data: { comment?: string; status?: string; completedAt?: Date | null } = {};
+    const data: Record<string, any> = {};
 
     if (comment !== undefined) data.comment = comment;
     if (status !== undefined) {
       data.status = status;
       if (['COMPLETED', 'INCOMPLETE'].includes(status)) {
-        data.completedAt = new Date();
+        data.completedAt = new Date().toISOString();
       } else if (status === 'PENDING') {
         data.completedAt = null;
       }
     }
 
-    const updated = await prisma.task.update({ where: { id }, data });
+    const [updated] = await sql`
+      UPDATE "Task"
+      SET ${sql(data)}
+      WHERE "id" = ${id}
+      RETURNING *
+    `;
 
     return NextResponse.json(updated);
   } catch (error) {
@@ -156,7 +152,6 @@ export async function PATCH(req: NextRequest) {
   }
 }
 
-
 export async function DELETE(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -166,7 +161,7 @@ export async function DELETE(req: NextRequest) {
       throw new ValidationError('ID de tarea inválido', result.error.issues);
     }
 
-    await prisma.task.delete({ where: { id: result.data.id } });
+    await sql`DELETE FROM "Task" WHERE "id" = ${result.data.id}`;
 
     return NextResponse.json({ success: true });
   } catch (error) {

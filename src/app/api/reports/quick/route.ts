@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import sql from '@/lib/db';
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,31 +13,34 @@ export async function POST(req: NextRequest) {
     let user;
 
     if (userId) {
-      user = await prisma.user.findUnique({ where: { id: userId } });
+      [user] = await sql`SELECT * FROM "User" WHERE "id" = ${userId} LIMIT 1`;
     } else {
-      user = await prisma.user.findFirst({
-        where: { role: 'BOSS' }
-      });
+      [user] = await sql`SELECT * FROM "User" WHERE "role" = 'BOSS' LIMIT 1`;
     }
 
     if (!user) return NextResponse.json({ error: "No user found to assign report" }, { status: 404 });
 
-    const newReport = await prisma.report.create({
-      data: {
-        operatorId: user.id,
-        operatorName: user.name,
-        operatorEmail: user.email,
-        problemDescription: `[ALERTA MONITOR] ${type.replace('_', ' ')}: ${description || 'Sin detalles'}`,
-        category: 'INCIDENCIA',
-        priority: 'ALTA',
-        status: 'PENDIENTE',
-        dateStarted: new Date(timestamp || new Date())
-      }
-    });
+    const [newReport] = await sql`
+      INSERT INTO "Report" (
+        "operatorId", "operatorName", "operatorEmail",
+        "problemDescription", "category", "priority",
+        "status", "dateStarted"
+      )
+      VALUES (
+        ${user.id}, ${user.name}, ${user.email},
+        ${`[ALERTA MONITOR] ${type.replace('_', ' ')}: ${description || 'Sin detalles'}`},
+        'INCIDENCIA', 'ALTA', 'PENDIENTE',
+        ${new Date(timestamp || new Date()).toISOString()}
+      )
+      RETURNING *
+    `;
 
     return NextResponse.json(newReport);
   } catch (error: unknown) {
     console.error("Quick Report Error:", error);
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Internal server error" },
+      { status: 500 }
+    );
   }
 }

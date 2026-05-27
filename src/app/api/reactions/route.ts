@@ -1,19 +1,13 @@
-/**
- * Reactions API route with input validation and typed error handling.
- */
-
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import sql from '@/lib/db';
 import { ApiError, ValidationError } from '@/lib/errors';
 import { z } from 'zod';
-
 
 const reactionSchema = z.object({
   reportId: z.string().min(1, 'ID de reporte es requerido'),
   authorId: z.string().min(1, 'ID de autor es requerido'),
   emoji: z.string().min(1, 'Emoji es requerido'),
 });
-
 
 export async function POST(req: NextRequest) {
   try {
@@ -26,41 +20,32 @@ export async function POST(req: NextRequest) {
 
     const { reportId, authorId, emoji } = result.data;
 
-    // Use unique constraint to find if reaction already exists (toggle behavior)
-    const existingReaction = await prisma.reaction.findUnique({
-      where: {
-        authorId_reportId_emoji: {
-          authorId,
-          reportId,
-          emoji,
-        },
-      },
-    });
+    const [existingReaction] = await sql`
+      SELECT * FROM "Reaction"
+      WHERE "authorId" = ${authorId}
+        AND "reportId" = ${reportId}
+        AND "emoji" = ${emoji}
+      LIMIT 1
+    `;
 
     if (existingReaction) {
-      // Toggle off: remove reaction
-      await prisma.reaction.delete({
-        where: { id: existingReaction.id },
-      });
+      await sql`DELETE FROM "Reaction" WHERE "id" = ${existingReaction.id}`;
       return NextResponse.json({ action: 'removed', id: existingReaction.id });
     } else {
-      // Toggle on: create reaction
-      const newReaction = await prisma.reaction.create({
-        data: {
-          reportId,
-          authorId,
-          emoji,
-        },
-        include: {
-          author: {
-            select: {
-              name: true,
-              image: true,
-            },
-          },
-        },
+      const [newReaction] = await sql`
+        INSERT INTO "Reaction" ("reportId", "authorId", "emoji")
+        VALUES (${reportId}, ${authorId}, ${emoji})
+        RETURNING *
+      `;
+
+      const [author] = await sql`
+        SELECT "name", "image" FROM "User" WHERE "id" = ${authorId} LIMIT 1
+      `;
+
+      return NextResponse.json({
+        action: 'added',
+        reaction: { ...newReaction, author },
       });
-      return NextResponse.json({ action: 'added', reaction: newReaction });
     }
   } catch (error) {
     if (error instanceof ValidationError) {

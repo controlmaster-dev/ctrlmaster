@@ -5,23 +5,6 @@ import { Cake } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import type { User } from "@/types/auth";
 
-const AVATAR_COLORS = [
-  "bg-[#E91E63]",
-  "bg-[#9C27B0]",
-  "bg-[#3F51B5]",
-  "bg-[#00BCD4]",
-  "bg-[#4CAF50]",
-  "bg-[#FF9800]",
-];
-
-function getAvatarColor(name: string) {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-}
-
 function getInitials(name: string) {
   const names = name.split(" ").filter(Boolean);
   if (names.length >= 2) return `${names[0][0]}${names[1][0]}`.toUpperCase();
@@ -51,10 +34,10 @@ export function BirthdayWidget({ users }: { users: User[] }) {
     .slice(0, 6);
 
   return (
-    <Card className="overflow-hidden rounded-xl border border-border/60 bg-card/80 shadow-sm">
-      <CardContent className="p-4">
+    <Card className="overflow-hidden rounded-sm border border-border/60 bg-card shadow-sm">
+      <CardContent className="p-4 md:p-5">
         <div className="mb-3 flex items-center gap-2.5">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#FF0C60] text-white">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm border border-border/60 bg-muted/40 text-muted-foreground">
             <Cake className="h-4 w-4" />
           </div>
           <div>
@@ -78,13 +61,13 @@ export function BirthdayWidget({ users }: { users: User[] }) {
               return (
                 <li key={user.id}>
                   <div
-                    className={`flex flex-col items-center rounded-lg border border-border/50 bg-muted/15 px-2 py-2.5 text-center ${
-                      isToday ? "border-[#FF0C60]/35 bg-[#FF0C60]/5" : ""
+                    className={`flex flex-col items-center rounded-sm border px-2 py-2.5 text-center ${
+                      isToday
+                        ? "border-[#FF0C60]/25 bg-muted/40"
+                        : "border-border/50 bg-muted/20"
                     }`}
                   >
-                    <div
-                      className={`mb-1.5 flex h-8 w-8 items-center justify-center rounded-md text-[11px] font-bold text-white ${getAvatarColor(user.name)}`}
-                    >
+                    <div className="mb-1.5 flex h-8 w-8 items-center justify-center rounded-sm border border-border/50 bg-background text-[11px] font-semibold text-muted-foreground">
                       {getInitials(user.name)}
                     </div>
                     <p className="w-full truncate text-[11px] font-medium leading-tight text-foreground">
@@ -92,7 +75,7 @@ export function BirthdayWidget({ users }: { users: User[] }) {
                     </p>
                     <p className="mt-0.5 text-[10px] leading-tight text-muted-foreground">
                       {isToday ? (
-                        <span className="font-medium text-[#FF0C60]">Hoy</span>
+                        <span className="font-medium text-foreground">Hoy</span>
                       ) : (
                         `${user.day} ${monthLabel}`
                       )}

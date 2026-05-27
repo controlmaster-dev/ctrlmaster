@@ -4,6 +4,7 @@ import { ArrowUpRight } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { prefetchReportDetail } from "@/lib/reportDetailCache";
 
 interface CommentAuthor {
   name?: string;
@@ -13,12 +14,17 @@ interface CommentItem {
   id: string;
   content: string;
   author?: CommentAuthor;
-  report?: { id?: string };
+  report?: { id?: string; problemDescription?: string };
 }
 
 interface LiveActivityCardProps {
   comments: CommentItem[];
   loading: boolean;
+  /** Abre el modal en el dashboard sin navegar a /reportes */
+  onReportClick?: (
+    reportId: string,
+    hint?: { problemDescription?: string }
+  ) => void;
 }
 
 function authorInitials(name?: string) {
@@ -28,12 +34,16 @@ function authorInitials(name?: string) {
   return name.substring(0, 2).toUpperCase();
 }
 
-export function LiveActivityCard({ comments, loading }: LiveActivityCardProps) {
+export function LiveActivityCard({
+  comments,
+  loading,
+  onReportClick,
+}: LiveActivityCardProps) {
   const recentComments = comments.slice(0, 3);
 
   return (
-    <Card className="overflow-hidden rounded-xl border border-border/60 bg-card/80 shadow-sm">
-      <CardHeader className="flex flex-row items-center justify-between gap-2 border-b border-border/50 px-4 py-3">
+    <Card className="overflow-hidden rounded-none border-0 bg-transparent shadow-none">
+      <CardHeader className="flex flex-row items-center justify-between gap-2 border-b border-border/40 bg-muted/15 px-4 py-3">
         <div className="min-w-0">
           <CardTitle className="text-sm font-semibold">Comentarios recientes</CardTitle>
           <CardDescription className="mt-0.5 text-[11px]">
@@ -58,38 +68,66 @@ export function LiveActivityCard({ comments, loading }: LiveActivityCardProps) {
             {[1, 2, 3].map((i) => (
               <div key={i} className="px-4 py-3">
                 <div className="mb-2 flex items-center gap-2">
-                  <Skeleton className="h-7 w-7 rounded-full" />
+                  <Skeleton className="h-7 w-7 rounded-sm" />
                   <Skeleton className="h-3 w-20" />
                 </div>
-                <Skeleton className="h-10 w-full rounded-md" />
+                <Skeleton className="h-10 w-full rounded-sm" />
               </div>
             ))}
           </div>
         ) : recentComments.length > 0 ? (
           <ul className="divide-y divide-border/40">
-            {recentComments.map((comment) => (
-              <li key={comment.id}>
-                <Link
-                  href={`/reportes?reportId=${comment.report?.id ?? ""}`}
-                  className="block px-4 py-3 transition-colors hover:bg-muted/30"
-                >
+            {recentComments.map((comment) => {
+              const reportId = comment.report?.id;
+              const rowClass =
+                "block w-full px-4 py-3 text-left transition-colors hover:bg-muted/30";
+
+              const inner = (
+                <>
                   <div className="mb-1.5 flex items-center gap-2">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted/50 text-[10px] font-bold text-muted-foreground">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-sm bg-muted/50 text-[10px] font-bold text-muted-foreground">
                       {authorInitials(comment.author?.name)}
                     </span>
                     <span className="truncate text-xs font-medium text-foreground">
                       {comment.author?.name?.split(" ")[0] ?? "Operador"}
                     </span>
                     <span className="ml-auto shrink-0 font-mono text-[10px] text-muted-foreground">
-                      #{comment.report?.id?.slice(0, 6) ?? "—"}
+                      #{reportId?.slice(0, 6) ?? "—"}
                     </span>
                   </div>
                   <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
                     {comment.content}
                   </p>
-                </Link>
-              </li>
-            ))}
+                </>
+              );
+
+              if (onReportClick && reportId) {
+                return (
+                  <li key={comment.id}>
+                    <button
+                      type="button"
+                      className={rowClass}
+                      onMouseEnter={() => prefetchReportDetail(reportId)}
+                      onClick={() =>
+                        onReportClick(reportId, {
+                          problemDescription: comment.report?.problemDescription,
+                        })
+                      }
+                    >
+                      {inner}
+                    </button>
+                  </li>
+                );
+              }
+
+              return (
+                <li key={comment.id}>
+                  <Link href={`/reportes?reportId=${reportId ?? ""}`} className={rowClass}>
+                    {inner}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         ) : (
           <p className="px-4 py-8 text-center text-xs text-muted-foreground">
