@@ -2,10 +2,13 @@ import postgres from 'postgres';
 import fs from 'fs';
 import path from 'path';
 import 'dotenv/config';
+import { resolveDatabaseUrl } from '../src/lib/databaseUrl';
 
-const dbUrl = process.env.DATABASE_URL;
-if (!dbUrl) {
-  console.error('DATABASE_URL not set');
+let dbUrl: string;
+try {
+  dbUrl = resolveDatabaseUrl(process.env.DATABASE_URL);
+} catch (e) {
+  console.error(e instanceof Error ? e.message : e);
   process.exit(1);
 }
 

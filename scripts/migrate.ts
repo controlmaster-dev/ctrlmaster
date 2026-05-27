@@ -7,10 +7,13 @@ import postgres from 'postgres';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import 'dotenv/config';
+import { resolveDatabaseUrl } from '../src/lib/databaseUrl';
 
-const dbUrl = process.env.DATABASE_URL;
-if (!dbUrl) {
-  console.error('❌ DATABASE_URL environment variable is not set');
+let dbUrl: string;
+try {
+  dbUrl = resolveDatabaseUrl(process.env.DATABASE_URL);
+} catch (e) {
+  console.error('❌', e instanceof Error ? e.message : e);
   process.exit(1);
 }
 

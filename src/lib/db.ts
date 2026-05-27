@@ -1,12 +1,9 @@
 import postgres from 'postgres';
+import { resolveDatabaseUrl } from '@/lib/databaseUrl';
+
+const dbUrl = resolveDatabaseUrl(process.env.DATABASE_URL);
 
 // Connection pool singleton
-const dbUrl = process.env.DATABASE_URL;
-if (!dbUrl) {
-  throw new Error('DATABASE_URL environment variable is not set');
-}
-
-// Use global singleton in development to survive hot-reloads
 declare global {
   // eslint-disable-next-line no-var
   var __sql: ReturnType<typeof postgres> | undefined;
