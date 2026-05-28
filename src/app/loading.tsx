@@ -1,13 +1,4 @@
-"use client";
-
-import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
-import { pageContainerClass } from "@/lib/page-layout";
-
+/** Sin skeleton global: evita flash del dashboard al navegar a otras rutas. */
 export default function Loading() {
-  return (
-    <div className={`${pageContainerClass} min-h-screen bg-background`}>
-      <DashboardSkeleton />
-    </div>
-  );
+  return null;
 }
-

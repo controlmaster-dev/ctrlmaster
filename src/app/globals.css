@@ -147,6 +147,124 @@
   .dashboard-ui select {
     border-radius: 2px;
   }
+
+  /* Operadores: mismo criterio de esquinas y controles */
+  .operadores-ui {
+    --radius: 2px;
+  }
+
+  .operadores-ui .rounded-full:not(.op-keep-round),
+  .operadores-ui [class*="rounded-full"]:not(.op-keep-round) {
+    border-radius: 2px !important;
+  }
+
+  .operadores-ui .rounded-xl,
+  .operadores-ui .rounded-2xl,
+  .operadores-ui .rounded-3xl,
+  .operadores-ui .rounded-lg,
+  .operadores-ui .rounded-md {
+    border-radius: 2px;
+  }
+
+  .operadores-ui button,
+  .operadores-ui [role="button"],
+  .operadores-ui input,
+  .operadores-ui select {
+    border-radius: 2px;
+  }
+
+  /* Navbar global */
+  .app-nav {
+    --radius: 2px;
+  }
+
+  .app-nav .rounded-xl,
+  .app-nav .rounded-2xl,
+  .app-nav .rounded-lg,
+  .app-nav .rounded-md {
+    border-radius: 2px;
+  }
+
+  .app-nav button,
+  .app-nav [role="button"],
+  .app-nav input,
+  .app-nav select,
+  .app-nav kbd {
+    border-radius: 2px;
+  }
+
+  .app-nav .nav-avatar {
+    border-radius: 2px !important;
+  }
+
+  /* Reportes / páginas de gestión */
+  .reportes-ui {
+    --radius: 2px;
+  }
+
+  .reportes-ui .rounded-xl,
+  .reportes-ui .rounded-2xl,
+  .reportes-ui .rounded-lg,
+  .reportes-ui .rounded-md {
+    border-radius: 2px;
+  }
+
+  .reportes-ui button,
+  .reportes-ui [role="button"],
+  .reportes-ui input,
+  .reportes-ui select {
+    border-radius: 2px;
+  }
+
+  .claves-ui,
+  .configuracion-ui {
+    --radius: 2px;
+  }
+
+  .claves-ui .rounded-xl,
+  .claves-ui .rounded-2xl,
+  .claves-ui .rounded-lg,
+  .claves-ui .rounded-md,
+  .configuracion-ui .rounded-xl,
+  .configuracion-ui .rounded-2xl,
+  .configuracion-ui .rounded-lg,
+  .configuracion-ui .rounded-md {
+    border-radius: 2px;
+  }
+
+  .claves-ui button,
+  .claves-ui [role="button"],
+  .claves-ui input,
+  .claves-ui select,
+  .configuracion-ui button,
+  .configuracion-ui [role="button"],
+  .configuracion-ui input,
+  .configuracion-ui select {
+    border-radius: 2px;
+  }
+
+  /* Crear reporte: esquinas casi cuadradas, conservando blobs decorativos */
+  .crear-reporte-ui {
+    --radius: 2px;
+  }
+
+  .crear-reporte-ui .rounded,
+  .crear-reporte-ui .rounded-xl,
+  .crear-reporte-ui .rounded-2xl,
+  .crear-reporte-ui .rounded-3xl,
+  .crear-reporte-ui .rounded-lg,
+  .crear-reporte-ui .rounded-md,
+  .crear-reporte-ui .rounded-sm {
+    border-radius: 2px;
+  }
+
+  .crear-reporte-ui button:not(.cr-keep-round),
+  .crear-reporte-ui [role="button"]:not(.cr-keep-round),
+  .crear-reporte-ui input,
+  .crear-reporte-ui select,
+  .crear-reporte-ui textarea {
+    border-radius: 2px;
+  }
 }
 
 @layer utilities {

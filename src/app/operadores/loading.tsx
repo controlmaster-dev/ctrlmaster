@@ -1,5 +1,3 @@
-import { OperadoresSkeleton } from "@/components/skeletons/OperadoresSkeleton";
-
-export default function OperadoresLoading() {
-  return <OperadoresSkeleton />;
+export default function Loading() {
+  return null;
 }

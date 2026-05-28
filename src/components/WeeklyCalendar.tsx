@@ -1,10 +1,8 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Plus, ChevronLeft, ChevronRight, User, Trash2, Plane, CalendarDays, Shield } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -14,15 +12,10 @@ import { Shift, Operator, WeekDate, DayColumn, EditingState, WeeklyCalendarProps
 
 const DAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
-function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-  return isMobile;
+function getInitials(name: string) {
+  const parts = name.split(' ').filter(Boolean);
+  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  return (name[0] || 'U').toUpperCase();
 }
 
 export function WeeklyCalendar({ 
@@ -34,7 +27,6 @@ export function WeeklyCalendar({
   onEditUser 
 }: WeeklyCalendarProps) {
   const isEditingEnabled = !!onUpdateSchedule;
-  const isMobile = useIsMobile();
 
   const weekDates = useMemo<WeekDate[]>(() => {
     if (!currentWeekStart) return [];
@@ -298,41 +290,39 @@ export function WeeklyCalendar({
   };
 
   return (
-    <div className="bg-card md:rounded-md border border-border overflow-hidden flex flex-col h-full w-full relative">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/20">
+    <div className="operadores-ui relative flex h-full w-full flex-col overflow-hidden border border-border bg-card md:rounded-sm">
+      <div className="flex items-center justify-between border-b border-border bg-muted/15 px-4 py-3">
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="text-xs font-mono font-medium opacity-70">
+          <span className="border border-border/60 bg-background px-2 py-0.5 font-mono text-[11px] text-muted-foreground">
             {currentWeekStart}
-          </Badge>
+          </span>
           {isCurrentRealWeek && (
-            <Badge variant="default" className="bg-[#FF0C60] text-white border-none shadow-sm text-[10px] px-1.5 h-5">
-              Actual
-            </Badge>
+            <span className="border border-border/60 bg-muted/40 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-foreground">
+              Semana actual
+            </span>
           )}
         </div>
 
         {onWeekChange && (
-          <div className="flex items-center gap-1 bg-card rounded-md border border-border p-0.5 shadow-sm">
+          <div className="flex items-center border border-border/60 bg-background p-0.5">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => adjustWeek('prev')}
-              className="h-7 w-7 text-muted-foreground hover:text-foreground"
+              className="h-7 w-7 rounded-sm text-muted-foreground hover:text-foreground"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="h-4 w-4" />
             </Button>
-            <div className="h-4 w-px bg-border mx-1" />
-            <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider px-2">
-              Navegar
+            <span className="border-x border-border/60 px-2.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+              Semana
             </span>
-            <div className="h-4 w-px bg-border mx-1" />
             <Button
               variant="ghost"
               size="icon"
               onClick={() => adjustWeek('next')}
-              className="h-7 w-7 text-muted-foreground hover:text-foreground"
+              className="h-7 w-7 rounded-sm text-muted-foreground hover:text-foreground"
             >
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
         )}
@@ -340,10 +330,10 @@ export function WeeklyCalendar({
 
       <ScrollArea className="flex-1 w-full bg-background/50 z-10 relative">
         {isLoading && (
-          <div className="absolute inset-0 z-50 bg-background/60 backdrop-blur-[1px] flex items-center justify-center">
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/70">
             <div className="flex flex-col items-center gap-2">
-              <div className="w-8 h-8 border-2 border-[#FF0C60] border-t-transparent rounded-full animate-spin" />
-              <span className="text-xs text-[#FF0C60] animate-pulse">Cargando...</span>
+              <div className="h-6 w-6 animate-spin border-2 border-foreground/20 border-t-foreground" />
+              <span className="text-xs text-muted-foreground">Cargando…</span>
             </div>
           </div>
         )}
@@ -354,68 +344,77 @@ export function WeeklyCalendar({
             return (
               <div
                 key={col.dayIndex}
-                className={`flex flex-col relative group transition-colors ${isToday ? 'bg-[#FF0C60]/[0.02]' : 'hover:bg-muted/10'}`}
+                className={`group relative flex flex-col transition-colors ${isToday ? 'bg-muted/15' : 'hover:bg-muted/5'}`}
               >
-                <div className={`sticky top-0 z-10 py-3 text-center border-b backdrop-blur-md ${isToday ? 'bg-[#FF0C60]/10 border-[#FF0C60]/20 text-[#FF0C60]' : 'bg-background/80 border-border text-muted-foreground'}`}>
-                  <span className="text-[10px] font-semibold uppercase tracking-wider block mb-0.5">
+                <div
+                  className={`sticky top-0 z-10 border-b py-2.5 text-center backdrop-blur-sm ${
+                    isToday
+                      ? 'border-foreground/30 bg-muted/40 text-foreground'
+                      : 'border-border bg-background/95 text-muted-foreground'
+                  }`}
+                >
+                  <span className="mb-0.5 block text-[10px] font-medium uppercase tracking-wider">
                     {col.dateLabel.split(' ')[0]}
                   </span>
-                  <span className="text-lg font-semibold leading-none">
+                  <span className="text-base font-semibold leading-none tabular-nums">
                     {col.dateLabel.split(' ')[1]}
                   </span>
                 </div>
 
-                <div className="p-1 space-y-1 flex-1 pb-10">
+                <div className="flex-1 space-y-1 p-1.5 pb-10">
                   {col.shifts.map((item, idx) => {
                     const isActiveNow = isToday &&
                       new Date().getHours() >= item.shift.start &&
                       new Date().getHours() < (item.shift.end === 0 ? 24 : item.shift.end);
                     return (
-                      <motion.div
+                      <div
                         key={`${item.op.id}-${idx}`}
-                        initial={{ opacity: 0, y: 5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: idx * 0.03 }}
                         onClick={() => handleEditClick(item.op, col.dayIndex)}
-                        className={`relative overflow-hidden rounded-md border p-1.5 cursor-pointer transition-all duration-200 hover:shadow-md hover:border-[#FF0C60]/40 group/card ${isActiveNow ? 'bg-card border-[#FF0C60] shadow-sm ring-1 ring-[#FF0C60]/20' : 'bg-card border-border shadow-none hover:bg-muted/30'}`}
+                        className={`group/card relative cursor-pointer border bg-card p-2 transition-colors hover:bg-muted/25 ${
+                          isActiveNow
+                            ? 'border-l-2 border-l-foreground border-border/70'
+                            : 'border-border/60'
+                        }`}
                       >
-                        {isActiveNow && (
-                          <div className="absolute top-0 right-0 w-2 h-2 m-1.5 bg-[#FF0C60] rounded-full animate-pulse" />
-                        )}
-
-                        <div className="flex items-center gap-1.5 mb-1.5">
-                          <Avatar className="w-5 h-5 rounded-md border border-border">
-                            <AvatarImage src={item.op.image} />
-                            <AvatarFallback className="rounded-md bg-muted text-[8px] font-medium text-muted-foreground">
-                              {item.op.name?.charAt(0) || 'U'}
+                        <div className="mb-1.5 flex items-center gap-2">
+                          <Avatar className="h-6 w-6 shrink-0 rounded-sm border border-border/60">
+                            <AvatarImage src={item.op.image} className="rounded-sm" />
+                            <AvatarFallback className="rounded-sm bg-muted/50 text-[8px] font-semibold text-muted-foreground">
+                              {getInitials(item.op.name || 'U')}
                             </AvatarFallback>
                           </Avatar>
-                          <div className="flex-1 min-w-0 flex flex-col justify-center">
-                            <div className="text-[10px] font-medium text-foreground truncate leading-tight">
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate text-[10px] font-medium leading-tight text-foreground">
                               {item.op.name}
                             </div>
-                            <div className="text-[8px] text-muted-foreground truncate mt-[1px] leading-none">
+                            <div className="mt-px truncate text-[8px] leading-none text-muted-foreground">
                               {item.op.role === 'BOSS' ? 'Admin' : 'Operador'}
                             </div>
                           </div>
+                          {item.op.role === 'BOSS' && (
+                            <Shield className="h-3 w-3 shrink-0 text-muted-foreground" />
+                          )}
                         </div>
 
-                        <div className={`flex items-center justify-between text-[9px] font-mono px-1 py-0.5 rounded ${isActiveNow ? 'bg-[#FF0C60]/10 text-[#FF0C60] font-semibold' : 'bg-muted/50 text-muted-foreground'}`}>
+                        <div className="flex items-center justify-between border-t border-border/40 pt-1 font-mono text-[9px] text-muted-foreground">
                           <span>{formatTime(item.shift.start)}</span>
-                          <span className="opacity-30">-</span>
+                          <span className="opacity-40">–</span>
                           <span>{formatTime(item.shift.end)}</span>
                         </div>
 
                         {item.op.isTempSchedule && (
-                          <div className="absolute bottom-1 right-1 w-1 h-1 bg-amber-500 rounded-full" title="Horario temporal" />
+                          <div
+                            className="absolute bottom-1 right-1 h-1.5 w-1.5 bg-foreground/40"
+                            title="Horario temporal"
+                          />
                         )}
-                      </motion.div>
+                      </div>
                     );
                   })}
 
                   {isEditingEnabled && (
                     <button
-                      className="w-full py-1.5 rounded border border-dashed border-border/50 text-xs text-muted-foreground/50 hover:text-[#FF0C60] hover:border-[#FF0C60]/30 hover:bg-[#FF0C60]/5 transition-all opacity-0 group-hover:opacity-100 flex items-center justify-center gap-1"
+                      className="flex w-full items-center justify-center gap-1 border border-dashed border-border/50 py-1.5 text-xs text-muted-foreground/60 opacity-0 transition-all hover:border-border hover:bg-muted/20 hover:text-foreground group-hover:opacity-100"
                       onClick={() => {
                         if (operators.length > 0) handleEditClick(operators[0], col.dayIndex);
                       }}
@@ -429,14 +428,18 @@ export function WeeklyCalendar({
           })}
         </div>
 
-        <div className="md:hidden flex flex-col w-full pb-20 divide-y divide-border">
+        <div className="flex w-full flex-col divide-y divide-border pb-20 md:hidden">
           {dayColumns.map((col, i) => {
             const isToday = isCurrentRealWeek && new Date().getDay() === i;
             return (
-              <div key={col.dayIndex} className={`flex flex-col ${isToday ? 'bg-[#FF0C60]/[0.02]' : ''}`}>
-                <div className={`sticky top-0 z-20 px-4 py-2 flex items-center justify-between backdrop-blur-xl border-b border-border/50 ${isToday ? 'bg-[#FF0C60]/5 border-[#FF0C60]/20' : 'bg-background/90'}`}>
+              <div key={col.dayIndex} className={`flex flex-col ${isToday ? 'bg-muted/10' : ''}`}>
+                <div
+                  className={`sticky top-0 z-20 flex items-center justify-between border-b px-4 py-2 backdrop-blur-sm ${
+                    isToday ? 'border-foreground/30 bg-muted/40' : 'border-border bg-background/95'
+                  }`}
+                >
                   <div className="flex items-baseline gap-2">
-                    <span className={`text-sm font-semibold capitalize ${isToday ? 'text-[#FF0C60]' : 'text-foreground'}`}>
+                    <span className="text-sm font-semibold capitalize text-foreground">
                       {col.dateLabel.split(' ')[0]}
                     </span>
                     <span className="text-xs text-muted-foreground">
@@ -444,44 +447,50 @@ export function WeeklyCalendar({
                     </span>
                   </div>
                   {isToday && (
-                    <span className="text-[10px] font-medium text-[#FF0C60] bg-[#FF0C60]/10 px-2 py-0.5 rounded-full">
-                      HOY
+                    <span className="border border-border/60 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-foreground">
+                      Hoy
                     </span>
                   )}
                 </div>
 
-                <div className="p-3 grid grid-cols-1 gap-2">
+                <div className="grid grid-cols-1 gap-2 p-3">
                   {col.shifts.length === 0 ? (
-                    <div className="text-xs text-muted-foreground/40 italic py-2 text-center">Sin turnos</div>
+                    <div className="py-2 text-center text-xs italic text-muted-foreground">
+                      Sin turnos
+                    </div>
                   ) : (
                     col.shifts.map((item, idx) => (
                       <div
                         key={`${item.op.id}-${idx}`}
                         onClick={() => handleEditClick(item.op, col.dayIndex)}
-                        className="bg-card border border-border rounded-lg p-3 flex items-center justify-between active:scale-[0.99] transition-transform shadow-sm"
+                        className="flex items-center justify-between border border-border/60 bg-card p-3"
                       >
-                        <div className="flex items-center gap-3 overflow-hidden">
-                          <Avatar className="w-9 h-9 border border-border shrink-0">
-                            <AvatarImage src={item.op.image} />
-                            <AvatarFallback className="text-[10px] bg-muted text-muted-foreground font-medium">
-                              {item.op.name?.charAt(0) || 'U'}
+                        <div className="flex min-w-0 items-center gap-3 overflow-hidden">
+                          <Avatar className="h-9 w-9 shrink-0 rounded-sm border border-border/60">
+                            <AvatarImage src={item.op.image} className="rounded-sm" />
+                            <AvatarFallback className="rounded-sm bg-muted/50 text-[10px] font-semibold text-muted-foreground">
+                              {getInitials(item.op.name || 'U')}
                             </AvatarFallback>
                           </Avatar>
                           <div className="min-w-0">
-                            <div className="font-medium text-sm text-foreground truncate">{item.op.name}</div>
-                            <div className="text-[10px] text-muted-foreground flex items-center gap-1.5">
+                            <div className="truncate text-sm font-medium text-foreground">
+                              {item.op.name}
+                            </div>
+                            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                               {item.op.role === 'BOSS' ? (
-                                <span className="text-amber-500 flex items-center gap-1">
-                                  <Shield className="w-3 h-3" /> Admin
-                                </span>
-                              ) : 'Operador'}
+                                <>
+                                  <Shield className="h-3 w-3" /> Admin
+                                </>
+                              ) : (
+                                'Operador'
+                              )}
                             </div>
                           </div>
                         </div>
 
-                        <div className="flex flex-col items-end shrink-0 pl-2">
-                          <div className="text-xs font-mono text-foreground">{formatTime(item.shift.start)}</div>
-                          <div className="text-[10px] font-mono text-muted-foreground">{formatTime(item.shift.end)}</div>
+                        <div className="flex shrink-0 flex-col items-end pl-2 font-mono text-xs">
+                          <span className="text-foreground">{formatTime(item.shift.start)}</span>
+                          <span className="text-muted-foreground">{formatTime(item.shift.end)}</span>
                         </div>
                       </div>
                     ))
@@ -494,15 +503,14 @@ export function WeeklyCalendar({
       </ScrollArea>
 
       <Dialog open={!!editingState} onOpenChange={(o) => { if (!o) setEditingState(null); }}>
-        <DialogContent className="bg-card backdrop-blur-2xl border-border text-foreground max-w-lg mb-0 rounded-md shadow-none ring-1 ring-border overflow-hidden p-0 max-h-[85vh] flex flex-col">
+        <DialogContent className="operadores-ui mb-0 flex max-h-[85vh] max-w-lg flex-col overflow-hidden rounded-sm border-border bg-card p-0 text-foreground shadow-none ring-1 ring-border">
           <div className="p-6 space-y-6 flex-1 overflow-y-auto">
             <div className="flex justify-between items-start border-b border-border pb-4">
               <div>
                 <DialogTitle className="font-semibold text-2xl tracking-tight text-foreground">
                   Editar Turno
                 </DialogTitle>
-                <DialogDescription className="text-muted-foreground text-sm mt-1 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-[#FF0C60]" />
+                <DialogDescription className="mt-1 text-sm text-muted-foreground">
                   {editingState && DAYS[editingState.dayIndex]} ({editingState && weekDates[editingState.dayIndex]?.dateStr})
                 </DialogDescription>
               </div>
@@ -574,13 +582,13 @@ export function WeeklyCalendar({
 
             <div className="space-y-4">
               {editingState?.shifts.length === 0 && (
-                <div className="text-center text-muted-foreground text-sm py-8 border-2 border-dashed border-border/30 rounded-2xl bg-muted/10">
+                <div className="border-2 border-dashed border-border/30 bg-muted/10 py-8 text-center text-sm text-muted-foreground">
                   No hay turnos asignados.
                 </div>
               )}
 
               {editingState?.shifts.map((shift) => (
-                <div key={shift.tempId} className="bg-muted/30 p-5 rounded-2xl border border-border space-y-5 relative group shadow-sm">
+                <div key={shift.tempId} className="group relative space-y-5 border border-border bg-muted/20 p-4">
                   <div className="space-y-2">
                     <div className="text-[10px] text-muted-foreground tracking-wide uppercase">Días aplicables</div>
                     <div className="flex gap-1 flex-wrap">
@@ -596,7 +604,7 @@ export function WeeklyCalendar({
                               updateEditingShift(shift.tempId, 'days', newDays);
                             }}
                             title={DAYS[index]}
-                            className={`w-8 h-8 rounded-md text-xs font-medium transition-all border ${isSelected ? 'bg-[#FF0C60] text-white border-[#FF0C60] shadow-md shadow-[#FF0C60]/20' : 'bg-card text-muted-foreground border-border hover:bg-muted hover:border-border'}`}
+                            className={`h-8 w-8 rounded-sm border text-xs font-medium transition-colors ${isSelected ? 'border-foreground bg-foreground text-background' : 'border-border bg-card text-muted-foreground hover:bg-muted'}`}
                           >
                             {dayLabel}
                           </button>
@@ -682,10 +690,10 @@ export function WeeklyCalendar({
               Cancelar
             </Button>
             <Button
-              className="bg-[#FF0C60] hover:bg-[#d90a50] text-white flex-1 rounded-md shadow-lg shadow-rose-900/20 transition-all font-medium tracking-wide"
+              className="flex-1 rounded-sm bg-foreground font-medium text-background hover:bg-foreground/90"
               onClick={saveChanges}
             >
-              Guardar Cambios
+              Guardar cambios
             </Button>
           </div>
         </DialogContent>

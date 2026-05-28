@@ -37,7 +37,7 @@ export function CrearReporteClient() {
   } = useReportForm();
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-background text-foreground selection:bg-[#FF0C60] selection:text-white md:flex-row">
+    <div className="crear-reporte-ui relative flex min-h-screen flex-col bg-background text-foreground selection:bg-[#FF0C60] selection:text-white md:flex-row">
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -right-20 top-0 h-72 w-72 rounded-full bg-[#FF0C60]/6 blur-3xl" />
         <div className="absolute -left-24 bottom-0 h-64 w-64 rounded-full bg-violet-600/5 blur-3xl" />

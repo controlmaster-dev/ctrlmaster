@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import {
-  Plus,
   MonitorPlay,
   Users as UsersIcon,
   FileText,
@@ -147,16 +146,6 @@ export function DashboardHero({
                 </Tooltip>
               </TooltipProvider>
             </div>
-
-            <Link href="/crear-reporte">
-              <Button
-                size="sm"
-                className="h-8 gap-1.5 rounded-sm bg-[#FF0C60] px-4 text-xs font-semibold text-white shadow-md shadow-[#FF0C60]/20 hover:bg-[#E00A54]"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Nuevo reporte
-              </Button>
-            </Link>
           </div>
         </div>
       </div>

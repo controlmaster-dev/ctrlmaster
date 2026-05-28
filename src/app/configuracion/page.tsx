@@ -39,8 +39,11 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 import { ConfirmModal } from "@/components/ConfirmModal";
-import { ScheduleEditor } from "@/components/ScheduleEditor";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  UserFormDialog,
+  type UserFormState,
+} from "@/components/configuracion/UserFormDialog";
 import {
   Dialog,
   DialogContent,
@@ -63,6 +66,8 @@ import { ConfiguracionSkeleton } from "@/components/skeletons/ConfiguracionSkele
 import { useConfiguracionBundle } from "@/hooks/useConfiguracionBundle";
 import { isConfigAdmin } from "@/lib/adminAccess";
 import { getSundayWeekStart } from "@/lib/weekUtils";
+import { pageContainerClass } from "@/lib/page-layout";
+import { cn } from "@/lib/utils";
 
 export default function ConfigurationPage() {
   const router = useRouter();
@@ -80,7 +85,7 @@ export default function ConfigurationPage() {
     type: "danger" as "danger" | "warning",
   });
 
-  const [newUser, setNewUser] = useState({
+  const [newUser, setNewUser] = useState<UserFormState>({
     name: "",
     email: "",
     password: "password123",
@@ -99,6 +104,7 @@ export default function ConfigurationPage() {
     reports,
     securityCodes,
     isReady,
+    reportsReady,
     refresh,
   } = useConfiguracionBundle(currentWeekStart, isAdmin);
 
@@ -335,10 +341,8 @@ export default function ConfigurationPage() {
 
   if (!isReady) {
     return (
-      <div className="min-h-screen relative overflow-hidden bg-background text-foreground pb-20">
-        <div className="relative z-10">
-          <ConfiguracionSkeleton />
-        </div>
+      <div className="configuracion-ui min-h-screen bg-background text-foreground">
+        <ConfiguracionSkeleton />
       </div>
     );
   }
@@ -535,9 +539,17 @@ export default function ConfigurationPage() {
     );
   };
 
+  const tabClass = (active: boolean) =>
+    cn(
+      "rounded-sm px-3 py-2 text-xs font-medium transition-colors whitespace-nowrap shrink-0",
+      active
+        ? "bg-[#FF0C60]/10 text-[#FF0C60]"
+        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+    );
+
   return (
-    <div className="min-h-screen relative overflow-hidden bg-background text-foreground selection:bg-primary/25 selection:text-foreground pb-20">
-      <div className="relative z-10 text-foreground">
+    <div className="configuracion-ui relative min-h-screen overflow-hidden bg-background pb-20 text-foreground selection:bg-[#FF0C60] selection:text-white">
+      <div className="relative z-10">
         <ConfirmModal
           isOpen={modal.isOpen}
           title={modal.title}
@@ -547,336 +559,63 @@ export default function ConfigurationPage() {
           type={modal.type}
         />
 
-        <Dialog open={isUserModalOpen} onOpenChange={setIsUserModalOpen}>
-          <DialogContent className="max-w-2xl bg-card border-border text-foreground p-0 overflow-hidden shadow-lg rounded-xl">
-            <div className="relative">
-              <div className="absolute inset-0 h-32 bg-gradient-to-br from-primary/10 via-transparent to-transparent pointer-events-none" />
+        <UserFormDialog
+          open={isUserModalOpen}
+          onOpenChange={setIsUserModalOpen}
+          isEditing={isEditing}
+          user={newUser}
+          onChange={setNewUser}
+          error={error}
+          onSubmit={confirmSaveUser}
+          onCancel={cancelEdit}
+        />
 
-              <div className="relative bg-muted/30 border-b border-border p-8 flex items-center gap-6">
-                <div className="w-14 h-14 bg-primary text-primary-foreground rounded-xl flex items-center justify-center shadow-md ring-1 ring-primary-foreground/20">
-                  {isEditing ? (
-                    <Settings className="w-7 h-7" />
-                  ) : (
-                    <UserPlus className="w-7 h-7" />
-                  )}
-                </div>
+        <div className={`${pageContainerClass} space-y-5`}>
+          <section className="border border-border/60 bg-card shadow-sm">
+            <div className="flex flex-col gap-4 p-4 xl:flex-row xl:items-start xl:justify-between">
+              <div className="space-y-2">
+                <span className="inline-flex items-center gap-1 rounded-sm border border-border/60 bg-muted/30 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                  <Settings className="h-3 w-3" />
+                  Administración
+                </span>
                 <div>
-                  <DialogTitle className="text-2xl font-semibold tracking-tight text-foreground mb-1">
-                    {isEditing ? "Editar Perfil y Horario" : "Registrar Nuevo Operador"}
-                  </DialogTitle>
-                  <DialogDescription className="text-[10px] font-medium text-primary uppercase tracking-wide flex items-center gap-2">
-                    <span className="w-1 h-1 bg-primary rounded-full animate-pulse" />{" "}
-                    Gestión de credenciales y turnos fijos
-                  </DialogDescription>
+                  <h1 className="text-xl font-semibold tracking-tight md:text-2xl">
+                    Configuración
+                  </h1>
+                  <p className="mt-1 max-w-xl text-sm text-muted-foreground">
+                    Usuarios, horarios, eventos, códigos de registro y depuración de reportes.
+                  </p>
                 </div>
               </div>
-
-              <div className="p-8 max-h-[70vh] overflow-y-auto custom-scrollbar space-y-8">
-                <form id="user-form" onSubmit={confirmSaveUser} className="space-y-10">
-                  {error && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="bg-destructive/10 border border-destructive/20 text-destructive text-xs font-semibold p-4 rounded-lg"
-                    >
-                      {error}
-                    </motion.div>
-                  )}
-
-                  <div className="space-y-6">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-1.5 h-4 bg-primary rounded-full" />
-                      <h4 className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                        Datos Personales
-                      </h4>
-                    </div>
-                    <div className="grid grid-cols-2 gap-6">
-                      <div className="space-y-2.5">
-                        <Label className="text-[10px] font-semibold text-muted-foreground tracking-tight opacity-70 ml-1">
-                          NOMBRE COMPLETO
-                        </Label>
-                        <Input
-                          value={newUser.name}
-                          onChange={(e) =>
-                            setNewUser({ ...newUser, name: e.target.value })
-                          }
-                          className="bg-background border-input text-foreground placeholder:text-muted-foreground h-12 text-sm font-medium uppercase rounded-lg transition-all ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
-                          required
-                          placeholder="EJ. JUAN PÉREZ"
-                        />
-                      </div>
-                      <div className="space-y-2.5">
-                        <Label className="text-[10px] font-semibold text-muted-foreground tracking-tight opacity-70 ml-1">
-                          CORREO CORPORATIVO
-                        </Label>
-                        <Input
-                          type="email"
-                          value={newUser.email}
-                          onChange={(e) =>
-                            setNewUser({ ...newUser, email: e.target.value })
-                          }
-                          className="bg-background border-input text-foreground placeholder:text-muted-foreground h-12 text-sm font-medium rounded-lg transition-all ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
-                          required
-                          placeholder="usuario@enlace.org"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-6">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-1.5 h-4 bg-primary rounded-full" />
-                      <h4 className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                        Seguridad y Rango
-                      </h4>
-                    </div>
-                    <div className="grid grid-cols-2 gap-6">
-                      <div className="space-y-2.5">
-                        <Label className="text-[10px] font-semibold text-muted-foreground tracking-tight opacity-70 ml-1">
-                          CARGO DESIGNADO
-                        </Label>
-                        <Select
-                          value={newUser.role}
-                          onValueChange={(val) => setNewUser({ ...newUser, role: val })}
-                        >
-                          <SelectTrigger className="bg-background border-input text-foreground h-12 text-sm font-medium rounded-lg uppercase ring-offset-background focus:ring-2 focus:ring-ring">
-                            <SelectValue placeholder="Seleccionar rol" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-popover border-border text-popover-foreground">
-                            <SelectItem
-                              value="OPERATOR"
-                              className="focus:bg-accent focus:text-accent-foreground hover:bg-muted"
-                            >
-                              Operador
-                            </SelectItem>
-                            <SelectItem
-                              value="ENGINEER"
-                              className="focus:bg-accent focus:text-accent-foreground hover:bg-muted"
-                            >
-                              Ingeniero
-                            </SelectItem>
-                            <SelectItem
-                              value="BOSS"
-                              className="focus:bg-accent focus:text-accent-foreground hover:bg-muted"
-                            >
-                              Coordinador
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2.5">
-                        <Label className="text-[10px] font-semibold text-muted-foreground tracking-tight opacity-70 ml-1">
-                          CONTRASEÑA DE ACCESO
-                        </Label>
-                        <Input
-                          value={newUser.password}
-                          onChange={(e) =>
-                            setNewUser({ ...newUser, password: e.target.value })
-                          }
-                          className="bg-background border-input text-foreground placeholder:text-muted-foreground h-12 text-sm font-medium rounded-lg transition-all ring-offset-background focus-visible:ring-2 focus-visible:ring-ring font-mono"
-                          required={!isEditing}
-                          type="password"
-                          placeholder={isEditing ? "SIN CAMBIOS" : "••••••••"}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-6">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-1.5 h-4 bg-primary rounded-full" />
-                      <h4 className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                        Celebraciones
-                      </h4>
-                    </div>
-                    <div className="space-y-2.5">
-                      <Label className="text-[10px] font-semibold text-muted-foreground tracking-tight opacity-70 ml-1">
-                        FECHA DE CUMPLEAÑOS
-                      </Label>
-                      <div className="flex gap-4">
-                        <Select
-                          value={
-                            newUser.birthday ? newUser.birthday.split("-")[0] : undefined
-                          }
-                          onValueChange={(m) => {
-                            const parts = newUser.birthday.split("-");
-                            const d = parts[1] || "01";
-                            setNewUser({ ...newUser, birthday: `${m}-${d}` });
-                          }}
-                        >
-                          <SelectTrigger className="bg-background border-input text-foreground h-12 text-sm font-medium rounded-lg flex-1 ring-offset-background focus:ring-2 focus:ring-ring">
-                            <SelectValue placeholder="MES" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-popover border-border text-popover-foreground max-h-60">
-                            {[
-                              "01",
-                              "02",
-                              "03",
-                              "04",
-                              "05",
-                              "06",
-                              "07",
-                              "08",
-                              "09",
-                              "10",
-                              "11",
-                              "12",
-                            ].map((m) => (
-                              <SelectItem
-                                key={m}
-                                value={m}
-                                className="focus:bg-accent focus:text-accent-foreground hover:bg-muted"
-                              >
-                                {new Date(2000, parseInt(m) - 1, 1)
-                                  .toLocaleString("es-CR", { month: "long" })
-                                  .toUpperCase()}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-
-                        <Select
-                          value={
-                            newUser.birthday ? newUser.birthday.split("-")[1] : undefined
-                          }
-                          onValueChange={(d) => {
-                            const parts = newUser.birthday.split("-");
-                            const m = parts[0] || "01";
-                            setNewUser({ ...newUser, birthday: `${m}-${d}` });
-                          }}
-                        >
-                          <SelectTrigger className="bg-background border-input text-foreground h-12 text-sm font-medium rounded-lg w-32 ring-offset-background focus:ring-2 focus:ring-ring">
-                            <SelectValue placeholder="DÍA" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-popover border-border text-popover-foreground max-h-60">
-                            {Array.from({ length: 31 }, (_, i) =>
-                              (i + 1).toString().padStart(2, "0")
-                            ).map((d) => (
-                              <SelectItem
-                                key={d}
-                                value={d}
-                                className="focus:bg-accent focus:text-accent-foreground hover:bg-muted"
-                              >
-                                {d}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="pt-8 border-t border-border">
-                    <div className="flex items-center gap-2 mb-6">
-                      <div className="w-1.5 h-4 bg-primary rounded-full" />
-                      <h4 className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                        Planificación de Turnos
-                      </h4>
-                    </div>
-                    <ScheduleEditor
-                      value={newUser.schedule}
-                      onChange={(s: any) => setNewUser({ ...newUser, schedule: s })}
-                    />
-                  </div>
-                </form>
-              </div>
-
-              <div className="p-8 border-t border-border bg-muted/10 flex justify-end gap-4">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={cancelEdit}
-                  className="h-12 px-6 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
-                >
-                  CANCELAR
-                </Button>
-                <button
-                  form="user-form"
-                  type="submit"
-                  className="px-8 h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-[11px] uppercase tracking-wide rounded-lg transition-all shadow-md active:scale-95"
-                >
-                  {isEditing ? "GUARDAR CAMBIOS" : "CONFIRMAR REGISTRO"}
-                </button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        <div className="relative z-10 mx-auto w-full max-w-[2200px] space-y-8 px-3 pt-20 pb-20 md:px-4 md:pt-6">
-          <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6">
-            <div>
-              <h1 className="text-3xl md:text-4xl font-semibold text-foreground tracking-tight flex items-center gap-2">
-                <Settings className="w-8 h-8 text-primary" /> Configuración
-              </h1>
-              <p className="text-muted-foreground mt-1 text-base md:text-lg font-medium">
-                Administración de usuarios y limpieza de base de datos.
-              </p>
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full xl:w-auto">
               <Button
                 onClick={() => {
                   cancelEdit();
                   setIsUserModalOpen(true);
                 }}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground h-12 md:h-14 px-8 rounded-lg shadow-lg shadow-primary/20 flex items-center justify-center gap-3 text-sm font-bold uppercase tracking-wide transition-all"
+                className="h-10 shrink-0 gap-2 rounded-sm bg-[#FF0C60] px-4 text-white hover:bg-[#E00A54]"
               >
-                <UserPlus className="w-5 h-5" /> Nuevo Operador
+                <UserPlus className="h-4 w-4" />
+                Nuevo operador
               </Button>
-
-              <div className="flex bg-muted/20 p-1.5 rounded-lg border border-border w-full sm:w-auto overflow-x-auto no-scrollbar scroll-smooth snap-x">
-                <button
-                  onClick={() => setActiveTab("users")}
-                  className={`px-4 py-2.5 rounded-md text-xs font-semibold tracking-tight transition-all flex items-center justify-center gap-2 whitespace-nowrap flex-shrink-0 snap-start ${
-                    activeTab === "users"
-                      ? "bg-primary/10 text-primary shadow-sm"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                  }`}
-                >
-                  Usuarios
-                </button>
-                <button
-                  onClick={() => setActiveTab("schedule")}
-                  className={`px-4 py-2.5 rounded-md text-xs font-semibold tracking-tight transition-all flex items-center justify-center gap-2 whitespace-nowrap flex-shrink-0 snap-start ${
-                    activeTab === "schedule"
-                      ? "bg-primary/10 text-primary shadow-sm"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                  }`}
-                >
-                  Horarios
-                </button>
-                <button
-                  onClick={() => setActiveTab("events")}
-                  className={`px-4 py-2.5 rounded-md text-xs font-semibold tracking-tight transition-all flex items-center justify-center gap-2 whitespace-nowrap flex-shrink-0 snap-start ${
-                    activeTab === "events"
-                      ? "bg-primary/10 text-primary shadow-sm"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                  }`}
-                >
-                  Eventos
-                </button>
-                <button
-                  onClick={() => setActiveTab("security")}
-                  className={`px-4 py-2.5 rounded-md text-xs font-semibold tracking-tight transition-all flex items-center justify-center gap-2 whitespace-nowrap flex-shrink-0 snap-start ${
-                    activeTab === "security"
-                      ? "bg-primary/10 text-primary shadow-sm"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                  }`}
-                >
-                  Seguridad
-                </button>
-                <button
-                  onClick={() => setActiveTab("reports")}
-                  className={`px-4 py-2.5 rounded-md text-xs font-semibold tracking-tight transition-all flex items-center justify-center gap-2 whitespace-nowrap flex-shrink-0 snap-start ${
-                    activeTab === "reports"
-                      ? "bg-primary/10 text-primary shadow-sm"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                  }`}
-                >
-                  Reportes
-                </button>
-              </div>
             </div>
+          </section>
+
+          <div className="flex gap-1 overflow-x-auto border border-border/60 bg-card p-1 shadow-sm no-scrollbar">
+            <button type="button" onClick={() => setActiveTab("users")} className={tabClass(activeTab === "users")}>
+              Usuarios
+            </button>
+            <button type="button" onClick={() => setActiveTab("schedule")} className={tabClass(activeTab === "schedule")}>
+              Horarios
+            </button>
+            <button type="button" onClick={() => setActiveTab("events")} className={tabClass(activeTab === "events")}>
+              Eventos
+            </button>
+            <button type="button" onClick={() => setActiveTab("security")} className={tabClass(activeTab === "security")}>
+              Seguridad
+            </button>
+            <button type="button" onClick={() => setActiveTab("reports")} className={tabClass(activeTab === "reports")}>
+              Reportes
+            </button>
           </div>
 
           <AnimatePresence mode="wait">
@@ -1209,7 +948,13 @@ export default function ConfigurationPage() {
                 exit={{ opacity: 0, scale: 0.98, y: 10 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
               >
-                <Card className="bg-card border border-border shadow-sm rounded-xl">
+                {!reportsReady ? (
+                  <div className="flex min-h-[280px] flex-col items-center justify-center gap-3 border border-border/60 bg-card">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">Cargando reportes…</p>
+                  </div>
+                ) : (
+                <Card className="rounded-sm border border-border bg-card shadow-sm">
                   <CardHeader className="bg-muted/10 p-8 border-b border-border">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                       <div className="space-y-2">
@@ -1287,6 +1032,7 @@ export default function ConfigurationPage() {
                     </Table>
                   </CardContent>
                 </Card>
+                )}
               </motion.div>
             )}
           </AnimatePresence>

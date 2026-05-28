@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { AppDataPrefetch } from "@/components/AppDataPrefetch";
+import { PageTransition } from "@/components/PageTransition";
 import LoginPage from "@/app/login/page";
 
 export function AuthWrapper({ children }: { children: React.ReactNode }) {
@@ -56,7 +57,9 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
       <div className="grid-background" />
       <AppDataPrefetch />
       <Navbar />
-      <main className="w-full flex-1 relative z-10">{children}</main>
+      <main className="relative z-10 w-full flex-1">
+        <PageTransition pathname={pathname}>{children}</PageTransition>
+      </main>
     </div>
   );
 }

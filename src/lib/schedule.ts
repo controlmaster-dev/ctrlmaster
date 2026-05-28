@@ -1,4 +1,16 @@
-import { differenceInCalendarWeeks, getDay } from 'date-fns';
+import { differenceInCalendarWeeks, format, getDay } from 'date-fns';
+
+/** Clave de calendario local (yyyy-MM-dd) para overrides — evita desfase UTC. */
+export function scheduleDateKey(date: Date | string): string {
+  if (typeof date === 'string') {
+    const match = date.match(/^(\d{4}-\d{2}-\d{2})/);
+    if (match) return match[1];
+    const parsed = new Date(date);
+    if (!isNaN(parsed.getTime())) return format(parsed, 'yyyy-MM-dd');
+    return '';
+  }
+  return format(date, 'yyyy-MM-dd');
+}
 
 const FIXED_SCHEDULE_DEFAULT: Record<number, string> = {
   0: 'Andrés Corea',
@@ -19,8 +31,7 @@ export function getBitcentralUser(
   baseSchedule: Record<string, string> = {}
 ) {
   const day = getDay(date);
-  const toISO = (d: Date) => isNaN(d.getTime()) ? '' : d.toISOString().split('T')[0];
-  const dateKey = toISO(date);
+  const dateKey = scheduleDateKey(date);
 
   if (overrides[dateKey]) {
     return { name: overrides[dateKey], isRotation: false, isOverride: true };

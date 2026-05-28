@@ -35,7 +35,7 @@ export function StepIndicator({ steps, currentStep, onStepClick }: StepIndicator
           >
             <div
               className={cn(
-                "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-xs transition-colors",
+                "flex h-8 w-8 shrink-0 items-center justify-center rounded-sm border text-xs transition-colors",
                 isActive && "border-[#FF0C60] bg-[#FF0C60]/10 text-[#FF0C60]",
                 isDone && "border-[#FF0C60] bg-[#FF0C60] text-white",
                 !isActive && !isDone && "border-border/50 bg-muted/30 text-muted-foreground"

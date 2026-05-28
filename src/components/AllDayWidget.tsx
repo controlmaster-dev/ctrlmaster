@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CalendarDays, Shield } from "lucide-react";
 import { addDays, format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -81,38 +80,38 @@ function DayShiftList({
 
   return (
     <div>
-      <div className="mb-2 flex items-baseline justify-between gap-2 px-1">
-        <span className="text-xs font-semibold text-foreground">{label}</span>
-        <span className="truncate text-[11px] capitalize text-muted-foreground">
+      <div className="mb-2 flex items-baseline justify-between gap-2 border-b border-border/40 pb-2">
+        <span className="text-[10px] font-medium uppercase tracking-wider text-foreground">
+          {label}
+        </span>
+        <span className="truncate text-[10px] capitalize text-muted-foreground">
           {dateLabel}
         </span>
       </div>
 
       {list.length === 0 ? (
-        <p className="px-1 py-6 text-center text-xs text-muted-foreground">
-          Sin turnos
-        </p>
+        <p className="py-5 text-center text-xs text-muted-foreground">Sin turnos</p>
       ) : (
-        <ul className="divide-y divide-border/40 rounded-lg border border-border/50 bg-muted/10">
+        <ul className="divide-y divide-border/50 border border-border/60">
           {list.map((item, idx) => (
             <li
               key={`${item.op.id}-${idx}`}
-              className="flex items-center justify-between gap-3 px-3 py-2.5"
+              className="flex items-center justify-between gap-3 bg-card px-3 py-2.5"
             >
               <div className="flex min-w-0 items-center gap-2.5">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-semibold text-muted-foreground">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center border border-border/60 bg-muted/40 text-[10px] font-semibold text-muted-foreground">
                   {getInitials(item.op.name)}
                 </span>
                 <div className="min-w-0">
                   <p className="flex items-center gap-1 truncate text-sm font-medium text-foreground">
                     {formatName(item.op.name)}
                     {item.op.role?.toUpperCase() === "BOSS" && (
-                      <Shield className="h-3 w-3 shrink-0 text-[#FF0C60]" />
+                      <Shield className="h-3 w-3 shrink-0 text-muted-foreground" />
                     )}
                   </p>
                 </div>
               </div>
-              <span className="shrink-0 rounded-md bg-background px-2 py-1 font-mono text-[11px] text-muted-foreground ring-1 ring-border/50">
+              <span className="shrink-0 border border-border/50 bg-muted/30 px-2 py-0.5 font-mono text-[10px] text-muted-foreground">
                 {formatTime(item.shift.start)} – {formatTime(item.shift.end)}
               </span>
             </li>
@@ -146,23 +145,23 @@ export function AllDayWidget({ operators, specialEvents = [] }: AllDayWidgetProp
   }, [specialEvents]);
 
   return (
-    <Card className="overflow-hidden rounded-xl border border-border/60 bg-card/80 shadow-sm">
-      <CardHeader className="border-b border-border/50 px-4 py-3">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#FF0C60]/10 text-[#FF0C60]">
-            <CalendarDays className="h-4 w-4" />
-          </div>
-          <div>
-            <CardTitle className="text-sm font-semibold">Turnos del día</CardTitle>
-            <p className="text-[11px] text-muted-foreground">Hoy y mañana</p>
-          </div>
+    <section className="border border-border/60 bg-card shadow-sm">
+      <header className="flex items-center gap-3 border-b border-border/50 px-4 py-3">
+        <div className="flex h-8 w-8 items-center justify-center border border-border/60 bg-muted/30 text-muted-foreground">
+          <CalendarDays className="h-4 w-4" />
         </div>
-      </CardHeader>
+        <div>
+          <h2 className="text-sm font-semibold tracking-tight">Turnos del día</h2>
+          <p className="text-[11px] text-muted-foreground">Hoy y mañana</p>
+        </div>
+      </header>
 
-      <CardContent className="space-y-5 p-4">
+      <div className="space-y-5 p-4">
         {activeEvent && (
-          <div className="rounded-lg border border-[#FF0C60]/20 bg-[#FF0C60]/5 px-3 py-2">
-            <p className="text-[10px] font-medium text-[#FF0C60]">Evento activo</p>
+          <div className="border border-border/60 bg-muted/20 px-3 py-2">
+            <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+              Evento activo
+            </p>
             <p className="mt-0.5 text-sm font-medium text-foreground">
               {activeEvent.name}
             </p>
@@ -175,7 +174,7 @@ export function AllDayWidget({ operators, specialEvents = [] }: AllDayWidgetProp
           list={tomorrowOperators}
           date={addDays(new Date(), 1)}
         />
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }

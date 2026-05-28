@@ -240,16 +240,25 @@ export default function OperatorsPage() {
 
   const activeEvent = getActiveEvent();
 
+  const onDutyCount = operators.filter((op) => {
+    const now = new Date();
+    const currentDay = now.getDay();
+    const currentHour = now.getHours() + now.getMinutes() / 60;
+    return !!op.shifts?.some((s) => {
+      const end = s.end === 0 ? 24 : s.end;
+      return (
+        s.days.includes(currentDay) &&
+        currentHour >= s.start &&
+        currentHour < end
+      );
+    });
+  }).length;
+
   // ─── render ───────────────────────────────────────────────────────────────
 
   return (
-    <div className="relative min-h-screen overflow-hidden pb-20 text-foreground selection:bg-[#FF0C60] selection:text-white">
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute -right-20 top-0 h-72 w-72 rounded-full bg-[#FF0C60]/6 blur-3xl" />
-        <div className="absolute -left-24 bottom-0 h-64 w-64 rounded-full bg-violet-600/5 blur-3xl" />
-      </div>
-
-      <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-xl">
+    <div className="operadores-ui relative min-h-screen overflow-hidden pb-20 text-foreground selection:bg-[#FF0C60] selection:text-white">
+      <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-sm">
         <div className="h-0.5 bg-[#FF0C60]" aria-hidden />
         <div className={`${pageHeaderBarClass} h-14`}>
           <Link href="/" className="flex items-center gap-2.5 hover:opacity-90">
@@ -271,7 +280,7 @@ export default function OperatorsPage() {
               <Button
                 variant="outline"
                 size="icon"
-                className="h-9 w-9 rounded-lg border-border/80"
+                className="h-9 w-9 rounded-sm border-border/80"
               >
                 <Home className="h-4 w-4" />
               </Button>
@@ -282,13 +291,13 @@ export default function OperatorsPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-9 gap-2 rounded-lg border-border/80 bg-card/80"
+                  className="h-9 gap-2 rounded-sm border-border/80"
                 >
                   <Calendar className="h-4 w-4" />
                   <span className="hidden md:inline">Calendario</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="flex h-full w-full max-w-[98vw] flex-col overflow-hidden rounded-none border-border bg-card p-0 md:h-[95vh] md:rounded-xl">
+              <DialogContent className="operadores-ui flex h-full w-full max-w-[98vw] flex-col overflow-hidden rounded-none border-border bg-card p-0 md:h-[95vh] md:rounded-sm">
                 <div className="flex flex-col gap-4 border-b border-border px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                   <div>
                     <DialogTitle className="text-lg font-semibold">
@@ -302,7 +311,7 @@ export default function OperatorsPage() {
                   {user && (
                     <div className="flex flex-wrap items-center gap-2">
                       <select
-                        className="h-9 rounded-lg border border-border/60 bg-muted/30 px-3 text-xs outline-none focus-visible:ring-1 focus-visible:ring-[#FF0C60]"
+                        className="h-9 rounded-sm border border-border/60 bg-muted/30 px-3 text-xs outline-none focus-visible:ring-1 focus-visible:ring-ring"
                         value={weeksDuration}
                         onChange={(e) => setWeeksDuration(Number(e.target.value))}
                       >
@@ -312,12 +321,12 @@ export default function OperatorsPage() {
                         <option value={24}>6 meses</option>
                       </select>
 
-                      <div className="flex rounded-lg border border-border/60 bg-muted/25 p-0.5">
+                      <div className="flex rounded-sm border border-border/60 bg-muted/25 p-0.5">
                         <Button
                           onClick={() => handleSubscribe(true)}
                           variant="ghost"
                           size="sm"
-                          className="h-8 gap-1.5 rounded-md text-xs"
+                          className="h-8 gap-1.5 rounded-sm text-xs"
                         >
                           <Calendar className="h-3.5 w-3.5" />
                           Suscribir
@@ -326,7 +335,7 @@ export default function OperatorsPage() {
                           onClick={() => (handleSubscribe as unknown as (m: string) => void)("copy")}
                           variant="ghost"
                           size="icon"
-                          className={`h-8 w-8 rounded-md ${copied ? "text-emerald-600" : ""}`}
+                          className={`h-8 w-8 rounded-sm ${copied ? "text-foreground" : ""}`}
                           title="Copiar enlace"
                         >
                           {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
@@ -335,7 +344,7 @@ export default function OperatorsPage() {
                           onClick={() => handleSubscribe(false)}
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 rounded-md"
+                          className="h-8 w-8 rounded-sm"
                           title="Descargar .ics"
                         >
                           <Download className="h-3.5 w-3.5" />
@@ -379,41 +388,70 @@ export default function OperatorsPage() {
         {!isReady ? (
           <OperadoresPageSkeleton />
         ) : (
-        <>
-        <header className="space-y-5 border-b border-border/60 pb-6">
-          <div>
-            <p className="text-sm text-muted-foreground">Equipo de control</p>
-            <h1 className="mt-1 text-2xl font-semibold tracking-tight md:text-3xl">
-              Horarios de <span className="text-[#FF0C60]">operadores</span>
-            </h1>
-            <p className="mt-1.5 max-w-xl text-sm text-muted-foreground">
-              Quién está en turno ahora y la programación de la semana.
-            </p>
+        <div className="space-y-5">
+        <header className="border border-border/60 bg-card shadow-sm">
+          <div className="border-b border-border/50 px-4 py-4 md:px-5">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                  Equipo de control
+                </p>
+                <h1 className="mt-1 text-xl font-semibold tracking-tight md:text-2xl">
+                  Horarios de operadores
+                </h1>
+                <p className="mt-1 max-w-xl text-sm text-muted-foreground">
+                  Estado en vivo de los trabajadores de Control Máster.
+                </p>
+              </div>
+
+              {operators.length > 0 && (
+                <div className="flex shrink-0 gap-px border border-border/60 bg-muted/20 text-center text-xs">
+                  <div className="min-w-[5.5rem] px-4 py-2.5 bg-card">
+                    <p className="text-lg font-semibold tabular-nums text-foreground">
+                      {onDutyCount}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">En turno</p>
+                  </div>
+                  <div className="min-w-[5.5rem] border-l border-border/60 px-4 py-2.5 bg-card">
+                    <p className="text-lg font-semibold tabular-nums text-foreground">
+                      {operators.length - onDutyCount}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">Fuera</p>
+                  </div>
+                  <div className="min-w-[5.5rem] border-l border-border/60 px-4 py-2.5 bg-card">
+                    <p className="text-lg font-semibold tabular-nums text-foreground">
+                      {operators.length}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">Total</p>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {predictions.length > 0 && (
-            <div>
-              <p className="mb-2 text-xs font-medium text-muted-foreground">
+            <div className="px-4 py-3 md:px-5">
+              <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
                 Próximos en turno
               </p>
-              <div className="flex gap-2 overflow-x-auto pb-1">
+              <div className="grid gap-px border border-border/60 bg-border/60 sm:grid-cols-2">
                 {predictions.map((pred) => (
                   <div
                     key={pred.nextOperator.id}
-                    className="flex min-w-[180px] shrink-0 items-center gap-2.5 rounded-lg border border-border/60 bg-card/80 px-3 py-2"
+                    className="flex items-center gap-3 bg-card px-3 py-2.5"
                   >
-                    <Avatar className="h-8 w-8 border border-border">
-                      <AvatarImage src={pred.nextOperator.image} />
-                      <AvatarFallback className="text-xs">
+                    <Avatar className="h-8 w-8 rounded-sm border border-border/60">
+                      <AvatarImage src={pred.nextOperator.image} className="rounded-sm" />
+                      <AvatarFallback className="rounded-sm text-xs">
                         {pred.nextOperator.name.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="min-w-0">
-                      <p className="truncate text-xs font-medium">
-                        {pred.nextOperator.name}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{pred.nextOperator.name}</p>
+                      <p className="text-[11px] text-muted-foreground">
                         {pred.timeUntil}
+                        <span className="mx-1.5 text-border">·</span>
+                        {pred.shiftLabel}
                       </p>
                     </div>
                   </div>
@@ -423,14 +461,14 @@ export default function OperatorsPage() {
           )}
         </header>
 
-        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-4 lg:gap-8">
-          <div className="lg:col-span-1 lg:sticky lg:top-20">
+        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-4 lg:gap-6">
+          <div className="lg:col-span-1 lg:sticky lg:top-[4.5rem]">
             <AllDayWidget operators={operators} specialEvents={eventsList} />
           </div>
 
           <div className="lg:col-span-3">
             {operators.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border/60 py-16 text-center">
+              <div className="border border-dashed border-border/60 bg-muted/10 py-16 text-center">
                 <p className="text-sm font-medium text-foreground">
                   No hay operadores configurados
                 </p>
@@ -469,7 +507,7 @@ export default function OperatorsPage() {
             )}
           </div>
         </div>
-        </>
+        </div>
         )}
       </main>
     </div>

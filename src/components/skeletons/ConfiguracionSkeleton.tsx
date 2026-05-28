@@ -1,26 +1,21 @@
 import { Skeleton } from "@/components/ui/skeleton";
+import { pageContainerClass } from "@/lib/page-layout";
 
 export function ConfiguracionSkeleton() {
   return (
-    <div className="mx-auto w-full max-w-[2200px] space-y-8 px-3 pt-20 pb-20 md:px-4 md:pt-6">
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-        <div className="space-y-2">
-          <Skeleton className="h-10 w-64" />
-          <Skeleton className="h-4 w-80" />
-        </div>
-        <div className="flex gap-2">
-          <Skeleton className="h-12 w-40 rounded-lg" />
-          <Skeleton className="h-12 w-72 rounded-lg" />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-28 rounded-xl" />
+    <div className={`configuracion-ui ${pageContainerClass} min-h-screen space-y-5`}>
+      <Skeleton className="h-28 w-full rounded-sm" />
+      <div className="flex gap-2 overflow-hidden">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} className="h-9 w-24 shrink-0 rounded-sm" />
         ))}
       </div>
-
-      <Skeleton className="h-[420px] w-full rounded-xl" />
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-24 rounded-sm" />
+        ))}
+      </div>
+      <Skeleton className="h-[360px] w-full rounded-sm" />
     </div>
   );
 }

@@ -8,10 +8,15 @@ import {
   getConfiguracionCache,
   setConfiguracionCache,
 } from "@/lib/configuracionCache";
+import { getClavesCache, setClavesCache } from "@/lib/clavesCache";
 import { prefetchReportDetails } from "@/lib/reportDetailCache";
 import { isConfigAdmin } from "@/lib/adminAccess";
 import { getSundayWeekStart } from "@/lib/weekUtils";
 import { prefetchBitcentralNearby } from "@/lib/bitcentralCache";
+import {
+  getReportesListCache,
+  setReportesListCache,
+} from "@/lib/reportesListCache";
 import { sortOperators } from "@/hooks/useOperadoresBundle";
 import type { Report } from "@/types/report";
 import type { Operator } from "@/lib/types";
@@ -107,20 +112,86 @@ export function AppDataPrefetch() {
 
     void prefetchBitcentralNearby();
 
+    const reportesQuery = "page=1&limit=20";
+    if (!getReportesListCache(reportesQuery)) {
+      Promise.all([
+        fetch(`/api/reports?${reportesQuery}`).then((r) => r.json()),
+        fetch("/api/reports?limit=1").then((r) => r.json()),
+        fetch("/api/reports?limit=1&status=pending").then((r) => r.json()),
+        fetch("/api/reports?limit=1&status=resolved").then((r) => r.json()),
+      ])
+        .then(([listRes, all, pending, resolved]) => {
+          let reports: unknown[] = [];
+          let total = 0;
+          let totalPages = 1;
+          if (listRes.reports) {
+            reports = listRes.reports;
+            total = listRes.total || 0;
+            totalPages = listRes.totalPages || 1;
+          } else if (Array.isArray(listRes)) {
+            reports = listRes;
+            total = listRes.length;
+          }
+          setReportesListCache({
+            queryKey: reportesQuery,
+            reports,
+            total,
+            totalPages,
+            globalStats: {
+              total: all.total ?? 0,
+              pending: pending.total ?? 0,
+              resolved: resolved.total ?? 0,
+            },
+            fetchedAt: Date.now(),
+          });
+          const ids = (reports as Report[]).slice(0, 12).map((r) => r.id);
+          void prefetchReportDetails(ids);
+        })
+        .catch(() => {});
+    }
+
+    if (!getClavesCache()) {
+      fetch("/api/credentials")
+        .then((r) => r.json())
+        .then((data) => {
+          setClavesCache({
+            credentials: Array.isArray(data) ? data : [],
+            fetchedAt: Date.now(),
+          });
+        })
+        .catch(() => {});
+    }
+
     if (isConfigAdmin(user) && !getConfiguracionCache(weekStart)) {
       Promise.all([
         fetch(`/api/users?weekStart=${weekStart}`).then((r) => r.json()),
-        fetch("/api/reports?limit=500").then((r) => r.json()),
         fetch("/api/auth/registration-codes").then((r) => r.json()),
       ])
-        .then(([usersData, reportsData, codesData]) => {
+        .then(([usersData, codesData]) => {
+          const users = Array.isArray(usersData) ? usersData : [];
+          const securityCodes = Array.isArray(codesData) ? codesData : [];
           setConfiguracionCache({
             weekStart,
-            users: Array.isArray(usersData) ? usersData : [],
-            reports: parseReports(reportsData),
-            securityCodes: Array.isArray(codesData) ? codesData : [],
+            users,
+            reports: [],
+            securityCodes,
+            reportsReady: false,
             fetchedAt: Date.now(),
           });
+
+          fetch("/api/reports?limit=500")
+            .then((r) => r.json())
+            .then((reportsData) => {
+              const cached = getConfiguracionCache(weekStart);
+              if (!cached) return;
+              setConfiguracionCache({
+                ...cached,
+                reports: parseReports(reportsData),
+                reportsReady: true,
+                fetchedAt: Date.now(),
+              });
+            })
+            .catch(() => {});
         })
         .catch(() => {});
     }

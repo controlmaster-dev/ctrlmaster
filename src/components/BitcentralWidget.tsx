@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { startOfWeek, addDays, format, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
-import { getBitcentralUser } from "@/lib/schedule";
+import { getBitcentralUser, scheduleDateKey } from "@/lib/schedule";
 import {
   getBitcentralCache,
   invalidateBitcentralCache,
@@ -63,12 +63,14 @@ export function BitcentralWidget({
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isManageEventsOpen, setIsManageEventsOpen] = useState(false);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
+  const [configDraft, setConfigDraft] = useState<Record<number, string>>({});
 
   const [newEventName, setNewEventName] = useState("");
   const [newEventStart, setNewEventStart] = useState(new Date());
   const [newEventEnd, setNewEventEnd] = useState(new Date());
 
   const [isLoading, setIsLoading] = useState(!initialCache);
+  const [isSaving, setIsSaving] = useState(false);
   const hasShownData = React.useRef(!!initialCache);
 
   const applyBundle = React.useCallback(
@@ -86,18 +88,22 @@ export function BitcentralWidget({
   );
 
   const fetchData = React.useCallback(
-    async (silent = false) => {
+    async (silent = false, force = false) => {
       if (!weekStart || isNaN(weekStart.getTime())) return;
 
-      const cached = getBitcentralCache(weekStart);
-      if (cached) {
-        applyBundle(cached);
-        setIsLoading(false);
+      if (!force) {
+        const cached = getBitcentralCache(weekStart);
+        if (cached) {
+          applyBundle(cached);
+          setIsLoading(false);
+        } else if (!silent && !hasShownData.current) {
+          setIsLoading(true);
+        }
       } else if (!silent && !hasShownData.current) {
         setIsLoading(true);
       }
 
-      const bundle = await prefetchBitcentralWeek(weekStart);
+      const bundle = await prefetchBitcentralWeek(weekStart, { force });
       if (bundle) applyBundle(bundle);
       setIsLoading(false);
     },
@@ -112,7 +118,10 @@ export function BitcentralWidget({
   }, {} as Record<string, string>);
 
   const overrideMap = overrides.reduce((acc, curr) => {
-    acc[new Date(curr.date).toDateString()] = curr.user.name;
+    const key = scheduleDateKey(curr.date);
+    if (key && curr.user?.name) {
+      acc[key] = curr.user.name;
+    }
     return acc;
   }, {} as Record<string, string>);
 
@@ -134,7 +143,7 @@ export function BitcentralWidget({
       return { name: event.name, isEvent: true, eventId: event.id };
     }
 
-    const dateKey = date.toDateString();
+    const dateKey = scheduleDateKey(date);
     if (overrideMap[dateKey]) {
       return { name: overrideMap[dateKey], isOverride: true, isRotation: false };
     }
@@ -164,57 +173,147 @@ export function BitcentralWidget({
 
   const handleOverride = async (userId: string) => {
     if (!selectedDate || isNaN(selectedDate.getTime())) return;
-    const res = await fetch("/api/schedule", {
-      method: "POST",
-      body: JSON.stringify({ date: selectedDate.toISOString(), userId }),
-    });
-    if (res.ok) {
-      invalidateBitcentralCache(weekStart);
-      void fetchData(true);
-      setSelectedDate(null);
+    setIsSaving(true);
+    try {
+      const res = await fetch("/api/schedule", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          date: format(selectedDate, "yyyy-MM-dd"),
+          userId,
+        }),
+      });
+      if (res.ok) {
+        const dateStr = format(selectedDate, "yyyy-MM-dd");
+        const operator = users.find((u) => u.id === userId);
+
+        setOverrides((prev) => {
+          const rest = prev.filter((o) => scheduleDateKey(o.date) !== dateStr);
+          if (userId === "reset" || !operator) return rest;
+          return [...rest, { date: dateStr, user: { name: operator.name } }];
+        });
+
+        toast.success(
+          userId === "reset" ? "Turno restaurado al horario base" : "Turno actualizado"
+        );
+        invalidateBitcentralCache(weekStart);
+        await fetchData(true, true);
+        setSelectedDate(null);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast.error(
+          typeof err.error === "string" ? err.error : "No se pudo guardar el cambio"
+        );
+      }
+    } catch {
+      toast.error("Error de conexión al guardar el turno");
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleCreateEvent = async () => {
-    if (!newEventName || !newEventStart || !newEventEnd) return;
+    if (!newEventName?.trim() || !newEventStart || !newEventEnd) {
+      toast.error("Completa nombre y fechas del evento");
+      return;
+    }
 
-    const res = await fetch("/api/special-events", {
-      method: "POST",
-      body: JSON.stringify({
-        name: newEventName,
-        startDate: newEventStart.toISOString(),
-        endDate: newEventEnd.toISOString(),
-      }),
-    });
+    setIsSaving(true);
+    try {
+      const res = await fetch("/api/special-events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newEventName.trim(),
+          startDate: format(newEventStart, "yyyy-MM-dd"),
+          endDate: format(newEventEnd, "yyyy-MM-dd"),
+        }),
+      });
 
-    if (res.ok) {
-      invalidateBitcentralCache();
-      void fetchData(true);
-      setNewEventName("");
-      setIsManageEventsOpen(false);
+      if (res.ok) {
+        toast.success("Evento creado");
+        invalidateBitcentralCache();
+        await fetchData(true, true);
+        setNewEventName("");
+        setIsManageEventsOpen(false);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast.error(
+          typeof err.error === "string" ? err.error : "No se pudo crear el evento"
+        );
+      }
+    } catch {
+      toast.error("Error de conexión al crear el evento");
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleDeleteEvent = async (id: string) => {
-    const res = await fetch(`/api/special-events?id=${id}`, { method: "DELETE" });
-    if (res.ok) {
-      invalidateBitcentralCache();
-      void fetchData(true);
+    setIsSaving(true);
+    try {
+      const res = await fetch(`/api/special-events?id=${id}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Evento eliminado");
+        invalidateBitcentralCache();
+        await fetchData(true, true);
+      } else {
+        toast.error("No se pudo eliminar el evento");
+      }
+    } catch {
+      toast.error("Error de conexión");
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const handleSaveConfig = async (newSchedule: BitcentralBaseDay[]) => {
-    const res = await fetch("/api/schedule/config", {
-      method: "POST",
-      body: JSON.stringify({ schedule: newSchedule }),
-    });
-    if (res.ok) {
-      toast.success("Horario base actualizado");
-      invalidateBitcentralCache();
-      void fetchData(true);
-      setIsConfigOpen(false);
-    } else {
-      toast.error("Error al actualizar horario");
+  const dayUserId = (entry?: BitcentralBaseDay) =>
+    entry?.userId || entry?.user?.id || "default";
+
+  const buildConfigDraft = () => {
+    const draft: Record<number, string> = {};
+    for (const dayIndex of [0, 1, 2, 3, 4, 5, 6]) {
+      const current = baseSchedule.find((s) => s.dayOfWeek === dayIndex);
+      draft[dayIndex] = dayUserId(current);
+    }
+    return draft;
+  };
+
+  const openConfigModal = () => {
+    setConfigDraft(buildConfigDraft());
+    setIsConfigOpen(true);
+  };
+
+  const handleConfigOpenChange = (open: boolean) => {
+    if (open) setConfigDraft(buildConfigDraft());
+    setIsConfigOpen(open);
+  };
+
+  const handleSaveConfig = async (
+    newSchedule: Array<{ dayOfWeek: number; userId: string }>
+  ) => {
+    setIsSaving(true);
+    try {
+      const res = await fetch("/api/schedule/config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ schedule: newSchedule }),
+      });
+      if (res.ok) {
+        toast.success("Horario base actualizado");
+        invalidateBitcentralCache();
+        await fetchData(true, true);
+        setIsConfigOpen(false);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast.error(
+          typeof err.error === "string" ? err.error : "Error al actualizar horario"
+        );
+      }
+    } catch {
+      toast.error("Error de conexión al guardar el horario");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -281,7 +380,7 @@ export function BitcentralWidget({
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-muted-foreground"
-              onClick={() => setIsConfigOpen(true)}
+              onClick={openConfigModal}
               title="Horario base"
             >
               <Settings className="h-4 w-4" />
@@ -447,33 +546,37 @@ export function BitcentralWidget({
         </div>
       </CardContent>
 
-      <Dialog open={isConfigOpen} onOpenChange={setIsConfigOpen}>
-        <DialogContent className="bg-background/95 backdrop-blur-2xl border border-border shadow-xl sm:rounded-sm max-w-lg">
-          <DialogHeader>
+      <Dialog open={isConfigOpen} onOpenChange={handleConfigOpenChange}>
+        <DialogContent className="!left-1/2 !top-[calc(3.5rem+0.5rem)] !max-w-xl w-[min(calc(100vw-2rem),36rem)] !-translate-x-1/2 !translate-y-0 gap-0 overflow-hidden border border-border bg-background/95 p-0 shadow-xl backdrop-blur-2xl sm:rounded-sm">
+          <DialogHeader className="shrink-0 border-b border-border/60 px-6 py-4 pr-12">
             <DialogTitle className="flex items-center gap-2 text-foreground">
-              <Settings className="w-5 h-5 text-blue-500" />
+              <Settings className="h-5 w-5 text-blue-500" />
               Configuración de Horario Base
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 pt-4 max-h-[60vh] overflow-y-auto custom-scrollbar pr-2">
+          <div className="max-h-[min(60vh,calc(100dvh-10rem))] space-y-4 overflow-y-auto px-6 py-4 custom-scrollbar">
             <p className="text-sm text-muted-foreground">
               Define el operador predeterminado para cada día de la semana. Los
               cambios aplicarán a todas las semanas futuras excepto donde haya
               modificaciones manuales.
             </p>
             <form
+              id="bitcentral-config-form"
               onSubmit={(e) => {
                 e.preventDefault();
-                const formData = new FormData(e.currentTarget);
-                const updates = [];
-
+                const updates: Array<{ dayOfWeek: number; userId: string }> = [];
                 for (let i = 0; i < 7; i++) {
-                  const userId = formData.get(`day-${i}`) as string;
-                  if (userId && userId !== "default") {
+                  const userId = configDraft[i] ?? "default";
+                  const hadAssignment = baseSchedule.some((s) => s.dayOfWeek === i);
+                  if (userId === "default") {
+                    if (hadAssignment) {
+                      updates.push({ dayOfWeek: i, userId: "REMOVE" });
+                    }
+                  } else {
                     updates.push({ dayOfWeek: i, userId });
                   }
                 }
-                handleSaveConfig(updates);
+                void handleSaveConfig(updates);
               }}
               className="space-y-3"
             >
@@ -500,46 +603,56 @@ export function BitcentralWidget({
                       {dayName}
                     </span>
                     <Select
-                      name={`day-${dayIndex}`}
-                      defaultValue={currentConfig?.userId || "default"}
+                      value={
+                        configDraft[dayIndex] ?? dayUserId(currentConfig)
+                      }
+                      onValueChange={(val) =>
+                        setConfigDraft((prev) => ({ ...prev, [dayIndex]: val }))
+                      }
+                      disabled={isSaving}
                     >
-                      <SelectTrigger className="w-[200px] h-9 text-sm bg-background border-input">
+                      <SelectTrigger className="h-9 w-[min(200px,50vw)] border-input bg-background text-sm">
                         <SelectValue placeholder="Seleccionar..." />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="z-[10060]">
                         <SelectItem
                           value="default"
                           className="text-muted-foreground font-light"
                         >
                           Sin asignar (Legacy)
                         </SelectItem>
-                        {users.map((u) => (
-                          <SelectItem key={u.id} value={u.id}>
-                            {u.name}
-                          </SelectItem>
-                        ))}
+                        {users
+                          .filter((u) => u.id)
+                          .map((u) => (
+                            <SelectItem key={u.id} value={u.id}>
+                              {u.name}
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                   </div>
                 );
               })}
 
-              <div className="pt-4 flex justify-end gap-2">
-                <Button
-                  variant="outline"
-                  type="button"
-                  onClick={() => setIsConfigOpen(false)}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  type="submit"
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  Guardar Cambios
-                </Button>
-              </div>
             </form>
+          </div>
+          <div className="flex shrink-0 justify-end gap-2 border-t border-border/60 bg-card px-6 py-4">
+            <Button
+              variant="outline"
+              type="button"
+              disabled={isSaving}
+              onClick={() => setIsConfigOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              form="bitcentral-config-form"
+              disabled={isSaving}
+              className="bg-blue-600 text-white hover:bg-blue-700"
+            >
+              {isSaving ? "Guardando…" : "Guardar cambios"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -565,11 +678,11 @@ export function BitcentralWidget({
               <p className="text-sm text-muted-foreground mb-3">
                 Selecciona quién cubrirá este turno (Modo Vacaciones/Cambio):
               </p>
-              <Select onValueChange={handleOverride}>
-                <SelectTrigger className="bg-background border-input focus:ring-blue-500/50 text-foreground h-11">
+              <Select onValueChange={handleOverride} disabled={isSaving}>
+                <SelectTrigger className="h-11 border-input bg-background text-foreground focus:ring-blue-500/50">
                   <SelectValue placeholder="Seleccionar operador..." />
                 </SelectTrigger>
-                <SelectContent className="bg-popover border-border text-popover-foreground">
+                <SelectContent className="z-[10060] border-border bg-popover text-popover-foreground">
                   <SelectItem
                     value="reset"
                     className="text-red-500 focus:text-red-600 font-bold focus:bg-red-500/10"
@@ -578,15 +691,17 @@ export function BitcentralWidget({
                       <span>🔄</span> Restaurar Original
                     </div>
                   </SelectItem>
-                  {users.map((u) => (
-                    <SelectItem
-                      key={u.id}
-                      value={u.id}
-                      className="focus:bg-accent focus:text-accent-foreground"
-                    >
-                      {u.name}
-                    </SelectItem>
-                  ))}
+                  {users
+                    .filter((u) => u.id)
+                    .map((u) => (
+                      <SelectItem
+                        key={u.id}
+                        value={u.id}
+                        className="focus:bg-accent focus:text-accent-foreground"
+                      >
+                        {u.name}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
@@ -638,10 +753,12 @@ export function BitcentralWidget({
                   </div>
                 </div>
                 <Button
-                  className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold h-9"
-                  onClick={handleCreateEvent}
+                  type="button"
+                  disabled={isSaving}
+                  className="h-9 w-full bg-yellow-500 font-bold text-black hover:bg-yellow-600"
+                  onClick={() => void handleCreateEvent()}
                 >
-                  Crear Evento
+                  {isSaving ? "Guardando…" : "Crear evento"}
                 </Button>
               </div>
             </div>

@@ -5,7 +5,7 @@ import { addDays, format, isSameDay, startOfWeek } from "date-fns";
 import { es } from "date-fns/locale";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { getBitcentralUser } from "@/lib/schedule";
+import { getBitcentralUser, scheduleDateKey } from "@/lib/schedule";
 import {
   PautaReminderNotice,
   type PautaReminderInfo,
@@ -97,7 +97,8 @@ export function PautaReminderProvider({ children }: { children: ReactNode }) {
 
     const overrideMap = overrides.reduce(
       (acc, curr) => {
-        acc[new Date(curr.date).toDateString()] = curr.user.name;
+        const key = scheduleDateKey(curr.date);
+        if (key && curr.user?.name) acc[key] = curr.user.name;
         return acc;
       },
       {} as Record<string, string>
@@ -119,7 +120,7 @@ export function PautaReminderProvider({ children }: { children: ReactNode }) {
         return { name: event.name, isEvent: true as const };
       }
 
-      const dateKey = date.toDateString();
+      const dateKey = scheduleDateKey(date);
       if (overrideMap[dateKey]) {
         return { name: overrideMap[dateKey], isEvent: false as const };
       }

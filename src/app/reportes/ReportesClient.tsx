@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Card } from "@/components/ui/card";
 import { ReportesSkeleton } from "@/components/skeletons/ReportesSkeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,7 +22,6 @@ import {
 } from "@/components/ui/select";
 import {
   Search,
-  Plus,
   FileText,
   CheckCircle2,
   Mail,
@@ -382,17 +380,17 @@ export function ReportesClient() {
 
   const getStatusBadge = (status: string) => {
     const base =
-      "inline-flex items-center gap-1 rounded border px-2 py-0.5 text-[11px] font-medium";
+      "inline-flex items-center gap-1 rounded-sm border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide";
     switch (status) {
       case "resolved":
         return (
-          <span className={`${base} border-emerald-500/25 bg-emerald-500/10 text-emerald-500`}>
+          <span className={`${base} border-border/60 bg-muted/30 text-foreground`}>
             <CheckCircle2 className="h-3 w-3" /> Resuelto
           </span>
         );
       case "pending":
         return (
-          <span className={`${base} border-amber-500/25 bg-amber-500/10 text-amber-500`}>
+          <span className={`${base} border-border/60 bg-muted/40 text-muted-foreground`}>
             <Clock className="h-3 w-3" /> Pendiente
           </span>
         );
@@ -402,6 +400,11 @@ export function ReportesClient() {
         );
     }
   };
+
+  const filterChip = (active: boolean) =>
+    active
+      ? "bg-muted text-foreground"
+      : "text-muted-foreground hover:bg-muted/50 hover:text-foreground";
 
   const clearFilters = () => {
     setSearch("");
@@ -419,14 +422,12 @@ export function ReportesClient() {
     new Set(reports.map((r) => r.operatorName).filter(Boolean))
   ).sort();
 
-  if (initialLoad && loading) return <ReportesSkeleton />;
+  const queryKey = buildQuery();
+  const hasListCache = typeof window !== "undefined" && !!getReportesListCache(queryKey);
+  if (initialLoad && loading && !hasListCache) return <ReportesSkeleton />;
 
   return (
-    <div className="relative min-h-screen overflow-hidden pb-20 text-foreground selection:bg-[#FF0C60] selection:text-white">
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute -right-20 top-0 h-72 w-72 rounded-full bg-[#FF0C60]/6 blur-3xl" />
-        <div className="absolute -left-24 bottom-0 h-64 w-64 rounded-full bg-violet-600/5 blur-3xl" />
-      </div>
+    <div className="reportes-ui relative min-h-screen overflow-hidden pb-20 text-foreground selection:bg-[#FF0C60] selection:text-white">
       <ReportDetailModal
         isOpen={detailModalOpen}
         onClose={() => {
@@ -465,26 +466,23 @@ export function ReportesClient() {
         }
       />
 
-      <div className={pageContainerClass}>
-        <header className="flex flex-col gap-5 border-b border-border/60 pb-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="min-w-0">
-            <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
-              Panel de <span className="text-[#FF0C60]">Incidencias</span>
-            </h1>
-            <p className="mt-1.5 max-w-xl text-sm text-muted-foreground">
-              Gestión y monitoreo de reportes técnicos
-            </p>
+      <div className={`${pageContainerClass} space-y-5`}>
+        <section className="border border-border/60 bg-card shadow-sm">
+          <div className="space-y-2 p-4 md:p-4">
+            <span className="inline-flex items-center gap-1 rounded-sm border border-border/60 bg-muted/30 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+              <FileText className="h-3 w-3" />
+              Gestión de reportes
+            </span>
+            <div>
+              <h1 className="text-xl font-semibold tracking-tight md:text-2xl">
+                Panel de incidencias
+              </h1>
+              <p className="mt-1 max-w-xl text-sm text-muted-foreground">
+                Búsqueda, seguimiento y acciones sobre reportes técnicos.
+              </p>
+            </div>
           </div>
-          <Link href="/crear-reporte" className="shrink-0">
-            <Button
-              size="sm"
-              className="h-9 gap-2 rounded-lg bg-[#FF0C60] px-4 text-white shadow-[0_0_20px_rgba(255,12,96,0.25)] hover:bg-[#E00A54]"
-            >
-              <Plus className="h-4 w-4" />
-              Nuevo Reporte
-            </Button>
-          </Link>
-        </header>
+        </section>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <StatsCard
@@ -499,8 +497,6 @@ export function ReportesClient() {
             value={globalStats.pending}
             subtitle="Por revisar"
             icon={<Clock className="h-5 w-5" />}
-            variant="danger"
-            valueColor="text-rose-500"
           />
           <StatsCard
             title="Resueltos"
@@ -508,25 +504,24 @@ export function ReportesClient() {
             subtitle="Cerrados"
             icon={<CheckCircle2 className="h-5 w-5" />}
             variant="success"
-            valueColor="text-emerald-500"
           />
         </div>
 
-        <Card className="overflow-hidden rounded-xl border border-border/60 bg-card/80 p-4 shadow-sm">
+        <section className="border border-border/60 bg-card p-4 shadow-sm">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Buscar por ID, operador o descripción…"
-                className="h-10 rounded-lg border-border/60 bg-muted/30 pl-9"
+                className="h-9 rounded-sm border-border/60 bg-muted/20 pl-9 text-sm"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <div className="flex rounded-lg border border-border/60 bg-muted/25 p-0.5">
-                {["all", "Enlace", "EJTV", "Enlace USA"].map((filter) => (
+              <div className="flex border border-border/60 bg-muted/15">
+                {["all", "Enlace", "EJTV", "Enlace USA"].map((filter, i, arr) => (
                   <button
                     key={filter}
                     type="button"
@@ -534,11 +529,7 @@ export function ReportesClient() {
                       setPriorityFilter(filter);
                       setPage(1);
                     }}
-                    className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                      priorityFilter === filter
-                        ? "bg-[#FF0C60] text-white"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
+                    className={`px-3 py-1.5 text-xs font-medium transition-colors ${i < arr.length - 1 ? "border-r border-border/60" : ""} ${filterChip(priorityFilter === filter)}`}
                   >
                     {filter === "all" ? "Todos" : filter}
                   </button>
@@ -552,7 +543,7 @@ export function ReportesClient() {
                   setPage(1);
                 }}
               >
-                <SelectTrigger className="h-10 w-[140px] rounded-lg border-border/60 bg-muted/30 text-xs">
+                <SelectTrigger className="h-9 w-[140px] rounded-sm border-border/60 bg-muted/20 text-xs">
                   <SelectValue placeholder="Estado" />
                 </SelectTrigger>
                 <SelectContent>
@@ -565,16 +556,16 @@ export function ReportesClient() {
               <Button
                 variant="outline"
                 size="icon"
-                className="h-10 w-10 rounded-lg border-border/60"
+                className={`h-9 w-9 rounded-sm border-border/60 ${hasActiveFilters ? "bg-muted" : ""}`}
                 onClick={() => setShowFilters(!showFilters)}
                 title="Más filtros"
               >
-                <Filter className={`h-4 w-4 ${hasActiveFilters ? "text-[#FF0C60]" : ""}`} />
+                <Filter className="h-4 w-4" />
               </Button>
               <Button
                 variant="outline"
                 size="icon"
-                className="h-10 w-10 rounded-lg border-border/60"
+                className="h-9 w-9 rounded-sm border-border/60"
                 onClick={() => {
                   setShowStats(!showStats);
                   if (!showStats) fetchOperatorStats();
@@ -586,7 +577,7 @@ export function ReportesClient() {
               <Button
                 variant="outline"
                 size="icon"
-                className="h-10 w-10 rounded-lg border-border/60"
+                className="h-9 w-9 rounded-sm border-border/60"
                 onClick={exportToCSV}
                 title="Exportar CSV"
               >
@@ -606,7 +597,7 @@ export function ReportesClient() {
                     setPage(1);
                   }}
                 >
-                  <SelectTrigger className="h-10 rounded-lg border-border/60 bg-muted/30 text-xs">
+                  <SelectTrigger className="h-9 rounded-sm border-border/60 bg-muted/20 text-xs">
                     <SelectValue placeholder="Todos" />
                   </SelectTrigger>
                   <SelectContent>
@@ -628,7 +619,7 @@ export function ReportesClient() {
                     setDateFrom(e.target.value);
                     setPage(1);
                   }}
-                  className="h-10 rounded-lg border-border/60 bg-muted/30 text-xs"
+                  className="h-9 rounded-sm border-border/60 bg-muted/20 text-xs"
                 />
               </div>
               <div className="space-y-1.5">
@@ -640,7 +631,7 @@ export function ReportesClient() {
                     setDateTo(e.target.value);
                     setPage(1);
                   }}
-                  className="h-10 rounded-lg border-border/60 bg-muted/30 text-xs"
+                  className="h-9 rounded-sm border-border/60 bg-muted/20 text-xs"
                 />
               </div>
               <div className="flex items-end">
@@ -655,19 +646,19 @@ export function ReportesClient() {
               </div>
             </div>
           )}
-        </Card>
+        </section>
 
         {showStats && operatorStats.length > 0 && (
-          <Card className="rounded-xl border border-border/60 bg-card/80 p-4 shadow-sm">
-            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold">
-              <BarChart3 className="h-4 w-4 text-[#FF0C60]" />
+          <section className="border border-border/60 bg-card p-4 shadow-sm">
+            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold tracking-tight">
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
               Por operador
             </h3>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-px border border-border/60 bg-border/60 sm:grid-cols-2 lg:grid-cols-3">
               {operatorStats.map((op: { name: string; total: number; pending: number; resolved: number; emailSent: number }, idx: number) => (
                 <div
                   key={idx}
-                  className="rounded-lg border border-border/50 bg-muted/15 p-3"
+                  className="bg-card p-3"
                 >
                   <p className="mb-2 truncate text-sm font-medium">{op.name}</p>
                   <div className="grid grid-cols-4 gap-1 text-center text-[10px]">
@@ -676,13 +667,13 @@ export function ReportesClient() {
                       <p className="text-muted-foreground">Total</p>
                     </div>
                     <div>
-                      <p className="text-base font-semibold tabular-nums text-amber-600">
+                      <p className="text-base font-semibold tabular-nums text-foreground">
                         {op.pending}
                       </p>
                       <p className="text-muted-foreground">Pend.</p>
                     </div>
                     <div>
-                      <p className="text-base font-semibold tabular-nums text-emerald-600">
+                      <p className="text-base font-semibold tabular-nums text-foreground">
                         {op.resolved}
                       </p>
                       <p className="text-muted-foreground">Res.</p>
@@ -695,10 +686,10 @@ export function ReportesClient() {
                 </div>
               ))}
             </div>
-          </Card>
+          </section>
         )}
 
-        <Card className="overflow-hidden rounded-xl border border-border/60 bg-card/80 shadow-sm">
+        <section className="overflow-hidden border border-border/60 bg-card shadow-sm">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader className="border-b border-border/60 bg-muted/20">
@@ -737,7 +728,7 @@ export function ReportesClient() {
                             <span className="font-mono text-[10px] text-muted-foreground">
                               #{report.id.slice(0, 6)}
                             </span>
-                            <span className="line-clamp-1 text-sm font-medium text-foreground group-hover:text-[#FF0C60]">
+                            <span className="line-clamp-1 text-sm font-medium text-foreground group-hover:underline">
                               {report.problemDescription}
                             </span>
                           </div>
@@ -754,15 +745,7 @@ export function ReportesClient() {
                           {getStatusBadge(report.status)}
                           {report.emailStatus && report.emailStatus !== "none" && (
                             <span
-                              className={`inline-flex items-center gap-1 text-[11px] ${
-                                report.emailStatus === "sent"
-                                  ? "text-blue-500"
-                                  : report.emailStatus === "pending"
-                                  ? "text-amber-500"
-                                  : report.emailStatus === "error"
-                                  ? "text-red-500"
-                                  : "text-muted-foreground"
-                              }`}
+                              className="inline-flex items-center gap-1 text-[11px] text-muted-foreground"
                             >
                               <Mail className="h-3 w-3" />
                               {report.emailStatus === "sent"
@@ -780,13 +763,13 @@ export function ReportesClient() {
                         <div className="flex items-center gap-2.5 text-muted-foreground">
                           {(report._count?.comments || 0) > 0 && (
                             <span className="inline-flex items-center gap-1 text-xs" title="Comentarios">
-                              <MessageSquare className="h-3.5 w-3.5 text-blue-500" />
+                              <MessageSquare className="h-3.5 w-3.5" />
                               {report._count?.comments}
                             </span>
                           )}
                           {(report._count?.reactions || 0) > 0 && (
                             <span className="inline-flex items-center gap-1 text-xs" title="Reacciones">
-                              <ThumbsUp className="h-3.5 w-3.5 text-[#FF0C60]" />
+                              <ThumbsUp className="h-3.5 w-3.5" />
                               {report._count?.reactions}
                             </span>
                           )}
@@ -802,7 +785,7 @@ export function ReportesClient() {
                         className="py-3.5 pr-4 text-right"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                        <div className="flex items-center justify-end gap-0.5 border border-border/60 bg-muted/10 p-0.5 opacity-0 transition-opacity group-hover:opacity-100">
                           <TooltipProvider>
                             {report.status !== "resolved" && (
                               <Tooltip>
@@ -811,18 +794,16 @@ export function ReportesClient() {
                                     size="icon"
                                     variant="ghost"
                                     onClick={(e) => handleResolve(report.id, e)}
-                                    className="w-9 h-9 text-emerald-500 hover:bg-emerald-500 hover:text-white rounded-md transition-all shadow-lg hover:shadow-emerald-500/20"
+                                    className="h-8 w-8 rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground"
                                   >
-                                    <CheckCircle2 className="w-4 h-4" />
+                                    <CheckCircle2 className="h-4 w-4" />
                                   </Button>
                                 </TooltipTrigger>
-                                <TooltipContent className="bg-emerald-500 border-none font-bold text-white">
-                                  <p>RESOLVER</p>
+                                <TooltipContent>
+                                  <p>Marcar resuelto</p>
                                 </TooltipContent>
                               </Tooltip>
                             )}
-
-                            <div className="w-px h-5 bg-border mx-1" />
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
@@ -832,13 +813,13 @@ export function ReportesClient() {
                                     e.stopPropagation();
                                     handleAction(report, "download");
                                   }}
-                                  className="w-9 h-9 text-muted-foreground hover:text-cyan-400 hover:bg-cyan-400/10 rounded-md transition-colors"
+                                  className="h-8 w-8 rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground"
                                 >
-                                  <FileText className="w-4 h-4" />
+                                  <FileText className="h-4 w-4" />
                                 </Button>
                               </TooltipTrigger>
-                              <TooltipContent className="bg-cyan-500 border-none font-bold text-white">
-                                <p>DESCARGAR PDF</p>
+                              <TooltipContent>
+                                <p>Descargar PDF</p>
                               </TooltipContent>
                             </Tooltip>
                             <Tooltip>
@@ -850,13 +831,13 @@ export function ReportesClient() {
                                     e.stopPropagation();
                                     handleAction(report, "email");
                                   }}
-                                  className="w-9 h-9 text-muted-foreground hover:text-violet-400 hover:bg-violet-400/10 rounded-md transition-colors"
+                                  className="h-8 w-8 rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground"
                                 >
-                                  <Mail className="w-4 h-4" />
+                                  <Mail className="h-4 w-4" />
                                 </Button>
                               </TooltipTrigger>
-                              <TooltipContent className="bg-violet-500 border-none font-bold text-white">
-                                <p>ENVIAR CORREO</p>
+                              <TooltipContent>
+                                <p>Enviar correo</p>
                               </TooltipContent>
                             </Tooltip>
                             <Tooltip>
@@ -868,13 +849,13 @@ export function ReportesClient() {
                                     e.stopPropagation();
                                     handleAction(report, "both");
                                   }}
-                                  className="w-9 h-9 text-muted-foreground hover:text-[#FF0C60] hover:bg-[#FF0C60]/10 rounded-md transition-colors"
+                                  className="h-8 w-8 rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground"
                                 >
-                                  <Send className="w-4 h-4" />
+                                  <Send className="h-4 w-4" />
                                 </Button>
                               </TooltipTrigger>
-                              <TooltipContent className="bg-[#FF0C60] border-none font-bold text-white">
-                                <p>ENVIAR + DESCARGAR</p>
+                              <TooltipContent>
+                                <p>Enviar y descargar</p>
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
@@ -886,15 +867,15 @@ export function ReportesClient() {
               </Table>
             </div>
             {reports.length === 0 && !loading && (
-              <div className="py-16 text-center">
-                <Zap className="mx-auto mb-3 h-10 w-10 text-muted-foreground/30" />
+              <div className="border-t border-border/50 py-16 text-center">
+                <Zap className="mx-auto mb-3 h-8 w-8 text-muted-foreground/40" />
                 <p className="text-sm font-medium text-foreground">Sin resultados</p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   Prueba con otros filtros o crea un reporte nuevo.
                 </p>
               </div>
             )}
-          </Card>
+        </section>
 
           {totalPages > 1 && (
             <div className="flex flex-col gap-3 px-1 sm:flex-row sm:items-center sm:justify-between">
@@ -928,7 +909,7 @@ export function ReportesClient() {
                       variant={page === pageNum ? "default" : "outline"}
                       size="sm"
                       onClick={() => setPage(pageNum)}
-                      className={`h-9 w-9 text-xs ${page === pageNum ? 'bg-[#FF0C60] hover:bg-[#FF0C60]' : ''}`}
+                      className={`h-8 w-8 text-xs ${page === pageNum ? "bg-foreground text-background hover:bg-foreground/90" : ""}`}
                     >
                       {pageNum}
                     </Button>
@@ -947,12 +928,12 @@ export function ReportesClient() {
             </div>
           )}
 
-        <Card className="rounded-xl border border-border/60 bg-card/80 p-4 shadow-sm">
-          <h2 className="mb-4 text-sm font-semibold text-foreground">
+        <section className="border border-border/60 bg-card p-4 shadow-sm">
+          <h2 className="mb-4 text-sm font-semibold tracking-tight text-foreground">
             Historial de correos
           </h2>
           <EmailHistoryCard />
-        </Card>
+        </section>
       </div>
     </div>
   );
@@ -983,7 +964,7 @@ function EmailHistoryCard() {
     );
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-border/50">
+    <div className="overflow-x-auto border border-border/60">
       <Table>
         <TableHeader className="border-b border-border/60 bg-muted/20">
           <TableRow className="hover:bg-transparent">

@@ -22,6 +22,7 @@ import {
 } from "@/components/claves/CredentialCard";
 import { CredentialFormDialog } from "@/components/claves/CredentialFormDialog";
 import { ClavesSkeleton } from "@/components/skeletons/ClavesSkeleton";
+import { useClavesBundle } from "@/hooks/useClavesBundle";
 
 type CredentialFormData = Pick<
   Credential,
@@ -39,11 +40,10 @@ const EMPTY_FORM: CredentialFormData = {
 export default function CredentialsPage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
-  const [credentials, setCredentials] = useState<Credential[]>([]);
+  const { credentials, isReady, refresh } = useClavesBundle(!!user);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Todas");
-  const [loadingData, setLoadingData] = useState(true);
-  const [initialLoad, setInitialLoad] = useState(true);
   const [showPassword, setShowPassword] = useState<Record<string, boolean>>({});
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -54,25 +54,6 @@ export default function CredentialsPage() {
   useEffect(() => {
     if (!isLoading && !user) router.replace("/login");
   }, [user, isLoading, router]);
-
-  const fetchCredentials = async () => {
-    setLoadingData(true);
-    try {
-      const res = await fetch("/api/credentials");
-      if (!res.ok) throw new Error("Failed to fetch");
-      const data = await res.json();
-      setCredentials(data);
-    } catch {
-      toast.error("Error cargando claves");
-    } finally {
-      setLoadingData(false);
-      setInitialLoad(false);
-    }
-  };
-
-  useEffect(() => {
-    if (user) fetchCredentials();
-  }, [user]);
 
   const categories = useMemo(
     () => ["Todas", ...Array.from(new Set(credentials.map((c) => c.category)))],
@@ -112,7 +93,7 @@ export default function CredentialsPage() {
       toast.success("Credencial guardada");
       setIsCreateOpen(false);
       setNewCredential(EMPTY_FORM);
-      fetchCredentials();
+      await refresh();
     } catch {
       toast.error("Error al crear");
     }
@@ -137,7 +118,7 @@ export default function CredentialsPage() {
       toast.success("Credencial actualizada");
       setIsEditOpen(false);
       setEditingCredential(null);
-      fetchCredentials();
+      await refresh();
     } catch {
       toast.error("Error al actualizar");
     }
@@ -148,7 +129,7 @@ export default function CredentialsPage() {
       const res = await fetch(`/api/credentials?id=${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
       toast.success("Credencial eliminada");
-      fetchCredentials();
+      await refresh();
     } catch {
       toast.error("Error al eliminar");
     }
@@ -162,13 +143,13 @@ export default function CredentialsPage() {
   };
 
   if (isLoading || !user) return null;
-  if (initialLoad && loadingData) return <ClavesSkeleton />;
+  if (!isReady) return <ClavesSkeleton />;
 
   return (
-    <div className="flex min-h-screen flex-col bg-background text-foreground selection:bg-[#FF0C60] selection:text-white md:flex-row md:pt-0">
-      {/* Sidebar — filtros y resumen */}
-      <aside className="flex w-full shrink-0 flex-col border-b border-border/60 bg-card/50 md:h-screen md:w-72 md:border-b-0 md:border-r lg:w-80">
-        <div className="border-b border-border/50 p-5 pt-20 md:pt-6">
+    <div className="flex min-h-[calc(100dvh-3.5rem)] flex-col bg-background text-foreground selection:bg-[#FF0C60] selection:text-white md:flex-row">
+      {/* Panel lateral — filtros y resumen */}
+      <aside className="flex w-full shrink-0 flex-col border-b border-border/60 bg-card/40 md:h-[calc(100dvh-3.5rem)] md:w-72 md:border-b-0 md:border-r lg:w-80">
+        <div className="border-b border-border/50 p-5">
           <h1 className="text-xl font-semibold tracking-tight">
             Bóveda de <span className="text-[#FF0C60]">claves</span>
           </h1>
@@ -247,13 +228,13 @@ export default function CredentialsPage() {
         </div>
       </aside>
 
-      {/* Área principal — credenciales a pantalla completa */}
-      <main className="relative flex min-h-0 flex-1 flex-col md:h-screen md:overflow-hidden">
+      {/* Grid principal */}
+      <main className="relative flex min-h-0 flex-1 flex-col md:h-[calc(100dvh-3.5rem)] md:overflow-hidden">
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute -right-20 top-0 h-72 w-72 rounded-full bg-[#FF0C60]/5 blur-3xl" />
         </div>
 
-        <div className="relative z-10 flex items-center justify-between gap-3 border-b border-border/50 px-3 py-3 md:px-4">
+        <div className="relative z-10 flex items-center justify-between gap-3 border-b border-border/50 px-4 py-3">
           <p className="text-sm text-muted-foreground">
             {filteredCredentials.length === 1
               ? "1 credencial"
@@ -269,17 +250,8 @@ export default function CredentialsPage() {
           </Button>
         </div>
 
-        <div className="relative z-10 flex-1 overflow-y-auto p-3 md:p-4">
-          {loadingData ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="h-48 animate-pulse rounded-xl border border-border/60 bg-muted/20"
-                />
-              ))}
-            </div>
-          ) : filteredCredentials.length === 0 ? (
+        <div className="relative z-10 flex-1 overflow-y-auto p-4">
+          {filteredCredentials.length === 0 ? (
             <div className="flex h-full min-h-[280px] flex-col items-center justify-center rounded-xl border border-dashed border-border/60 text-center">
               <Shield className="mb-3 h-10 w-10 text-muted-foreground/30" />
               <p className="text-sm font-medium">

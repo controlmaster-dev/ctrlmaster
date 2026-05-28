@@ -3,20 +3,22 @@ import { OperadoresCardsSkeleton } from "@/components/skeletons/OperadoresCardsS
 
 export function OperadoresPageSkeleton() {
   return (
-    <div className="space-y-6">
-      <div className="space-y-3 border-b border-border/60 pb-6">
-        <Skeleton className="h-4 w-32" />
-        <Skeleton className="h-9 w-72" />
-        <Skeleton className="h-4 w-96" />
-        <div className="flex gap-2 pt-2">
+    <div className="space-y-5">
+      <div className="border border-border/60 bg-card">
+        <div className="space-y-3 border-b border-border/50 px-4 py-4 md:px-5">
+          <Skeleton className="h-3 w-28" />
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-4 w-80" />
+        </div>
+        <div className="flex gap-px border-t border-border/50 p-4">
           {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-14 w-44 shrink-0 rounded-lg" />
+            <Skeleton key={i} className="h-14 flex-1 rounded-sm" />
           ))}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-4 lg:gap-8">
-        <Skeleton className="h-64 rounded-xl lg:col-span-1" />
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-4 lg:gap-6">
+        <Skeleton className="h-72 rounded-sm lg:col-span-1" />
         <div className="lg:col-span-3">
           <OperadoresCardsSkeleton />
         </div>

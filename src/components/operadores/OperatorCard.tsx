@@ -1,6 +1,5 @@
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Shield, Info, Calendar as CalIcon } from "lucide-react";
@@ -44,59 +43,52 @@ export function OperatorCard({
     : null;
 
   return (
-    <Card
-      className={`h-full overflow-hidden rounded-xl border shadow-sm transition-shadow hover:shadow-md ${
+    <article
+      className={`flex h-full flex-col border bg-card shadow-sm transition-colors hover:border-border ${
         isAvailable
-          ? "border-emerald-500/30 bg-card ring-1 ring-emerald-500/20"
-          : "border-border/60 bg-card/80"
+          ? "border-l-2 border-l-emerald-600/70 border-border/70"
+          : "border-border/60"
       }`}
     >
-      <CardContent className="flex flex-col gap-4 p-4">
-        <div className="flex items-start gap-3">
-          <div className="relative shrink-0">
-            <Avatar
-              className={`h-11 w-11 border-2 ${
-                isAvailable ? "border-emerald-500" : "border-border"
-              }`}
-            >
-              <AvatarImage src={op.image} />
-              <AvatarFallback className="bg-muted text-sm font-medium">
-                {op.name.charAt(0)}
-              </AvatarFallback>
-            </Avatar>
-            <span
-              className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card ${
-                isAvailable ? "bg-emerald-500" : "bg-muted-foreground/40"
-              }`}
-              aria-hidden
-            />
-          </div>
-
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5">
-              <h3 className="truncate text-sm font-semibold text-foreground">
-                {op.name}
-              </h3>
-              {op.role === "BOSS" && (
-                <Shield className="h-3.5 w-3.5 shrink-0 text-[#FF0C60]" />
-              )}
-            </div>
-            <Badge
-              variant="outline"
-              className={`mt-1.5 h-5 border px-2 text-[10px] font-medium ${
-                isAvailable
-                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
-                  : "border-border/60 bg-muted/30 text-muted-foreground"
-              }`}
-            >
-              {isAvailable ? "En turno" : "Fuera de turno"}
-            </Badge>
-          </div>
+      <div className="flex items-start gap-3 border-b border-border/50 px-4 py-3">
+        <div className="relative shrink-0">
+          <Avatar className="h-10 w-10 rounded-sm border border-border/60">
+            <AvatarImage src={op.image} className="rounded-sm" />
+            <AvatarFallback className="rounded-sm bg-muted text-xs font-medium">
+              {op.name.charAt(0)}
+            </AvatarFallback>
+          </Avatar>
+          <span
+            className={`absolute -bottom-px -right-px h-2 w-2 border border-card ${
+              isAvailable ? "bg-emerald-600" : "bg-muted-foreground/50"
+            }`}
+            aria-hidden
+          />
         </div>
 
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <h3 className="truncate text-sm font-semibold tracking-tight text-foreground">
+              {op.name}
+            </h3>
+            {op.role === "BOSS" && (
+              <Shield className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            )}
+          </div>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
+            {isAvailable ? (
+              <span className="text-foreground/90">En turno ahora</span>
+            ) : (
+              "Fuera de turno"
+            )}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex flex-1 flex-col gap-3 p-4">
         {activeEvent && returnDateStr ? (
-          <div className="rounded-lg border border-rose-500/20 bg-rose-500/5 p-3">
-            <p className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wide text-[#FF0C60]">
+          <div className="border border-border/60 bg-muted/20 px-3 py-2.5">
+            <p className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
               <CalIcon className="h-3 w-3" />
               Horario especial
             </p>
@@ -104,21 +96,23 @@ export function OperatorCard({
               {activeEvent.name}
             </p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Retorno:{" "}
-              <span className="font-medium text-[#FF0C60]">{returnDateStr}</span>
+              Retorno estimado:{" "}
+              <span className="font-medium text-foreground">{returnDateStr}</span>
             </p>
           </div>
         ) : null}
 
         {!activeEvent && activeStats ? (
-          <div className="space-y-2 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3">
-            <div className="flex justify-between text-xs text-emerald-700 dark:text-emerald-400">
+          <div className="space-y-2 border border-border/50 bg-muted/15 px-3 py-2.5">
+            <div className="flex justify-between text-[11px] text-muted-foreground">
               <span>Turno en curso</span>
-              <span className="font-mono tabular-nums">{activeStats.remaining}</span>
+              <span className="font-mono tabular-nums text-foreground">
+                {activeStats.remaining}
+              </span>
             </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-emerald-500/20">
+            <div className="h-1 overflow-hidden bg-border/60">
               <div
-                className="h-full rounded-full bg-emerald-500 transition-all duration-700"
+                className="h-full bg-foreground/70 transition-all duration-700"
                 style={{ width: `${activeStats.progress}%` }}
               />
             </div>
@@ -129,15 +123,15 @@ export function OperatorCard({
         ) : null}
 
         {!activeEvent ? (
-          <div className="rounded-lg border border-border/50 bg-muted/20 p-3">
-            <div className="mb-2 flex items-center justify-between">
-              <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          <div className="flex-1 border border-border/50 bg-muted/10 px-3 py-2.5">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
                 Horario semanal
               </span>
               {op.isTempSchedule && (
                 <Badge
                   variant="outline"
-                  className="h-4 border-[#FF0C60]/25 bg-[#FF0C60]/10 px-1.5 text-[9px] text-[#FF0C60]"
+                  className="h-5 rounded-sm border-border/60 bg-background px-1.5 text-[9px] font-normal text-muted-foreground"
                 >
                   Modificado
                 </Badge>
@@ -145,7 +139,7 @@ export function OperatorCard({
             </div>
 
             {op.shifts && op.shifts.length > 0 ? (
-              <ul className="space-y-1.5">
+              <ul className="space-y-1">
                 {op.shifts.map((shift: Shift, sIdx: number) => {
                   if (!shift.days?.length) return null;
                   const startOfWeekDate = new Date(currentWeekStart + "T12:00:00");
@@ -169,7 +163,7 @@ export function OperatorCard({
                   return (
                     <li
                       key={sIdx}
-                      className={`flex items-center justify-between gap-2 text-xs ${
+                      className={`flex items-center justify-between gap-2 border-b border-border/30 py-1.5 text-xs last:border-0 ${
                         isTodayReal ? "text-foreground" : "text-muted-foreground"
                       }`}
                     >
@@ -177,10 +171,10 @@ export function OperatorCard({
                         {formattedDateLabels}
                       </span>
                       <span
-                        className={`shrink-0 rounded px-1.5 py-0.5 font-mono text-[10px] ${
+                        className={`shrink-0 px-1.5 py-px font-mono text-[10px] ${
                           isTodayReal
-                            ? "border border-[#FF0C60]/20 bg-card text-[#FF0C60]"
-                            : "bg-muted/50 text-muted-foreground"
+                            ? "bg-foreground/10 text-foreground"
+                            : "text-muted-foreground"
                         }`}
                       >
                         {formatTime(shift.start)} – {formatTime(shift.end)}
@@ -190,14 +184,14 @@ export function OperatorCard({
                 })}
               </ul>
             ) : (
-              <p className="flex items-center gap-1.5 text-xs italic text-muted-foreground">
+              <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Info className="h-3.5 w-3.5 shrink-0" />
                 Sin horario asignado
               </p>
             )}
           </div>
         ) : null}
-      </CardContent>
-    </Card>
+      </div>
+    </article>
   );
 }

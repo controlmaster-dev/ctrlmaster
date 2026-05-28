@@ -236,8 +236,8 @@ export function CommandPalette({
       transition={{ type: "spring", bounce: 0, duration: 0.28 }}
       className={`relative flex w-full flex-col overflow-hidden border border-border bg-card shadow-xl pointer-events-auto ${
         isIntegrated
-          ? "z-[100] max-h-[min(42vh,340px)] rounded-b-xl rounded-t-none border-t-0"
-          : "z-[20001] mt-[10vh] max-h-[min(58vh,420px)] max-w-[480px] rounded-xl md:mt-[12vh]"
+          ? "z-[100] max-h-[min(42vh,340px)] rounded-b-sm rounded-t-none border-t-0"
+          : "z-[20001] mt-[10vh] max-h-[min(58vh,420px)] max-w-[480px] rounded-sm md:mt-[12vh]"
       }`}
     >
       <div className="h-0.5 shrink-0 bg-gradient-to-r from-[#FF0C60] via-[#FF0C60]/50 to-transparent" />

@@ -3,34 +3,32 @@ import { pageContainerClass } from "@/lib/page-layout";
 
 export function ReportesSkeleton() {
   return (
-    <div className={`${pageContainerClass} min-h-screen overflow-hidden`}>
-      <div className="flex flex-col justify-between gap-5 border-b border-border/60 pb-6 lg:flex-row lg:items-center">
-        <div className="space-y-2">
-          <Skeleton className="h-8 w-64 rounded-lg md:h-9" />
-          <Skeleton className="h-4 w-72 max-w-full rounded-md" />
-        </div>
-        <Skeleton className="h-9 w-36 rounded-lg" />
+    <div className={`reportes-ui ${pageContainerClass} min-h-screen space-y-5 overflow-hidden`}>
+      <div className="border border-border/60 bg-card p-4">
+        <Skeleton className="h-3 w-32" />
+        <Skeleton className="mt-3 h-8 w-56" />
+        <Skeleton className="mt-2 h-4 w-72 max-w-full" />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {[0, 1, 2].map((i) => (
-          <Skeleton key={i} className="h-32 rounded-xl md:h-36" />
+          <Skeleton key={i} className="h-28 rounded-sm border border-border/60" />
         ))}
       </div>
 
-      <Skeleton className="h-14 w-full rounded-xl" />
+      <Skeleton className="h-24 w-full rounded-sm border border-border/60" />
 
-      <div className="overflow-hidden rounded-xl border border-border/60">
-        <Skeleton className="h-12 w-full rounded-none rounded-t-xl" />
+      <div className="overflow-hidden border border-border/60">
+        <Skeleton className="h-11 w-full rounded-none" />
         <div className="divide-y divide-border/40">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-4 px-4 py-4">
-              <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
+            <div key={i} className="flex items-center gap-4 px-4 py-3.5">
               <div className="flex-1 space-y-2">
-                <Skeleton className="h-3.5 w-[75%]" />
-                <Skeleton className="h-2.5 w-[45%]" />
+                <Skeleton className="h-3.5 w-[70%]" />
+                <Skeleton className="h-2.5 w-[40%]" />
               </div>
-              <Skeleton className="h-6 w-20 rounded-md" />
+              <Skeleton className="h-5 w-16 rounded-sm" />
+              <Skeleton className="h-5 w-20 rounded-sm" />
             </div>
           ))}
         </div>
