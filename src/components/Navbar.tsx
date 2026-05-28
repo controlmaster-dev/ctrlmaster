@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -13,7 +12,8 @@ import {
   Headset,
   MonitorPlay,
   Key,
-  Menu,
+  Ellipsis,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -43,6 +43,7 @@ export function Navbar() {
   const [openPalette, setOpenPalette] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -58,15 +59,15 @@ export function Navbar() {
     (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
-        if (!isMobile) {
-          searchInputRef.current?.focus();
-          setOpenPalette(true);
-        } else {
-          setOpenPalette((curr) => !curr);
-        }
+        setSearchOpen(true);
+        setTimeout(() => searchInputRef.current?.focus(), 50);
+      }
+      if (e.key === "Escape") {
+        setSearchOpen(false);
+        setSearchQuery("");
       }
     },
-    [isMobile]
+    []
   );
 
   useEffect(() => {
@@ -75,264 +76,274 @@ export function Navbar() {
   }, [handleKeyDown]);
 
   const isPath = (path: string) => pathname === path;
-  const isOperadores =
-    pathname.startsWith("/operadores") && pathname !== "/operadores/monitoreo";
-
-  const navTabClass = (active: boolean) =>
-    cn(
-      "relative flex h-14 items-center gap-2 px-4 text-sm font-medium transition-colors",
-      active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-    );
-
-  const iconBtnClass = (active: boolean) =>
-    cn(
-      "h-9 w-9 rounded-md text-muted-foreground hover:bg-muted/50 hover:text-foreground",
-      active && "bg-muted/80 text-foreground"
-    );
 
   const mainNav = [
-    { href: "/", icon: Home, label: "Inicio", active: isPath("/") },
-    { href: "/reportes", icon: Layout, label: "Reportes", active: isPath("/reportes") },
-    { href: "/claves", icon: Key, label: "Claves", active: isPath("/claves") },
+    { href: "/", icon: Home, label: "Inicio", exact: true },
+    { href: "/reportes", icon: Layout, label: "Reportes" },
+    { href: "/claves", icon: Key, label: "Claves" },
   ];
 
-  const closePalette = () => {
-    setOpenPalette(false);
-    searchInputRef.current?.blur();
+  const secondaryLinks = [
+    { href: "/operadores", icon: Headset, label: "Operadores", show: true },
+    { href: "/operadores/monitoreo", icon: MonitorPlay, label: "Monitoreo", show: true },
+    { href: "/configuracion", icon: Settings, label: "Configuración", show: user?.role !== "ENGINEER" },
+  ];
+
+  const closeSearch = () => {
+    setSearchOpen(false);
     setSearchQuery("");
   };
 
   return (
     <>
+      {/* Command palette portal for mobile */}
       {mounted && isMobile && openPalette &&
         createPortal(
           <CommandPalette isOpen={openPalette} onClose={() => setOpenPalette(false)} />,
           document.body
         )}
 
-      {/* Desktop */}
-      <header className="sticky top-0 z-[100] hidden border-b border-border bg-background/95 backdrop-blur-md md:block">
+      {/* Desktop navbar */}
+      <header className="sticky top-0 z-[100] hidden border-b border-border bg-background/80 backdrop-blur-xl md:block">
         <NavRouteIndicator pathname={pathname} />
-        <div className="mx-auto flex h-14 max-w-[2200px] items-center gap-3 px-4 lg:gap-5 lg:px-6">
-          <Link href="/" className="mr-1 flex shrink-0 items-center gap-2.5 hover:opacity-90">
-            <NextImage src={LOGO_URL} alt="Control Master" width={28} height={28} className="object-contain" />
-            <span className="hidden font-semibold tracking-tight text-foreground lg:inline">
+        <div className="mx-auto flex h-14 max-w-[2200px] items-center gap-2 px-6">
+          {/* Logo + brand */}
+          <Link
+            href="/"
+            className="mr-6 flex shrink-0 items-center gap-2.5 transition-opacity hover:opacity-80"
+          >
+            <NextImage src={LOGO_URL} alt="Control Master" width={26} height={26} className="rounded object-contain" />
+            <span className="text-[14px] font-bold tracking-tight text-foreground">
               Control Master
             </span>
           </Link>
 
-          <nav className="hidden h-14 shrink-0 items-stretch md:flex" aria-label="Principal">
-            {mainNav.map(({ href, icon: Icon, label, active }) => (
-              <Link key={href} href={href} className={navTabClass(active)}>
-                <Icon className="h-4 w-4 shrink-0 opacity-80" />
-                <span>{label}</span>
-                {active && (
-                  <span
-                    className="absolute bottom-0 left-3 right-3 h-0.5 rounded-full bg-[#FF0C60]"
-                    aria-hidden
-                  />
-                )}
-              </Link>
-            ))}
+          {/* Main navigation — clean pill-style */}
+          <nav className="flex h-14 shrink-0 items-center gap-1" aria-label="Principal">
+            {mainNav.map(({ href, icon: Icon, label, exact }) => {
+              const active = exact ? isPath(href) : pathname.startsWith(href) && href !== "/";
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={cn(
+                    "relative flex h-9 items-center gap-2 rounded-md px-3.5 text-[13px] font-medium transition-all duration-200",
+                    active
+                      ? "bg-muted text-foreground"
+                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                  )}
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  <span>{label}</span>
+                </Link>
+              );
+            })}
           </nav>
 
-          <div className="mx-2 hidden h-6 w-px shrink-0 bg-border md:block" />
+          {/* Spacer */}
+          <div className="flex-1" />
 
-          {/* Búsqueda */}
-          <div
-            className={cn(
-              "relative min-w-0 flex-1 px-2 lg:max-w-xl lg:px-0 xl:max-w-2xl",
-              openPalette && "z-[100]"
-            )}
-          >
-            <div
+          {/* Search */}
+          <div className="relative flex items-center">
+            <button
+              type="button"
+              onClick={() => { setSearchOpen(true); setTimeout(() => searchInputRef.current?.focus(), 50); }}
               className={cn(
-                "relative z-[101] flex h-10 w-full items-center gap-2 border bg-muted/30 transition-shadow",
-                openPalette
-                  ? "rounded-t-lg rounded-b-none border-border bg-card shadow-sm ring-1 ring-border/80"
-                  : "rounded-lg border-border/70 hover:border-border hover:bg-muted/40"
+                "group flex h-9 w-[180px] lg:w-[220px] items-center gap-2 rounded-md border border-border/80 bg-muted/20 px-3 text-[13px] text-muted-foreground transition-all duration-200 hover:border-border hover:bg-muted/40 hover:text-foreground",
+                searchOpen && "hidden"
               )}
             >
-              <Search className="ml-3 h-4 w-4 shrink-0 text-muted-foreground" />
-              <input
-                ref={searchInputRef}
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onFocus={() => setOpenPalette(true)}
-                onKeyDown={(e) => {
-                  if (e.key === "Escape") closePalette();
-                }}
-                placeholder="Buscar…"
-                className="h-full min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/60"
-              />
-              {!openPalette && (
-                <kbd className="mr-2.5 hidden h-6 items-center gap-1 rounded border border-border/70 bg-background px-1.5 font-mono text-[10px] text-muted-foreground sm:inline-flex">
-                  <Command className="h-3 w-3" />K
-                </kbd>
-              )}
-            </div>
+              <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <span className="flex-1 text-left">Buscar...</span>
+              <kbd className="hidden h-5 items-center gap-0.5 rounded border border-border/80 bg-background px-1.5 font-mono text-[9px] font-bold text-muted-foreground/80 sm:inline-flex">
+                ⌘K
+              </kbd>
+            </button>
 
-            {mounted && !isMobile && openPalette && (
-              <div className="absolute left-0 right-0 top-full z-50 -mt-px">
-                <CommandPalette
-                  isOpen={openPalette}
-                  onClose={closePalette}
-                  isIntegrated
-                  externalQuery={searchQuery}
-                  onQueryChange={setSearchQuery}
-                />
+            {searchOpen && (
+              <div className="relative z-[101]">
+                <div className="flex h-9 w-[260px] lg:w-[300px] items-center gap-2 rounded-md border border-border bg-card px-3 transition-all">
+                  <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => setOpenPalette(true)}
+                    onBlur={(e) => {
+                      if (!e.relatedTarget?.closest("[data-palette]")) {
+                        setTimeout(() => { if (!document.activeElement?.closest("[data-palette]")) closeSearch(); }, 150);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") closeSearch();
+                    }}
+                    placeholder="Buscar reportes, operadores..."
+                    className="h-full min-w-0 flex-1 bg-transparent text-[13px] text-foreground outline-none placeholder:text-muted-foreground/50"
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onClick={closeSearch}
+                    className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+
+                {mounted && !isMobile && openPalette && (
+                  <div className="absolute right-0 top-full z-50 mt-1.5 w-[400px]" data-palette>
+                    <CommandPalette
+                      isOpen={openPalette}
+                      onClose={closeSearch}
+                      isIntegrated
+                      externalQuery={searchQuery}
+                      onQueryChange={setSearchQuery}
+                    />
+                  </div>
+                )}
               </div>
             )}
           </div>
 
-          {/* Acciones */}
-          <div className="flex shrink-0 items-center gap-2">
-            <Link href="/crear-reporte" className="hidden shrink-0 sm:block">
-              <Button
-                size="sm"
-                className="h-9 gap-1.5 rounded-md bg-[#FF0C60] px-3.5 text-xs font-semibold text-white hover:bg-[#E00A54]"
-              >
-                <Plus className="h-4 w-4" />
-                Nuevo reporte
-              </Button>
-            </Link>
-
-            <div className="hidden items-center gap-0.5 sm:flex">
-              {user?.role !== "ENGINEER" && (
-                <Link href="/configuracion">
-                  <Button variant="ghost" size="icon" className={iconBtnClass(isPath("/configuracion"))} title="Configuración">
-                    <Settings className="h-[18px] w-[18px]" />
-                  </Button>
-                </Link>
-              )}
-              <Link href="/operadores/monitoreo">
-                <Button variant="ghost" size="icon" className={iconBtnClass(isPath("/operadores/monitoreo"))} title="Monitoreo">
-                  <MonitorPlay className="h-[18px] w-[18px]" />
-                </Button>
-              </Link>
-              <Link href="/operadores">
-                <Button variant="ghost" size="icon" className={iconBtnClass(isOperadores)} title="Operadores">
-                  <Headset className="h-[18px] w-[18px]" />
-                </Button>
-              </Link>
-            </div>
-
-            <div className="mx-1 hidden h-5 w-px bg-border/80 sm:block" />
-
-            <ThemeToggle />
+          {/* CTA button */}
+          <Link href="/crear-reporte" className="ml-1.5 hidden shrink-0 sm:block">
             <Button
-              variant="ghost"
-              size="icon"
-              onClick={logout}
-              className="h-9 w-9 text-muted-foreground hover:text-foreground"
-              title="Cerrar sesión"
+              size="sm"
+              className="h-9 gap-1.5 rounded-md bg-[#FF0C60] px-4 text-[13px] font-semibold text-white shadow-none hover:bg-[#E00A54] transition-all duration-200"
             >
-              <LogOut className="h-[18px] w-[18px]" />
+              <Plus className="h-4 w-4" />
+              Nuevo reporte
             </Button>
+          </Link>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  className="rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  title={user?.name || "Mi cuenta"}
-                >
-                  <Avatar className="h-9 w-9 border border-border/80">
-                    <AvatarImage src={user?.avatar || ""} alt={user?.name || "Usuario"} />
-                    <AvatarFallback className="bg-muted text-xs font-semibold text-foreground">
-                      {user?.name
-                        ?.split(" ")
-                        .filter(Boolean)
-                        .map((n) => n[0])
-                        .join("")
-                        .substring(0, 2)
-                        .toUpperCase() || "CM"}
-                    </AvatarFallback>
-                  </Avatar>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-52">
-                <DropdownMenuLabel className="font-normal">
-                  <p className="text-sm font-medium">{user?.name || "Usuario"}</p>
-                  <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {user?.role !== "ENGINEER" && (
-                  <Link href="/configuracion">
-                    <DropdownMenuItem className="cursor-pointer gap-2">
-                      <Settings className="h-4 w-4" />
-                      Configuración
+          {/* Secondary links dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="ml-0.5 flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                title="Más opciones"
+              >
+                <Ellipsis className="h-[18px] w-[18px]" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 z-[10050] border-border bg-popover text-popover-foreground">
+              {secondaryLinks
+                .filter((l) => l.show)
+                .map(({ href, icon: Icon, label }) => (
+                  <Link key={href} href={href}>
+                    <DropdownMenuItem className="cursor-pointer gap-2.5 text-xs font-medium">
+                      <Icon className="h-4 w-4" />
+                      {label}
                     </DropdownMenuItem>
                   </Link>
-                )}
-                <DropdownMenuItem className="cursor-pointer gap-2" onClick={logout}>
-                  <LogOut className="h-4 w-4" />
-                  Cerrar sesión
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+                ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <div className="mx-1.5 h-5 w-px bg-border" />
+
+          {/* Theme + user */}
+          <ThemeToggle />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="ml-1.5 rounded-full outline-none transition-all duration-200 hover:opacity-80"
+                title={user?.name || "Mi cuenta"}
+              >
+                <Avatar className="h-8 w-8 border border-border/60">
+                  <AvatarImage src={user?.avatar || ""} alt={user?.name || "Usuario"} />
+                  <AvatarFallback className="bg-muted text-[11px] font-bold text-foreground">
+                    {user?.name
+                      ?.split(" ")
+                      .filter(Boolean)
+                      .map((n) => n[0])
+                      .join("")
+                      .substring(0, 2)
+                      .toUpperCase() || "CM"}
+                  </AvatarFallback>
+                </Avatar>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52 z-[10050] border-border bg-popover text-popover-foreground">
+              <DropdownMenuLabel className="font-normal px-3 py-2.5">
+                <p className="text-sm font-semibold text-foreground">{user?.name || "Usuario"}</p>
+                <p className="truncate text-xs text-muted-foreground mt-0.5">{user?.email}</p>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {user?.role !== "ENGINEER" && (
+                <Link href="/configuracion">
+                  <DropdownMenuItem className="cursor-pointer gap-2.5 text-xs font-medium">
+                    <Settings className="h-4 w-4" />
+                    Configuración
+                  </DropdownMenuItem>
+                </Link>
+              )}
+              <DropdownMenuItem className="cursor-pointer gap-2.5 text-xs font-medium text-red-500 focus:text-red-500" onClick={logout}>
+                <LogOut className="h-4 w-4" />
+                Cerrar sesión
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 
-      {/* Mobile */}
+      {/* Mobile navbar */}
       {mounted &&
         createPortal(
           <>
-            <header className="fixed left-0 right-0 top-0 z-[9999] border-b border-border/80 bg-background/90 backdrop-blur-md md:hidden">
+            {/* Top bar */}
+            <header className="fixed left-0 right-0 top-0 z-[9999] border-b border-border bg-background/95 backdrop-blur-md md:hidden">
               <div className="flex h-14 items-center justify-between gap-3 px-4">
-                <Link href="/" className="flex min-w-0 items-center gap-2">
-                  <NextImage src={LOGO_URL} alt="Logo" width={28} height={28} className="shrink-0 object-contain" />
-                  <span className="truncate text-sm font-semibold tracking-tight">Control Master</span>
+                <Link
+                  href="/"
+                  className="flex min-w-0 items-center gap-2 transition-colors"
+                >
+                  <NextImage src={LOGO_URL} alt="Logo" width={22} height={22} className="shrink-0 rounded object-contain" />
+                  <span className="truncate text-[14px] font-bold tracking-tight">Control Master</span>
                 </Link>
 
-                <div className="flex shrink-0 items-center gap-1">
+                <div className="flex shrink-0 items-center gap-1.5">
                   <button
                     type="button"
                     onClick={() => setOpenPalette(true)}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                    className="flex h-9 w-9 items-center justify-center rounded-md border border-border/40 bg-card text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
                     aria-label="Buscar"
                   >
-                    <Search className="h-5 w-5" />
+                    <Search className="h-4 w-4" />
                   </button>
                   <ThemeToggle />
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <button type="button" className="rounded-full outline-none">
-                        <Avatar className="h-9 w-9 border border-border/80">
+                      <button
+                        type="button"
+                        className="rounded-full outline-none"
+                      >
+                        <Avatar className="h-8 w-8 border border-border/60">
                           <AvatarImage src={user?.avatar || ""} alt="" />
-                          <AvatarFallback className="bg-muted text-xs font-semibold">
+                          <AvatarFallback className="bg-muted text-[10px] font-bold">
                             {user?.name?.split(" ").map((n) => n[0]).join("").toUpperCase() || "CM"}
                           </AvatarFallback>
                         </Avatar>
                       </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-52">
-                      <DropdownMenuLabel className="font-normal">
-                        <p className="text-sm font-medium">{user?.name}</p>
-                        <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
+                    <DropdownMenuContent align="end" className="w-52 z-[10050] border-border bg-popover text-popover-foreground">
+                      <DropdownMenuLabel className="font-normal px-3 py-2.5">
+                        <p className="text-sm font-semibold text-foreground">{user?.name}</p>
+                        <p className="truncate text-xs text-muted-foreground mt-0.5">{user?.email}</p>
                       </DropdownMenuLabel>
                       <DropdownMenuSeparator />
-                      {user?.role !== "ENGINEER" && (
-                        <Link href="/configuracion">
-                          <DropdownMenuItem className="gap-2">
-                            <Settings className="h-4 w-4" /> Configuración
+                      {secondaryLinks.filter((l) => l.show).map(({ href, icon: Icon, label }) => (
+                        <Link key={href} href={href}>
+                          <DropdownMenuItem className="gap-2.5 text-xs font-medium">
+                            <Icon className="h-4 w-4" /> {label}
                           </DropdownMenuItem>
                         </Link>
-                      )}
-                      <Link href="/operadores">
-                        <DropdownMenuItem className="gap-2">
-                          <Headset className="h-4 w-4" /> Operadores
-                        </DropdownMenuItem>
-                      </Link>
-                      <Link href="/operadores/monitoreo">
-                        <DropdownMenuItem className="gap-2">
-                          <MonitorPlay className="h-4 w-4" /> Monitoreo
-                        </DropdownMenuItem>
-                      </Link>
+                      ))}
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem className="gap-2" onClick={logout}>
+                      <DropdownMenuItem className="gap-2.5 text-xs font-medium text-red-500 focus:text-red-500" onClick={logout}>
                         <LogOut className="h-4 w-4" /> Cerrar sesión
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -341,91 +352,47 @@ export function Navbar() {
               </div>
             </header>
 
+            {/* Bottom tab bar */}
             {pathname !== "/crear-reporte" && (
               <nav
-                className="fixed bottom-0 left-0 right-0 z-[9999] border-t border-border/80 bg-background/95 pb-safe backdrop-blur-md md:hidden"
+                className="fixed bottom-0 left-0 right-0 z-[9999] border-t border-border bg-background/95 pb-safe backdrop-blur-md md:hidden"
                 aria-label="Navegación móvil"
               >
                 <div className="relative mx-auto flex h-[60px] max-w-lg items-stretch justify-around px-2">
-                  <Link
-                    href="/"
-                    className={cn(
-                      "flex flex-1 flex-col items-center justify-center gap-0.5 text-[10px] font-medium",
-                      isPath("/") ? "text-[#FF0C60]" : "text-muted-foreground"
-                    )}
-                  >
-                    <Home className="h-5 w-5" />
-                    Inicio
-                  </Link>
-                  <Link
-                    href="/reportes"
-                    className={cn(
-                      "flex flex-1 flex-col items-center justify-center gap-0.5 text-[10px] font-medium",
-                      isPath("/reportes") ? "text-[#FF0C60]" : "text-muted-foreground"
-                    )}
-                  >
-                    <Layout className="h-5 w-5" />
-                    Reportes
-                  </Link>
+                  {mainNav.map(({ href, icon: Icon, label, exact }) => {
+                    const active = exact ? isPath(href) : pathname.startsWith(href) && href !== "/";
+                    return (
+                      <Link
+                        key={href}
+                        href={href}
+                        className={cn(
+                          "flex flex-1 flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors",
+                          active ? "text-foreground" : "text-muted-foreground"
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            "flex h-8 w-14 items-center justify-center rounded-md transition-colors",
+                            active && "bg-muted text-foreground"
+                          )}
+                        >
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        {label}
+                      </Link>
+                    );
+                  })}
 
+                  {/* Central FAB */}
                   <div className="relative flex w-14 shrink-0 items-center justify-center">
                     <Link
                       href="/crear-reporte"
-                      className="absolute -top-5 flex h-12 w-12 items-center justify-center rounded-full bg-[#FF0C60] text-white shadow-lg shadow-[#FF0C60]/25"
+                      className="absolute -top-4 flex h-11 w-11 items-center justify-center rounded-full border border-border bg-[#FF0C60] text-white transition-transform active:scale-95"
                       aria-label="Nuevo reporte"
                     >
-                      <Plus className="h-6 w-6 stroke-[2.5]" />
+                      <Plus className="h-5 w-5 stroke-[2.5]" />
                     </Link>
                   </div>
-
-                  <Link
-                    href="/claves"
-                    className={cn(
-                      "flex flex-1 flex-col items-center justify-center gap-0.5 text-[10px] font-medium",
-                      isPath("/claves") ? "text-[#FF0C60]" : "text-muted-foreground"
-                    )}
-                  >
-                    <Key className="h-5 w-5" />
-                    Claves
-                  </Link>
-
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button
-                        type="button"
-                        className={cn(
-                          "flex flex-1 flex-col items-center justify-center gap-0.5 text-[10px] font-medium",
-                          isOperadores || isPath("/operadores/monitoreo") || isPath("/configuracion")
-                            ? "text-[#FF0C60]"
-                            : "text-muted-foreground"
-                        )}
-                      >
-                        <Menu className="h-5 w-5" />
-                        Más
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="center" side="top" className="mb-3 w-52">
-                      <DropdownMenuLabel>Más opciones</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <Link href="/operadores">
-                        <DropdownMenuItem className="gap-2">
-                          <Headset className="h-4 w-4" /> Operadores
-                        </DropdownMenuItem>
-                      </Link>
-                      <Link href="/operadores/monitoreo">
-                        <DropdownMenuItem className="gap-2">
-                          <MonitorPlay className="h-4 w-4" /> Monitoreo
-                        </DropdownMenuItem>
-                      </Link>
-                      {user?.role !== "ENGINEER" && (
-                        <Link href="/configuracion">
-                          <DropdownMenuItem className="gap-2">
-                            <Settings className="h-4 w-4" /> Configuración
-                          </DropdownMenuItem>
-                        </Link>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
                 </div>
               </nav>
             )}

@@ -10,8 +10,11 @@ import { logger } from '../lib/logger.js';
 import { config } from '../config/index.js';
 import { messageQueue } from '../lib/messageQueue.js';
 
+type ConnectionState = 'disconnected' | 'connecting' | 'connected';
+
 export class WhatsAppService {
   private socket: WASocket | null = null;
+  private connectionState: ConnectionState = 'disconnected';
   private reconnectAttempts = 0;
   private reconnectTimer: NodeJS.Timeout | null = null;
   private startTime = Date.now();
@@ -33,6 +36,14 @@ export class WhatsAppService {
   private async connect(state: any, saveCreds: any, version: [number, number, number]): Promise<void> {
     if (this.isShuttingDown) return;
 
+    // Clean up old socket before creating a new one
+    if (this.socket) {
+      try { this.socket.ev.removeAllListeners(); } catch {}
+      try { this.socket.end(new Error('Reconnecting')); } catch {}
+      this.socket = null;
+    }
+
+    this.connectionState = 'connecting';
     this.socket = makeWASocket({
       version,
       auth: state,
@@ -55,6 +66,7 @@ export class WhatsAppService {
 
       if (connection === 'open') {
         logger.info('✅ WhatsApp conectado exitosamente');
+        this.connectionState = 'connected';
         this.reconnectAttempts = 0;
         this.startTime = Date.now();
 
@@ -63,6 +75,7 @@ export class WhatsAppService {
       }
 
       if (connection === 'close') {
+        this.connectionState = 'disconnected';
         const reason = (lastDisconnect?.error as any)?.output?.statusCode;
         const shouldReconnect = reason !== DisconnectReason.loggedOut;
 

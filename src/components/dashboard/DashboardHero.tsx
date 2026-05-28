@@ -6,6 +6,7 @@ import {
   Users as UsersIcon,
   FileText,
   Sparkles,
+  ArrowUpRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,12 +15,15 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { BentoCard } from "./BentoCard";
+import { cn } from "@/lib/utils";
 
 interface DashboardHeroProps {
   firstName?: string;
   isEngineer?: boolean;
   reportsToday: number;
   pendingCount: number;
+  className?: string;
 }
 
 export function DashboardHero({
@@ -27,6 +31,7 @@ export function DashboardHero({
   isEngineer,
   reportsToday,
   pendingCount,
+  className,
 }: DashboardHeroProps) {
   const today = new Date();
   const dateLabel = today.toLocaleDateString("es-ES", {
@@ -40,95 +45,102 @@ export function DashboardHero({
   });
 
   return (
-    <section className="rounded-sm border border-border/60 bg-card shadow-sm">
-      <div className="p-4 md:p-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
-          <div className="min-w-0 flex-1 space-y-2">
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <span className="inline-flex items-center gap-1 rounded-sm border border-border/60 bg-muted/30 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                <Sparkles className="h-3 w-3" />
-                Panel de control
-              </span>
-              <span className="rounded-sm border border-border/60 bg-muted/40 px-2 py-0.5 text-[10px] font-medium capitalize text-muted-foreground">
-                {dateLabel}
-              </span>
-              <span className="text-[10px] tabular-nums text-muted-foreground lg:ml-auto">
-                {timeLabel}
-              </span>
-            </div>
-
-            <div>
-              {firstName && (
-                <p className="text-xs text-muted-foreground">
-                  Hola,{" "}
-                  <span className="font-semibold text-foreground">{firstName}</span>
-                </p>
-              )}
-              <h1 className="text-xl font-bold tracking-tight md:text-2xl">
-                {isEngineer ? (
-                  <>
-                    Ingeniería{" "}
-                    <span className="text-foreground">Master</span>
-                  </>
-                ) : (
-                  <>
-                    Control{" "}
-                    <span className="text-[#FF0C60]">Master</span>
-                  </>
-                )}
-              </h1>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted-foreground">
-              <span>
-                Resumen del día: incidencias, equipo en turno y servicios.
-              </span>
-              <span className="hidden h-3 w-px bg-border/60 sm:inline-block" />
-              <span className="rounded-sm border border-border/50 bg-muted/30 px-2 py-0.5">
-                <span className="font-semibold text-foreground">{reportsToday}</span>{" "}
-                reportes hoy
-              </span>
-              {pendingCount > 0 ? (
-                <span className="rounded-sm border border-border/60 bg-muted/30 px-2 py-0.5 font-medium text-foreground">
-                  {pendingCount} pendiente{pendingCount !== 1 ? "s" : ""}
-                </span>
-              ) : (
-                <span className="rounded-sm border border-border/60 bg-muted/30 px-2 py-0.5">
-                  Sin pendientes críticos
-                </span>
-              )}
-            </div>
+    <BentoCard variant="elevated" className={cn("p-5 md:p-6", className)}>
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="min-w-0 flex-1 space-y-3">
+          {/* Top badges row */}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border/50 bg-background px-3 py-1 text-[11px] font-medium text-muted-foreground">
+              <Sparkles className="h-3 w-3 text-[#FF0C60]" />
+              Panel de control
+            </span>
+            <span className="rounded-full border border-border/40 bg-background px-3 py-1 text-[11px] capitalize text-muted-foreground">
+              {dateLabel}
+            </span>
+            <span className="ml-auto text-[11px] tabular-nums text-muted-foreground/60">
+              {timeLabel}
+            </span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 lg:shrink-0">
-            <div className="flex items-center gap-1 rounded-sm border border-border/50 bg-muted/30 p-0.5">
-              <Link href="/operadores/monitoreo">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 gap-1.5 rounded-none px-2.5 text-xs hover:bg-background/80"
-                >
+          {/* Greeting + title */}
+          <div>
+            {firstName && (
+              <p className="text-sm text-muted-foreground">
+                Hola,{" "}
+                <span className="font-semibold text-foreground">{firstName}</span>
+              </p>
+            )}
+            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
+              {isEngineer ? (
+                <>
+                  Ingeniería{" "}
+                  <span className="text-foreground">Master</span>
+                </>
+              ) : (
+                <>
+                  Control{" "}
+                  <span className="text-[#FF0C60]">Master</span>
+                </>
+              )}
+            </h1>
+          </div>
+
+          {/* Inline stats + quick actions */}
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Mini stat pills */}
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-lg border border-border/50 bg-muted/40 px-3 py-1.5 text-xs">
+                <span className="text-base font-bold tabular-nums text-foreground">
+                  {reportsToday}
+                </span>
+                <span className="text-muted-foreground">reportes hoy</span>
+              </span>
+              {pendingCount > 0 ? (
+                <span className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/20 bg-red-500/[0.06] px-3 py-1.5 text-xs">
+                  <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                  <span className="font-semibold tabular-nums text-red-600 dark:text-red-400">
+                    {pendingCount}
+                  </span>
+                  <span className="text-muted-foreground">pendiente{pendingCount !== 1 ? "s" : ""}</span>
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/20 bg-emerald-500/[0.06] px-3 py-1.5 text-xs text-emerald-700 dark:text-emerald-400">
+                  Todo al día
+                </span>
+              )}
+            </div>
+
+            {/* Quick action buttons */}
+            <div className="hidden items-center gap-1 md:flex">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 gap-1.5 rounded-lg text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+                asChild
+              >
+                <Link href="/operadores/monitoreo">
                   <MonitorPlay className="h-3.5 w-3.5" />
                   Monitoreo
-                </Button>
-              </Link>
-              <Link href="/operadores">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 gap-1.5 rounded-none px-2.5 text-xs hover:bg-background/80"
-                >
+                </Link>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 gap-1.5 rounded-lg text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+                asChild
+              >
+                <Link href="/operadores">
                   <UsersIcon className="h-3.5 w-3.5" />
                   Horarios
-                </Button>
-              </Link>
+                </Link>
+              </Button>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 rounded-none"
+                      className="h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
                       asChild
                     >
                       <a
@@ -140,7 +152,7 @@ export function DashboardHero({
                       </a>
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent side="top">
+                  <TooltipContent>
                     <p>Manual en PDF</p>
                   </TooltipContent>
                 </Tooltip>
@@ -148,7 +160,20 @@ export function DashboardHero({
             </div>
           </div>
         </div>
+
+        {/* Right side: CTA */}
+        <div className="hidden shrink-0 md:block">
+          <Button
+            className="h-10 gap-2 rounded-xl bg-[#FF0C60] px-5 text-sm font-semibold text-white shadow-none hover:bg-[#E00A54]"
+            asChild
+          >
+            <Link href="/crear-reporte">
+              Nuevo reporte
+              <ArrowUpRight className="h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
       </div>
-    </section>
+    </BentoCard>
   );
 }

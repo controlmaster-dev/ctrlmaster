@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import { BentoCard } from "@/components/dashboard/BentoCard";
 import { Button } from "@/components/ui/button";
 import {
   Calendar as CalIcon,
@@ -39,11 +40,13 @@ import { toast } from "sonner";
 interface BitcentralWidgetProps {
   users: Array<{ id: string; name: string }>;
   isReadOnly?: boolean;
+  className?: string;
 }
 
 export function BitcentralWidget({
   users,
   isReadOnly = false,
+  className,
 }: BitcentralWidgetProps) {
   const [today, setToday] = useState(new Date());
   const [weekStart, setWeekStart] = useState(() =>
@@ -338,20 +341,20 @@ export function BitcentralWidget({
   }) => {
     if (info.isOverride) {
       return (
-        <span className="rounded-sm bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">
+        <span className="rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">
           Cambio manual
         </span>
       );
     }
     if (info.isRotation) {
       return (
-        <span className="rounded-sm bg-violet-500/10 px-1.5 py-0.5 text-[10px] font-medium text-violet-600 dark:text-violet-400">
+        <span className="rounded-md bg-violet-500/10 px-1.5 py-0.5 text-[10px] font-medium text-violet-600 dark:text-violet-400">
           Rotativo
         </span>
       );
     }
     return (
-      <span className="rounded-sm bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+      <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
         Regular
       </span>
     );
@@ -367,10 +370,10 @@ export function BitcentralWidget({
   );
 
   return (
-    <Card className="relative overflow-hidden rounded-sm border border-border/60 bg-card/80 shadow-sm">
-      <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0 border-b border-border/50 px-4 py-3">
+    <BentoCard variant="default" className={cn("overflow-hidden", className)}>
+      <div className="flex flex-row items-center justify-between gap-3 border-b border-border/30 px-4 py-3">
         <div className="flex min-w-0 items-center gap-2.5">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-blue-500/10 text-blue-600 dark:text-blue-400">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
             <CalIcon className="h-4 w-4" />
           </div>
           <div className="min-w-0">
@@ -408,7 +411,7 @@ export function BitcentralWidget({
                 Hoy
               </Button>
             )}
-            <div className="flex items-center rounded-sm border border-border/60 bg-muted/30 p-0.5">
+            <div className="flex items-center rounded-lg border border-border/60 bg-muted/30 p-0.5">
               <Button
                 variant="ghost"
                 size="icon"
@@ -436,8 +439,8 @@ export function BitcentralWidget({
             </div>
           </div>
         )}
-      </CardHeader>
-      <CardContent className="p-2">
+      </div>
+      <div className="p-2">
         <div className="flex flex-col gap-1">
           {isLoading
             ? Array.from({ length: 7 }).map((_, i) => (
@@ -468,9 +471,9 @@ export function BitcentralWidget({
                   return (
                     <div
                       key={toISO(date)}
-                      className="flex items-center gap-2.5 rounded-sm border border-amber-500/25 bg-amber-500/5 px-2 py-2"
+                      className="flex items-center gap-2.5 rounded-lg border border-amber-500/25 bg-amber-500/5 px-2 py-2"
                     >
-                      <div className="flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-sm bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                      <div className="flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400">
                         <span className="text-[9px] font-semibold uppercase leading-none">
                           {format(date, "EEE", { locale: es })}
                         </span>
@@ -482,7 +485,7 @@ export function BitcentralWidget({
                         <p className="truncate text-sm font-medium text-amber-700 dark:text-amber-300">
                           {info.name}
                         </p>
-                        <span className="mt-0.5 inline-block rounded-sm bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400">
+                        <span className="mt-0.5 inline-block rounded-md bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400">
                           Evento especial
                         </span>
                       </div>
@@ -495,7 +498,7 @@ export function BitcentralWidget({
                     key={toISO(date)}
                     role={!isReadOnly ? "button" : undefined}
                     tabIndex={!isReadOnly ? 0 : undefined}
-                    className={`group flex items-center gap-2.5 rounded-sm px-2 py-2 transition-colors ${
+                    className={`group flex items-center gap-2.5 rounded-lg px-2 py-2 transition-colors ${
                       isTodayStr
                         ? "bg-blue-500/8 ring-1 ring-blue-500/25"
                         : "hover:bg-muted/40"
@@ -509,7 +512,7 @@ export function BitcentralWidget({
                     }}
                   >
                     <div
-                      className={`flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-sm ${
+                      className={`flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-lg ${
                         isTodayStr
                           ? "bg-blue-600 text-white"
                           : "bg-muted/50 text-muted-foreground"
@@ -525,7 +528,7 @@ export function BitcentralWidget({
 
                     <div className="flex min-w-0 flex-1 items-center gap-2">
                       <div
-                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-sm text-[10px] font-bold ${
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[10px] font-bold ${
                           isTodayStr
                             ? "bg-blue-600 text-white"
                             : "bg-muted text-muted-foreground"
@@ -548,7 +551,7 @@ export function BitcentralWidget({
                 );
               })}
         </div>
-      </CardContent>
+      </div>
 
       <Dialog open={isConfigOpen} onOpenChange={handleConfigOpenChange}>
         <DialogContent className="!left-1/2 !top-[calc(3.5rem+0.5rem)] !max-w-xl w-[min(calc(100vw-2rem),36rem)] !-translate-x-1/2 !translate-y-0 gap-0 overflow-hidden border border-border bg-background/95 p-0 shadow-xl backdrop-blur-2xl sm:rounded-sm">
@@ -806,6 +809,6 @@ export function BitcentralWidget({
           </div>
         </DialogContent>
       </Dialog>
-    </Card>
+    </BentoCard>
   );
 }

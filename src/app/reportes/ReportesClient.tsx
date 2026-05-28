@@ -49,6 +49,7 @@ import { SuccessModal } from "@/components/SuccessModal";
 
 import Link from "next/link";
 import { StatsCard } from "@/components/dashboard/StatsCard";
+import { BentoCard } from "@/components/dashboard/BentoCard";
 import dynamic from "next/dynamic";
 const ReportDetailModal = dynamic(
   () => import("@/components/ReportDetailModal").then((m) => m.ReportDetailModal),
@@ -471,9 +472,9 @@ export function ReportesClient() {
       />
 
       <div className={`${pageContainerClass} space-y-5`}>
-        <section className="border border-border/60 bg-card shadow-sm">
-          <div className="space-y-2 p-4 md:p-4">
-            <span className="inline-flex items-center gap-1 rounded-sm border border-border/60 bg-muted/30 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+        <BentoCard variant="default" className="p-4">
+          <div className="space-y-2">
+            <span className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/30 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               <FileText className="h-3 w-3" />
               Gestión de reportes
             </span>
@@ -486,7 +487,7 @@ export function ReportesClient() {
               </p>
             </div>
           </div>
-        </section>
+        </BentoCard>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <StatsCard
@@ -511,20 +512,20 @@ export function ReportesClient() {
           />
         </div>
 
-        <section className="border border-border/60 bg-card p-4 shadow-sm">
+        <BentoCard variant="default" className="p-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Buscar por ID, operador o descripción…"
-                className="h-9 rounded-sm border-border/60 bg-muted/20 pl-9 text-sm"
+                className="h-9 rounded-md border-border bg-muted/20 pl-9 text-sm"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <div className="flex border border-border/60 bg-muted/15">
+              <div className="flex border border-border bg-muted/15 rounded-md overflow-hidden">
                 {["all", "Enlace", "EJTV", "Enlace USA"].map((filter, i, arr) => (
                   <button
                     key={filter}
@@ -533,7 +534,7 @@ export function ReportesClient() {
                       setPriorityFilter(filter);
                       setPage(1);
                     }}
-                    className={`px-3 py-1.5 text-xs font-medium transition-colors ${i < arr.length - 1 ? "border-r border-border/60" : ""} ${filterChip(priorityFilter === filter)}`}
+                    className={`px-3 py-1.5 text-xs font-medium transition-colors ${i < arr.length - 1 ? "border-r border-border" : ""} ${filterChip(priorityFilter === filter)}`}
                   >
                     {filter === "all" ? "Todos" : filter}
                   </button>
@@ -547,7 +548,7 @@ export function ReportesClient() {
                   setPage(1);
                 }}
               >
-                <SelectTrigger className="h-9 w-[140px] rounded-sm border-border/60 bg-muted/20 text-xs">
+                <SelectTrigger className="h-9 w-[140px] rounded-md border-border bg-muted/20 text-xs">
                   <SelectValue placeholder="Estado" />
                 </SelectTrigger>
                 <SelectContent>
@@ -560,7 +561,7 @@ export function ReportesClient() {
               <Button
                 variant="outline"
                 size="icon"
-                className={`h-9 w-9 rounded-sm border-border/60 ${hasActiveFilters ? "bg-muted" : ""}`}
+                className={`h-9 w-9 rounded-md border-border ${hasActiveFilters ? "bg-muted" : ""}`}
                 onClick={() => setShowFilters(!showFilters)}
                 title="Más filtros"
               >
@@ -569,7 +570,7 @@ export function ReportesClient() {
               <Button
                 variant="outline"
                 size="icon"
-                className="h-9 w-9 rounded-sm border-border/60"
+                className="h-9 w-9 rounded-md border-border"
                 onClick={() => {
                   setShowStats(!showStats);
                   if (!showStats) fetchOperatorStats();
@@ -581,7 +582,7 @@ export function ReportesClient() {
               <Button
                 variant="outline"
                 size="icon"
-                className="h-9 w-9 rounded-sm border-border/60"
+                className="h-9 w-9 rounded-md border-border"
                 onClick={exportToCSV}
                 title="Exportar CSV"
               >
@@ -591,7 +592,7 @@ export function ReportesClient() {
           </div>
 
           {showFilters && (
-            <div className="mt-4 grid grid-cols-1 gap-3 border-t border-border/50 pt-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-4 grid grid-cols-1 gap-3 border-t border-border pt-4 sm:grid-cols-2 lg:grid-cols-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-muted-foreground">Operador</label>
                 <Select
@@ -601,7 +602,7 @@ export function ReportesClient() {
                     setPage(1);
                   }}
                 >
-                  <SelectTrigger className="h-9 rounded-sm border-border/60 bg-muted/20 text-xs">
+                  <SelectTrigger className="h-9 rounded-md border-border bg-muted/20 text-xs">
                     <SelectValue placeholder="Todos" />
                   </SelectTrigger>
                   <SelectContent>
@@ -623,7 +624,7 @@ export function ReportesClient() {
                     setDateFrom(e.target.value);
                     setPage(1);
                   }}
-                  className="h-9 rounded-sm border-border/60 bg-muted/20 text-xs"
+                  className="h-9 rounded-md border-border bg-muted/20 text-xs"
                 />
               </div>
               <div className="space-y-1.5">
@@ -635,7 +636,7 @@ export function ReportesClient() {
                     setDateTo(e.target.value);
                     setPage(1);
                   }}
-                  className="h-9 rounded-sm border-border/60 bg-muted/20 text-xs"
+                  className="h-9 rounded-md border-border bg-muted/20 text-xs"
                 />
               </div>
               <div className="flex items-end">
@@ -650,15 +651,15 @@ export function ReportesClient() {
               </div>
             </div>
           )}
-        </section>
+        </BentoCard>
 
         {showStats && operatorStats.length > 0 && (
-          <section className="border border-border/60 bg-card p-4 shadow-sm">
+          <BentoCard variant="default" className="p-4">
             <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold tracking-tight">
               <BarChart3 className="h-4 w-4 text-muted-foreground" />
               Por operador
             </h3>
-            <div className="grid grid-cols-1 gap-px border border-border/60 bg-border/60 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-px border border-border bg-border/60 sm:grid-cols-2 lg:grid-cols-3 rounded-md overflow-hidden">
               {operatorStats.map((op: { name: string; total: number; pending: number; resolved: number; emailSent: number }, idx: number) => (
                 <div
                   key={idx}
@@ -690,13 +691,13 @@ export function ReportesClient() {
                 </div>
               ))}
             </div>
-          </section>
+          </BentoCard>
         )}
 
-        <section className="overflow-hidden border border-border/60 bg-card shadow-sm">
+        <BentoCard variant="default" className="overflow-hidden">
             <div className="overflow-x-auto">
               <Table>
-                <TableHeader className="border-b border-border/60 bg-muted/20">
+                <TableHeader className="border-b border-border bg-muted/20">
                   <TableRow className="hover:bg-transparent">
                     <TableHead className="h-11 pl-4 text-xs font-medium text-muted-foreground">
                       Incidencia
@@ -722,7 +723,7 @@ export function ReportesClient() {
                   {reports.map((report) => (
                     <TableRow
                       key={report.id}
-                      className="group cursor-pointer border-border/40 transition-colors hover:bg-muted/20"
+                      className="group cursor-pointer border-border transition-colors hover:bg-muted/20"
                       onMouseEnter={() => prefetchReportDetail(report.id)}
                       onClick={() => handleRowClick(report)}
                     >
@@ -789,7 +790,7 @@ export function ReportesClient() {
                         className="py-3.5 pr-4 text-right"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <div className="flex items-center justify-end gap-0.5 border border-border/60 bg-muted/10 p-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                        <div className="flex items-center justify-end gap-0.5 border border-border bg-muted/10 p-0.5 opacity-0 transition-opacity group-hover:opacity-100 rounded-md overflow-hidden">
                           <TooltipProvider>
                             {report.status !== "resolved" && (
                               <Tooltip>
@@ -871,7 +872,7 @@ export function ReportesClient() {
               </Table>
             </div>
             {reports.length === 0 && !loading && (
-              <div className="border-t border-border/50 py-16 text-center">
+              <div className="border-t border-border py-16 text-center">
                 <Zap className="mx-auto mb-3 h-8 w-8 text-muted-foreground/40" />
                 <p className="text-sm font-medium text-foreground">Sin resultados</p>
                 <p className="mt-1 text-xs text-muted-foreground">
@@ -879,7 +880,7 @@ export function ReportesClient() {
                 </p>
               </div>
             )}
-        </section>
+        </BentoCard>
 
           {totalPages > 1 && (
             <div className="flex flex-col gap-3 px-1 sm:flex-row sm:items-center sm:justify-between">
@@ -932,12 +933,12 @@ export function ReportesClient() {
             </div>
           )}
 
-        <section className="border border-border/60 bg-card p-4 shadow-sm">
+        <BentoCard variant="default" className="p-4">
           <h2 className="mb-4 text-sm font-semibold tracking-tight text-foreground">
             Historial de correos
           </h2>
           <EmailHistoryCard />
-        </section>
+        </BentoCard>
       </div>
     </div>
   );
@@ -968,9 +969,9 @@ function EmailHistoryCard() {
     );
 
   return (
-    <div className="overflow-x-auto border border-border/60">
+    <div className="overflow-x-auto border border-border rounded-md overflow-hidden">
       <Table>
-        <TableHeader className="border-b border-border/60 bg-muted/20">
+        <TableHeader className="border-b border-border bg-muted/20">
           <TableRow className="hover:bg-transparent">
             <TableHead className="h-10 pl-4 text-xs font-medium text-muted-foreground">
               Asunto
@@ -990,7 +991,7 @@ function EmailHistoryCard() {
           {emails.map((email) => (
             <TableRow
               key={email.id}
-              className="border-border/40 hover:bg-muted/20"
+              className="border-b border-border hover:bg-muted/20"
             >
               <TableCell className="py-3 pl-4 text-sm font-medium">
                 {email.subject}

@@ -10,7 +10,7 @@ export function DashboardSkeleton() {
       transition={{ duration: 0.45 }}
       className="space-y-5 md:space-y-6"
     >
-      <div className="overflow-hidden rounded-sm border border-border/60 bg-card p-4 shadow-sm">
+      <div className="overflow-hidden rounded-sm border border-border bg-card p-4">
         <div className="flex flex-wrap gap-2">
           <Skeleton className="h-5 w-28 rounded-sm" />
           <Skeleton className="h-5 w-40 rounded-sm" />
@@ -31,7 +31,7 @@ export function DashboardSkeleton() {
         {[0, 1, 2].map((i) => (
           <div
             key={i}
-            className="overflow-hidden rounded-sm border border-border/60 bg-card p-5 shadow-sm"
+            className="overflow-hidden rounded-sm border border-border bg-card p-5"
           >
             <Skeleton className="h-12 w-12 rounded-sm" />
             <div className="mt-4 space-y-3">
@@ -54,7 +54,7 @@ export function DashboardSkeleton() {
 
       <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-3 xl:gap-5">
         <div className="flex flex-col gap-4 xl:col-span-2">
-          <div className="overflow-hidden rounded-sm border border-border/60 bg-card shadow-sm">
+          <div className="overflow-hidden rounded-sm border border-border bg-card">
             <Skeleton className="h-1 w-full" />
             <div className="border-b border-border/40 p-4">
               <Skeleton className="h-5 w-48" />

@@ -1,8 +1,9 @@
 "use client";
 
 import React from "react";
+import { cn } from "@/lib/utils";
 import { Cake } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { BentoCard } from "@/components/dashboard/BentoCard";
 import type { User } from "@/types/auth";
 
 function getInitials(name: string) {
@@ -17,7 +18,7 @@ function formatName(name: string) {
   return name;
 }
 
-export function BirthdayWidget({ users }: { users: User[] }) {
+export function BirthdayWidget({ users, className }: { users: User[]; className?: string }) {
   const today = new Date();
   const currentMonth = today.getMonth() + 1;
   const currentDay = today.getDate();
@@ -34,10 +35,10 @@ export function BirthdayWidget({ users }: { users: User[] }) {
     .slice(0, 6);
 
   return (
-    <Card className="overflow-hidden rounded-sm border border-border/60 bg-card shadow-sm">
-      <CardContent className="p-4 md:p-5">
+    <BentoCard variant="default" className={cn("overflow-hidden", className)}>
+      <div className="p-4 md:p-5">
         <div className="mb-3 flex items-center gap-2.5">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm border border-border/60 bg-muted/40 text-muted-foreground">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-border/40 bg-muted/40 text-muted-foreground">
             <Cake className="h-4 w-4" />
           </div>
           <div>
@@ -61,13 +62,13 @@ export function BirthdayWidget({ users }: { users: User[] }) {
               return (
                 <li key={user.id}>
                   <div
-                    className={`flex flex-col items-center rounded-sm border px-2 py-2.5 text-center ${
+                    className={`flex flex-col items-center rounded-lg border px-2 py-2.5 text-center transition-colors ${
                       isToday
                         ? "border-[#FF0C60]/25 bg-muted/40"
-                        : "border-border/50 bg-muted/20"
+                        : "border-border/40 bg-muted/20 hover:bg-muted/40"
                     }`}
                   >
-                    <div className="mb-1.5 flex h-8 w-8 items-center justify-center rounded-sm border border-border/50 bg-background text-[11px] font-semibold text-muted-foreground">
+                    <div className="mb-1.5 flex h-8 w-8 items-center justify-center rounded-lg border border-border/40 bg-background text-[11px] font-semibold text-muted-foreground">
                       {getInitials(user.name)}
                     </div>
                     <p className="w-full truncate text-[11px] font-medium leading-tight text-foreground">
@@ -86,7 +87,7 @@ export function BirthdayWidget({ users }: { users: User[] }) {
             })}
           </ul>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </BentoCard>
   );
 }

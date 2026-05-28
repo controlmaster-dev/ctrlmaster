@@ -30,7 +30,7 @@ export function StatsCard({
   return (
     <div
       className={cn(
-        "rounded-sm border border-border/60 bg-card p-4 shadow-sm",
+        "rounded-[6px] border border-border bg-card p-4 backdrop-blur-sm transition-all duration-300 hover:border-foreground/15 dark:hover:border-foreground/20 md:p-5",
         className
       )}
     >
@@ -41,12 +41,12 @@ export function StatsCard({
               {title}
             </p>
             {variant === "danger" && value > 0 && (
-              <span className="dash-keep-round relative flex h-2 w-2 shrink-0 rounded-full bg-rose-500/80" />
+              <span className="relative flex h-2 w-2 shrink-0 rounded-full bg-rose-500/80" />
             )}
           </div>
           <p
             className={cn(
-              "mt-2 text-3xl font-semibold tabular-nums tracking-tight md:text-4xl",
+              "mt-1.5 text-3xl font-bold tabular-nums tracking-tight md:text-4xl",
               valueColor
             )}
           >
@@ -57,7 +57,7 @@ export function StatsCard({
 
         <div
           className={cn(
-            "flex h-10 w-10 shrink-0 items-center justify-center rounded-sm border border-border/60 bg-muted/30",
+            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border/40 bg-muted/40",
             iconTint[variant]
           )}
         >

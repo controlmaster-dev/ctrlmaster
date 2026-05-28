@@ -23,7 +23,7 @@ export function DashboardSectionCard({
   return (
     <Card
       className={cn(
-        "overflow-hidden rounded-sm border-border/60 bg-card shadow-sm ring-1 ring-black/[0.03] dark:ring-white/[0.05]",
+        "overflow-hidden rounded-[6px] border border-border bg-card",
         className
       )}
     >
