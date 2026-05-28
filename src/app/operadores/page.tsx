@@ -1,5 +1,5 @@
 "use client";
-
+ 
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -25,6 +25,8 @@ import { OperadoresPageSkeleton } from "@/components/skeletons/OperadoresPageSke
 import { pageHeaderBarClass, pageMainClass } from "@/lib/page-layout";
 import { getSundayWeekStart } from "@/lib/weekUtils";
 import { useOperadoresBundle, useOperadoresWeek } from "@/hooks/useOperadoresBundle";
+import { Navbar } from "@/components/Navbar";
+import { BentoCard } from "@/components/dashboard/BentoCard";
 
 interface Prediction {
   nextOperator: Operator;
@@ -258,197 +260,164 @@ export default function OperatorsPage() {
 
   return (
     <div className="operadores-ui relative min-h-screen overflow-hidden pb-20 text-foreground selection:bg-[#FF0C60] selection:text-white">
-      <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-sm">
-        <div className="h-0.5 bg-[#FF0C60]" aria-hidden />
-        <div className={`${pageHeaderBarClass} h-14`}>
-          <Link href="/" className="flex items-center gap-2.5 hover:opacity-90">
-            <Image
-              src="https://res.cloudinary.com/dtgpm5idm/image/upload/v1760034292/cropped-logo-3D-preview-192x192_c8yd8r.png"
-              alt="Control Master"
-              width={28}
-              height={28}
-              className="object-contain"
-            />
-            <span className="hidden text-sm font-semibold tracking-tight sm:inline">
-              Control Master
-            </span>
-          </Link>
-
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <Link href="/">
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-9 w-9 rounded-sm border-border/80"
-              >
-                <Home className="h-4 w-4" />
-              </Button>
-            </Link>
-
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-9 gap-2 rounded-sm border-border/80"
-                >
-                  <Calendar className="h-4 w-4" />
-                  <span className="hidden md:inline">Calendario</span>
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="operadores-ui flex h-full w-full max-w-[98vw] flex-col overflow-hidden rounded-none border-border bg-card p-0 md:h-[95vh] md:rounded-sm">
-                <div className="flex flex-col gap-4 border-b border-border px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-                  <div>
-                    <DialogTitle className="text-lg font-semibold">
-                      Distribución semanal
-                    </DialogTitle>
-                    <DialogDescription className="text-sm text-muted-foreground">
-                      Turnos de todos los operadores
-                    </DialogDescription>
-                  </div>
-
-                  {user && (
-                    <div className="flex flex-wrap items-center gap-2">
-                      <select
-                        className="h-9 rounded-sm border border-border/60 bg-muted/30 px-3 text-xs outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                        value={weeksDuration}
-                        onChange={(e) => setWeeksDuration(Number(e.target.value))}
-                      >
-                        <option value={4}>4 semanas</option>
-                        <option value={8}>8 semanas</option>
-                        <option value={12}>3 meses</option>
-                        <option value={24}>6 meses</option>
-                      </select>
-
-                      <div className="flex rounded-sm border border-border/60 bg-muted/25 p-0.5">
-                        <Button
-                          onClick={() => handleSubscribe(true)}
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 gap-1.5 rounded-sm text-xs"
-                        >
-                          <Calendar className="h-3.5 w-3.5" />
-                          Suscribir
-                        </Button>
-                        <Button
-                          onClick={() => (handleSubscribe as unknown as (m: string) => void)("copy")}
-                          variant="ghost"
-                          size="icon"
-                          className={`h-8 w-8 rounded-sm ${copied ? "text-foreground" : ""}`}
-                          title="Copiar enlace"
-                        >
-                          {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                        </Button>
-                        <Button
-                          onClick={() => handleSubscribe(false)}
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 rounded-sm"
-                          title="Descargar .ics"
-                        >
-                          <Download className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex flex-1 flex-col overflow-hidden p-0 md:p-6">
-                  <WeeklyCalendar
-                    operators={modalOperators}
-                    currentWeekStart={modalWeekStart}
-                    onWeekChange={setModalWeekStart}
-                    isLoading={!modalReady}
-                  />
-                </div>
-              </DialogContent>
-            </Dialog>
-
-            {user ? (
-              <Link href="/" className="ml-1 hidden border-l border-border pl-3 sm:block">
-                <Avatar className="h-8 w-8 border border-border">
-                  <AvatarImage src={user.avatar} />
-                  <AvatarFallback className="text-xs">{user.name?.charAt(0)}</AvatarFallback>
-                </Avatar>
-              </Link>
-            ) : (
-              <Link href="/login">
-                <Button variant="ghost" size="sm" className="h-9 gap-2">
-                  <LogIn className="h-4 w-4" />
-                  <span className="hidden sm:inline">Ingresar</span>
-                </Button>
-              </Link>
-            )}
-          </div>
-        </div>
-      </header>
-
+      <Navbar />
+ 
       <main className={pageMainClass}>
         {!isReady ? (
           <OperadoresPageSkeleton />
         ) : (
         <div className="space-y-5">
-        <header className="border border-border/60 bg-card shadow-sm">
-          <div className="border-b border-border/50 px-4 py-4 md:px-5">
+        <BentoCard variant="default" className="overflow-hidden">
+          <div className="border-b border-border px-4 py-4 md:px-5">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div>
-                <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                   Equipo de control
                 </p>
-                <h1 className="mt-1 text-xl font-semibold tracking-tight md:text-2xl">
-                  Horarios de operadores
-                </h1>
+                <div className="flex flex-wrap items-center gap-3 mt-1">
+                  <h1 className="text-xl font-bold tracking-tight md:text-2xl">
+                    Horarios de operadores
+                  </h1>
+                  
+                  {/* Calendar Dialog Trigger placed contextually next to the title */}
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 gap-2 rounded-[6px] border-border bg-muted/20 hover:bg-muted/40 text-xs font-semibold"
+                      >
+                        <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span>Distribución semanal</span>
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="operadores-ui flex h-full w-full max-w-[98vw] flex-col overflow-hidden border-border bg-card p-0 md:h-[95vh] md:rounded-[6px]">
+                      <div className="flex flex-col gap-4 border-b border-border px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                        <div>
+                          <DialogTitle className="text-lg font-semibold">
+                            Distribución semanal
+                          </DialogTitle>
+                          <DialogDescription className="text-sm text-muted-foreground">
+                            Turnos de todos los operadores
+                          </DialogDescription>
+                        </div>
+ 
+                        {user && (
+                          <div className="flex flex-wrap items-center gap-2">
+                            <select
+                              className="h-9 rounded-[6px] border border-border bg-card px-3 text-xs font-medium outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer hover:bg-muted/20"
+                              value={weeksDuration}
+                              onChange={(e) => setWeeksDuration(Number(e.target.value))}
+                            >
+                              <option value={4}>4 semanas</option>
+                              <option value={8}>8 semanas</option>
+                              <option value={12}>3 meses</option>
+                              <option value={24}>6 meses</option>
+                            </select>
+ 
+                            <div className="flex rounded-[6px] border border-border bg-muted/20 p-0.5">
+                              <Button
+                                onClick={() => handleSubscribe(true)}
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 gap-1.5 rounded-[4px] text-xs font-semibold hover:bg-card hover:shadow-none"
+                              >
+                                <Calendar className="h-3.5 w-3.5" />
+                                Suscribir
+                              </Button>
+                              <Button
+                                onClick={() => (handleSubscribe as unknown as (m: string) => void)("copy")}
+                                variant="ghost"
+                                size="icon"
+                                className={`h-8 w-8 rounded-[4px] hover:bg-card hover:shadow-none ${copied ? "text-emerald-500" : "text-muted-foreground"}`}
+                                title="Copiar enlace"
+                              >
+                                {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                              </Button>
+                              <Button
+                                onClick={() => handleSubscribe(false)}
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 rounded-[4px] hover:bg-card hover:shadow-none text-muted-foreground"
+                                title="Descargar .ics"
+                              >
+                                <Download className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+ 
+                      <div className="flex flex-1 flex-col overflow-hidden p-0 md:p-6">
+                        <WeeklyCalendar
+                          operators={modalOperators}
+                          currentWeekStart={modalWeekStart}
+                          onWeekChange={setModalWeekStart}
+                          isLoading={!modalReady}
+                        />
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
                 <p className="mt-1 max-w-xl text-sm text-muted-foreground">
                   Estado en vivo de los trabajadores de Control Máster.
                 </p>
               </div>
-
+ 
               {operators.length > 0 && (
-                <div className="flex shrink-0 gap-px border border-border/60 bg-muted/20 text-center text-xs">
-                  <div className="min-w-[5.5rem] px-4 py-2.5 bg-card">
-                    <p className="text-lg font-semibold tabular-nums text-foreground">
-                      {onDutyCount}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground">En turno</p>
+                <div className="flex shrink-0 border border-border bg-muted/20 rounded-[6px] overflow-hidden text-center text-xs shadow-none">
+                  <div className="min-w-[5.5rem] px-4 py-2.5 bg-card flex flex-col items-center justify-center">
+                    <div className="flex items-center gap-1.5">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <p className="text-lg font-bold tabular-nums text-foreground leading-none">
+                        {onDutyCount}
+                      </p>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-1">En turno</p>
                   </div>
-                  <div className="min-w-[5.5rem] border-l border-border/60 px-4 py-2.5 bg-card">
-                    <p className="text-lg font-semibold tabular-nums text-foreground">
-                      {operators.length - onDutyCount}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground">Fuera</p>
+                  <div className="min-w-[5.5rem] border-l border-border px-4 py-2.5 bg-card flex flex-col items-center justify-center">
+                    <div className="flex items-center gap-1.5">
+                      <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
+                      <p className="text-lg font-bold tabular-nums text-foreground leading-none">
+                        {operators.length - onDutyCount}
+                      </p>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-1">Fuera</p>
                   </div>
-                  <div className="min-w-[5.5rem] border-l border-border/60 px-4 py-2.5 bg-card">
-                    <p className="text-lg font-semibold tabular-nums text-foreground">
-                      {operators.length}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground">Total</p>
+                  <div className="min-w-[5.5rem] border-l border-border px-4 py-2.5 bg-card flex flex-col items-center justify-center">
+                    <div className="flex items-center gap-1.5">
+                      <span className="h-1.5 w-1.5 rounded-full bg-foreground/60" />
+                      <p className="text-lg font-bold tabular-nums text-foreground leading-none">
+                        {operators.length}
+                      </p>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-1">Total</p>
                   </div>
                 </div>
               )}
             </div>
           </div>
-
+ 
           {predictions.length > 0 && (
             <div className="px-4 py-3 md:px-5">
-              <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Próximos en turno
               </p>
-              <div className="grid gap-px border border-border/60 bg-border/60 sm:grid-cols-2">
+              <div className="grid gap-2 sm:grid-cols-2">
                 {predictions.map((pred) => (
                   <div
                     key={pred.nextOperator.id}
-                    className="flex items-center gap-3 bg-card px-3 py-2.5"
+                    className="flex items-center gap-3 bg-muted/10 border border-border rounded-[6px] px-3 py-2.5"
                   >
-                    <Avatar className="h-8 w-8 rounded-sm border border-border/60">
-                      <AvatarImage src={pred.nextOperator.image} className="rounded-sm" />
-                      <AvatarFallback className="rounded-sm text-xs">
+                    <Avatar className="h-8 w-8 rounded-[6px] border border-border">
+                      <AvatarImage src={pred.nextOperator.image} className="rounded-[6px]" />
+                      <AvatarFallback className="rounded-[6px] text-xs font-bold bg-muted">
                         {pred.nextOperator.name.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{pred.nextOperator.name}</p>
-                      <p className="text-[11px] text-muted-foreground">
+                      <p className="text-[11px] text-muted-foreground font-medium">
                         {pred.timeUntil}
                         <span className="mx-1.5 text-border">·</span>
                         {pred.shiftLabel}
@@ -459,7 +428,7 @@ export default function OperatorsPage() {
               </div>
             </div>
           )}
-        </header>
+        </BentoCard>
 
         <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-4 lg:gap-6">
           <div className="lg:col-span-1 lg:sticky lg:top-[4.5rem]">

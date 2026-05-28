@@ -251,13 +251,13 @@ export function MonitoreoClient() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 gap-1.5 px-2 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+                  className="h-8 gap-1.5 px-2 text-xs text-muted-foreground hover:bg-muted hover:text-foreground rounded-[6px]"
                 >
                   <Activity className="h-4 w-4" />
                   <span className="hidden md:inline">Ver señales</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-6xl overflow-hidden rounded-3xl border border-border bg-card p-0 text-card-foreground shadow-lg">
+              <DialogContent className="max-w-6xl overflow-hidden rounded-[6px] border border-border bg-card p-0 text-card-foreground shadow-none ring-1 ring-border">
                 <DialogTitle className="sr-only">Estado de las señales</DialogTitle>
                 {statsOpen ? <MonitoringStats /> : null}
               </DialogContent>
@@ -266,9 +266,9 @@ export function MonitoreoClient() {
         </div>
       </header>
 
-      <div className="grid shrink-0 grid-cols-1 gap-2 p-2 md:grid-cols-2">
+      <div className="grid shrink-0 grid-cols-1 gap-4 p-4 md:grid-cols-2">
         <div
-          className="group/master relative aspect-video cursor-pointer overflow-hidden rounded-lg bg-black ring-1 ring-border"
+          className="group/master relative aspect-video cursor-pointer overflow-hidden rounded-[6px] border border-emerald-500/30 bg-black hover:border-emerald-500/50 transition-all duration-200"
           onClick={handleCut}
           title="Clic o barra espaciadora para cambiar de canal"
         >
@@ -289,7 +289,7 @@ export function MonitoreoClient() {
           </div>
         </div>
 
-        <div className="relative aspect-video overflow-hidden rounded-lg bg-black ring-2 ring-emerald-500/50 ring-offset-2 ring-offset-background">
+        <div className="relative aspect-video overflow-hidden rounded-[6px] border-2 border-red-500 bg-black shadow-none">
           {playersReady ? (
             <VideoJSPlayer
               title={prgStream.title}

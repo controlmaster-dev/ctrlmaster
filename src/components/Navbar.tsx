@@ -119,174 +119,194 @@ export function Navbar() {
           </Link>
 
           {/* Main navigation — clean pill-style */}
-          <nav className="flex h-14 shrink-0 items-center gap-1" aria-label="Principal">
-            {mainNav.map(({ href, icon: Icon, label, exact }) => {
-              const active = exact ? isPath(href) : pathname.startsWith(href) && href !== "/";
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  className={cn(
-                    "relative flex h-9 items-center gap-2 rounded-md px-3.5 text-[13px] font-medium transition-all duration-200",
-                    active
-                      ? "bg-muted text-foreground"
-                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-                  )}
-                >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  <span>{label}</span>
-                </Link>
-              );
-            })}
-          </nav>
+          {user && (
+            <nav className="flex h-14 shrink-0 items-center gap-1" aria-label="Principal">
+              {mainNav.map(({ href, icon: Icon, label, exact }) => {
+                const active = exact ? isPath(href) : pathname.startsWith(href) && href !== "/";
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={cn(
+                      "relative flex h-9 items-center gap-2 rounded-md px-3.5 text-[13px] font-medium transition-all duration-200",
+                      active
+                        ? "bg-muted text-foreground"
+                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                    )}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span>{label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+          )}
 
           {/* Spacer */}
           <div className="flex-1" />
 
           {/* Search */}
-          <div className="relative flex items-center">
-            <button
-              type="button"
-              onClick={() => { setSearchOpen(true); setTimeout(() => searchInputRef.current?.focus(), 50); }}
-              className={cn(
-                "group flex h-9 w-[180px] lg:w-[220px] items-center gap-2 rounded-md border border-border/80 bg-muted/20 px-3 text-[13px] text-muted-foreground transition-all duration-200 hover:border-border hover:bg-muted/40 hover:text-foreground",
-                searchOpen && "hidden"
-              )}
-            >
-              <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-              <span className="flex-1 text-left">Buscar...</span>
-              <kbd className="hidden h-5 items-center gap-0.5 rounded border border-border/80 bg-background px-1.5 font-mono text-[9px] font-bold text-muted-foreground/80 sm:inline-flex">
-                ⌘K
-              </kbd>
-            </button>
-
-            {searchOpen && (
-              <div className="relative z-[101]">
-                <div className="flex h-9 w-[260px] lg:w-[300px] items-center gap-2 rounded-md border border-border bg-card px-3 transition-all">
-                  <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                  <input
-                    ref={searchInputRef}
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onFocus={() => setOpenPalette(true)}
-                    onBlur={(e) => {
-                      if (!e.relatedTarget?.closest("[data-palette]")) {
-                        setTimeout(() => { if (!document.activeElement?.closest("[data-palette]")) closeSearch(); }, 150);
-                      }
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Escape") closeSearch();
-                    }}
-                    placeholder="Buscar reportes, operadores..."
-                    className="h-full min-w-0 flex-1 bg-transparent text-[13px] text-foreground outline-none placeholder:text-muted-foreground/50"
-                    autoFocus
-                  />
-                  <button
-                    type="button"
-                    onClick={closeSearch}
-                    className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:text-foreground"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-
-                {mounted && !isMobile && openPalette && (
-                  <div className="absolute right-0 top-full z-50 mt-1.5 w-[400px]" data-palette>
-                    <CommandPalette
-                      isOpen={openPalette}
-                      onClose={closeSearch}
-                      isIntegrated
-                      externalQuery={searchQuery}
-                      onQueryChange={setSearchQuery}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* CTA button */}
-          <Link href="/crear-reporte" className="ml-1.5 hidden shrink-0 sm:block">
-            <Button
-              size="sm"
-              className="h-9 gap-1.5 rounded-md bg-[#FF0C60] px-4 text-[13px] font-semibold text-white shadow-none hover:bg-[#E00A54] transition-all duration-200"
-            >
-              <Plus className="h-4 w-4" />
-              Nuevo reporte
-            </Button>
-          </Link>
-
-          {/* Secondary links dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+          {user && (
+            <div className="relative flex items-center">
               <button
                 type="button"
-                className="ml-0.5 flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
-                title="Más opciones"
+                onClick={() => { setSearchOpen(true); setTimeout(() => searchInputRef.current?.focus(), 50); }}
+                className={cn(
+                  "group flex h-9 w-[180px] lg:w-[220px] items-center gap-2 rounded-md border border-border/80 bg-muted/20 px-3 text-[13px] text-muted-foreground transition-all duration-200 hover:border-border hover:bg-muted/40 hover:text-foreground",
+                  searchOpen && "hidden"
+                )}
               >
-                <Ellipsis className="h-[18px] w-[18px]" />
+                <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                <span className="flex-1 text-left">Buscar...</span>
+                <kbd className="hidden h-5 items-center gap-0.5 rounded border border-border/80 bg-background px-1.5 font-mono text-[9px] font-bold text-muted-foreground/80 sm:inline-flex">
+                  ⌘K
+                </kbd>
               </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 z-[10050] border-border bg-popover text-popover-foreground">
-              {secondaryLinks
-                .filter((l) => l.show)
-                .map(({ href, icon: Icon, label }) => (
-                  <Link key={href} href={href}>
-                    <DropdownMenuItem className="cursor-pointer gap-2.5 text-xs font-medium">
-                      <Icon className="h-4 w-4" />
-                      {label}
-                    </DropdownMenuItem>
-                  </Link>
-                ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
 
-          <div className="mx-1.5 h-5 w-px bg-border" />
+              {searchOpen && (
+                <div className="relative z-[101]">
+                  <div className="flex h-9 w-[260px] lg:w-[300px] items-center gap-2 rounded-md border border-border bg-card px-3 transition-all">
+                    <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    <input
+                      ref={searchInputRef}
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onFocus={() => setOpenPalette(true)}
+                      onBlur={(e) => {
+                        if (!e.relatedTarget?.closest("[data-palette]")) {
+                          setTimeout(() => { if (!document.activeElement?.closest("[data-palette]")) closeSearch(); }, 150);
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Escape") closeSearch();
+                      }}
+                      placeholder="Buscar reportes, operadores..."
+                      className="h-full min-w-0 flex-1 bg-transparent text-[13px] text-foreground outline-none placeholder:text-muted-foreground/50"
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      onClick={closeSearch}
+                      className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+
+                  {mounted && !isMobile && openPalette && (
+                    <div className="absolute right-0 top-full z-50 mt-1.5 w-[400px]" data-palette>
+                      <CommandPalette
+                        isOpen={openPalette}
+                        onClose={closeSearch}
+                        isIntegrated
+                        externalQuery={searchQuery}
+                        onQueryChange={setSearchQuery}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* CTA button */}
+          {user && (
+            <Link href="/crear-reporte" className="ml-1.5 hidden shrink-0 sm:block">
+              <Button
+                size="sm"
+                className="h-9 gap-1.5 rounded-md bg-[#FF0C60] px-4 text-[13px] font-semibold text-white shadow-none hover:bg-[#E00A54] transition-all duration-200"
+              >
+                <Plus className="h-4 w-4" />
+                Nuevo reporte
+              </Button>
+            </Link>
+          )}
+
+          {/* Secondary links dropdown */}
+          {user && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="ml-0.5 flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                  title="Más opciones"
+                >
+                  <Ellipsis className="h-[18px] w-[18px]" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 z-[10050] border-border bg-popover text-popover-foreground">
+                {secondaryLinks
+                  .filter((l) => l.show)
+                  .map(({ href, icon: Icon, label }) => (
+                    <Link key={href} href={href}>
+                      <DropdownMenuItem className="cursor-pointer gap-2.5 text-xs font-medium">
+                        <Icon className="h-4 w-4" />
+                        {label}
+                      </DropdownMenuItem>
+                    </Link>
+                  ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
+          {user && <div className="mx-1.5 h-5 w-px bg-border" />}
 
           {/* Theme + user */}
           <ThemeToggle />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                className="ml-1.5 rounded-full outline-none transition-all duration-200 hover:opacity-80"
-                title={user?.name || "Mi cuenta"}
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="ml-1.5 rounded-full outline-none transition-all duration-200 hover:opacity-80"
+                  title={user?.name || "Mi cuenta"}
+                >
+                  <Avatar className="h-8 w-8 border border-border/60">
+                    <AvatarImage src={user?.avatar || ""} alt={user?.name || "Usuario"} />
+                    <AvatarFallback className="bg-muted text-[11px] font-bold text-foreground">
+                      {user?.name
+                        ?.split(" ")
+                        .filter(Boolean)
+                        .map((n) => n[0])
+                        .join("")
+                        .substring(0, 2)
+                        .toUpperCase() || "CM"}
+                    </AvatarFallback>
+                  </Avatar>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52 z-[10050] border-border bg-popover text-popover-foreground">
+                <DropdownMenuLabel className="font-normal px-3 py-2.5">
+                  <p className="text-sm font-semibold text-foreground">{user?.name || "Usuario"}</p>
+                  <p className="truncate text-xs text-muted-foreground mt-0.5">{user?.email}</p>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {user?.role !== "ENGINEER" && (
+                  <Link href="/configuracion">
+                    <DropdownMenuItem className="cursor-pointer gap-2.5 text-xs font-medium">
+                      <Settings className="h-4 w-4" />
+                      Configuración
+                    </DropdownMenuItem>
+                  </Link>
+                )}
+                <DropdownMenuItem className="cursor-pointer gap-2.5 text-xs font-medium text-red-500 focus:text-red-500" onClick={logout}>
+                  <LogOut className="h-4 w-4" />
+                  Cerrar sesión
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Link href="/login" className="ml-1.5">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 rounded-[6px] border-border bg-card px-4 text-[13px] font-semibold text-foreground hover:bg-muted"
               >
-                <Avatar className="h-8 w-8 border border-border/60">
-                  <AvatarImage src={user?.avatar || ""} alt={user?.name || "Usuario"} />
-                  <AvatarFallback className="bg-muted text-[11px] font-bold text-foreground">
-                    {user?.name
-                      ?.split(" ")
-                      .filter(Boolean)
-                      .map((n) => n[0])
-                      .join("")
-                      .substring(0, 2)
-                      .toUpperCase() || "CM"}
-                  </AvatarFallback>
-                </Avatar>
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52 z-[10050] border-border bg-popover text-popover-foreground">
-              <DropdownMenuLabel className="font-normal px-3 py-2.5">
-                <p className="text-sm font-semibold text-foreground">{user?.name || "Usuario"}</p>
-                <p className="truncate text-xs text-muted-foreground mt-0.5">{user?.email}</p>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {user?.role !== "ENGINEER" && (
-                <Link href="/configuracion">
-                  <DropdownMenuItem className="cursor-pointer gap-2.5 text-xs font-medium">
-                    <Settings className="h-4 w-4" />
-                    Configuración
-                  </DropdownMenuItem>
-                </Link>
-              )}
-              <DropdownMenuItem className="cursor-pointer gap-2.5 text-xs font-medium text-red-500 focus:text-red-500" onClick={logout}>
-                <LogOut className="h-4 w-4" />
-                Cerrar sesión
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                Iniciar sesión
+              </Button>
+            </Link>
+          )}
         </div>
       </header>
 
@@ -306,54 +326,68 @@ export function Navbar() {
                 </Link>
 
                 <div className="flex shrink-0 items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setOpenPalette(true)}
-                    className="flex h-9 w-9 items-center justify-center rounded-md border border-border/40 bg-card text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
-                    aria-label="Buscar"
-                  >
-                    <Search className="h-4 w-4" />
-                  </button>
+                  {user && (
+                    <button
+                      type="button"
+                      onClick={() => setOpenPalette(true)}
+                      className="flex h-9 w-9 items-center justify-center rounded-md border border-border/40 bg-card text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                      aria-label="Buscar"
+                    >
+                      <Search className="h-4 w-4" />
+                    </button>
+                  )}
                   <ThemeToggle />
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button
-                        type="button"
-                        className="rounded-full outline-none"
+                  {user ? (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          className="rounded-full outline-none"
+                        >
+                          <Avatar className="h-8 w-8 border border-border/60">
+                            <AvatarImage src={user?.avatar || ""} alt="" />
+                            <AvatarFallback className="bg-muted text-[10px] font-bold">
+                              {user?.name?.split(" ").map((n) => n[0]).join("").toUpperCase() || "CM"}
+                            </AvatarFallback>
+                          </Avatar>
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-52 z-[10050] border-border bg-popover text-popover-foreground">
+                        <DropdownMenuLabel className="font-normal px-3 py-2.5">
+                          <p className="text-sm font-semibold text-foreground">{user?.name}</p>
+                          <p className="truncate text-xs text-muted-foreground mt-0.5">{user?.email}</p>
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {secondaryLinks.filter((l) => l.show).map(({ href, icon: Icon, label }) => (
+                          <Link key={href} href={href}>
+                            <DropdownMenuItem className="gap-2.5 text-xs font-medium">
+                              <Icon className="h-4 w-4" /> {label}
+                            </DropdownMenuItem>
+                          </Link>
+                        ))}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="gap-2.5 text-xs font-medium text-red-500 focus:text-red-500" onClick={logout}>
+                          <LogOut className="h-4 w-4" /> Cerrar sesión
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  ) : (
+                    <Link href="/login" className="ml-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 rounded-[6px] border-border bg-card px-2.5 text-xs font-semibold text-foreground hover:bg-muted"
                       >
-                        <Avatar className="h-8 w-8 border border-border/60">
-                          <AvatarImage src={user?.avatar || ""} alt="" />
-                          <AvatarFallback className="bg-muted text-[10px] font-bold">
-                            {user?.name?.split(" ").map((n) => n[0]).join("").toUpperCase() || "CM"}
-                          </AvatarFallback>
-                        </Avatar>
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-52 z-[10050] border-border bg-popover text-popover-foreground">
-                      <DropdownMenuLabel className="font-normal px-3 py-2.5">
-                        <p className="text-sm font-semibold text-foreground">{user?.name}</p>
-                        <p className="truncate text-xs text-muted-foreground mt-0.5">{user?.email}</p>
-                      </DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      {secondaryLinks.filter((l) => l.show).map(({ href, icon: Icon, label }) => (
-                        <Link key={href} href={href}>
-                          <DropdownMenuItem className="gap-2.5 text-xs font-medium">
-                            <Icon className="h-4 w-4" /> {label}
-                          </DropdownMenuItem>
-                        </Link>
-                      ))}
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem className="gap-2.5 text-xs font-medium text-red-500 focus:text-red-500" onClick={logout}>
-                        <LogOut className="h-4 w-4" /> Cerrar sesión
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                        Iniciar sesión
+                      </Button>
+                    </Link>
+                  )}
                 </div>
               </div>
             </header>
 
             {/* Bottom tab bar */}
-            {pathname !== "/crear-reporte" && (
+            {user && pathname !== "/crear-reporte" && (
               <nav
                 className="fixed bottom-0 left-0 right-0 z-[9999] border-t border-border bg-background/95 pb-safe backdrop-blur-md md:hidden"
                 aria-label="Navegación móvil"

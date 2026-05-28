@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Shift, Operator, WeekDate, DayColumn, EditingState, WeeklyCalendarProps } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 const DAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
@@ -290,37 +291,37 @@ export function WeeklyCalendar({
   };
 
   return (
-    <div className="operadores-ui relative flex h-full w-full flex-col overflow-hidden border border-border bg-card md:rounded-sm">
+    <div className="operadores-ui relative flex h-full w-full flex-col overflow-hidden border border-border bg-card md:rounded-[6px]">
       <div className="flex items-center justify-between border-b border-border bg-muted/15 px-4 py-3">
         <div className="flex items-center gap-2">
-          <span className="border border-border/60 bg-background px-2 py-0.5 font-mono text-[11px] text-muted-foreground">
+          <span className="border border-border/60 bg-background px-2 py-0.5 font-mono text-[11px] text-muted-foreground rounded-[4px]">
             {currentWeekStart}
           </span>
           {isCurrentRealWeek && (
-            <span className="border border-border/60 bg-muted/40 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-foreground">
+            <span className="border border-border/60 bg-muted/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-foreground rounded-[4px]">
               Semana actual
             </span>
           )}
         </div>
 
         {onWeekChange && (
-          <div className="flex items-center border border-border/60 bg-background p-0.5">
+          <div className="flex items-center border border-border/60 bg-background p-0.5 rounded-[6px]">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => adjustWeek('prev')}
-              className="h-7 w-7 rounded-sm text-muted-foreground hover:text-foreground"
+              className="h-7 w-7 rounded-[4px] text-muted-foreground hover:text-foreground"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="border-x border-border/60 px-2.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+            <span className="border-x border-border/60 px-2.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
               Semana
             </span>
             <Button
               variant="ghost"
               size="icon"
               onClick={() => adjustWeek('next')}
-              className="h-7 w-7 rounded-sm text-muted-foreground hover:text-foreground"
+              className="h-7 w-7 rounded-[4px] text-muted-foreground hover:text-foreground"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
@@ -344,19 +345,22 @@ export function WeeklyCalendar({
             return (
               <div
                 key={col.dayIndex}
-                className={`group relative flex flex-col transition-colors ${isToday ? 'bg-muted/15' : 'hover:bg-muted/5'}`}
+                className={cn(
+                  "group relative flex flex-col transition-colors",
+                  isToday ? 'bg-muted/15' : 'hover:bg-muted/5'
+                )}
               >
                 <div
                   className={`sticky top-0 z-10 border-b py-2.5 text-center backdrop-blur-sm ${
                     isToday
-                      ? 'border-foreground/30 bg-muted/40 text-foreground'
+                      ? 'border-emerald-500/30 bg-emerald-500/5 text-foreground'
                       : 'border-border bg-background/95 text-muted-foreground'
                   }`}
                 >
-                  <span className="mb-0.5 block text-[10px] font-medium uppercase tracking-wider">
+                  <span className={cn("mb-0.5 block text-[10px] font-semibold uppercase tracking-wider", isToday ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground")}>
                     {col.dateLabel.split(' ')[0]}
                   </span>
-                  <span className="text-base font-semibold leading-none tabular-nums">
+                  <span className="text-base font-bold leading-none tabular-nums">
                     {col.dateLabel.split(' ')[1]}
                   </span>
                 </div>
@@ -370,24 +374,25 @@ export function WeeklyCalendar({
                       <div
                         key={`${item.op.id}-${idx}`}
                         onClick={() => handleEditClick(item.op, col.dayIndex)}
-                        className={`group/card relative cursor-pointer border bg-card p-2 transition-colors hover:bg-muted/25 ${
+                        className={cn(
+                          "group/card relative cursor-pointer border bg-card p-2.5 transition-all duration-200 hover:border-foreground/20 rounded-[6px] shadow-none",
                           isActiveNow
-                            ? 'border-l-2 border-l-foreground border-border/70'
-                            : 'border-border/60'
-                        }`}
+                            ? 'border-emerald-500 bg-emerald-500/5 dark:bg-emerald-500/10 border-l-2'
+                            : 'border-border'
+                        )}
                       >
-                        <div className="mb-1.5 flex items-center gap-2">
-                          <Avatar className="h-6 w-6 shrink-0 rounded-sm border border-border/60">
-                            <AvatarImage src={item.op.image} className="rounded-sm" />
-                            <AvatarFallback className="rounded-sm bg-muted/50 text-[8px] font-semibold text-muted-foreground">
+                        <div className="mb-2 flex items-center gap-2">
+                          <Avatar className="h-6 w-6 shrink-0 rounded-[4px] border border-border">
+                            <AvatarImage src={item.op.image} className="rounded-[4px]" />
+                            <AvatarFallback className="rounded-[4px] bg-muted/50 text-[8px] font-bold text-muted-foreground">
                               {getInitials(item.op.name || 'U')}
                             </AvatarFallback>
                           </Avatar>
                           <div className="min-w-0 flex-1">
-                            <div className="truncate text-[10px] font-medium leading-tight text-foreground">
+                            <div className={cn("truncate text-[10px] font-bold leading-tight", isActiveNow ? "text-emerald-700 dark:text-emerald-300" : "text-foreground")}>
                               {item.op.name}
                             </div>
-                            <div className="mt-px truncate text-[8px] leading-none text-muted-foreground">
+                            <div className="mt-0.5 truncate text-[8px] leading-none text-muted-foreground">
                               {item.op.role === 'BOSS' ? 'Admin' : 'Operador'}
                             </div>
                           </div>
@@ -396,15 +401,15 @@ export function WeeklyCalendar({
                           )}
                         </div>
 
-                        <div className="flex items-center justify-between border-t border-border/40 pt-1 font-mono text-[9px] text-muted-foreground">
-                          <span>{formatTime(item.shift.start)}</span>
+                        <div className="flex items-center justify-between border-t border-border/40 pt-1.5 font-mono text-[9px] text-muted-foreground">
+                          <span className={isActiveNow ? "text-emerald-600 dark:text-emerald-400 font-medium" : ""}>{formatTime(item.shift.start)}</span>
                           <span className="opacity-40">–</span>
-                          <span>{formatTime(item.shift.end)}</span>
+                          <span className={isActiveNow ? "text-emerald-600 dark:text-emerald-400 font-medium" : ""}>{formatTime(item.shift.end)}</span>
                         </div>
 
                         {item.op.isTempSchedule && (
                           <div
-                            className="absolute bottom-1 right-1 h-1.5 w-1.5 bg-foreground/40"
+                            className="absolute bottom-1 right-1 h-1.5 w-1.5 bg-foreground/45 rounded-full"
                             title="Horario temporal"
                           />
                         )}
@@ -414,7 +419,7 @@ export function WeeklyCalendar({
 
                   {isEditingEnabled && (
                     <button
-                      className="flex w-full items-center justify-center gap-1 border border-dashed border-border/50 py-1.5 text-xs text-muted-foreground/60 opacity-0 transition-all hover:border-border hover:bg-muted/20 hover:text-foreground group-hover:opacity-100"
+                      className="flex w-full items-center justify-center gap-1 border border-dashed border-border/50 py-1.5 text-xs text-muted-foreground/60 opacity-0 transition-all hover:border-border hover:bg-muted/20 hover:text-foreground rounded-[6px] group-hover:opacity-100"
                       onClick={() => {
                         if (operators.length > 0) handleEditClick(operators[0], col.dayIndex);
                       }}
@@ -432,14 +437,14 @@ export function WeeklyCalendar({
           {dayColumns.map((col, i) => {
             const isToday = isCurrentRealWeek && new Date().getDay() === i;
             return (
-              <div key={col.dayIndex} className={`flex flex-col ${isToday ? 'bg-muted/10' : ''}`}>
+              <div key={col.dayIndex} className={cn("flex flex-col", isToday ? 'bg-muted/10' : '')}>
                 <div
                   className={`sticky top-0 z-20 flex items-center justify-between border-b px-4 py-2 backdrop-blur-sm ${
-                    isToday ? 'border-foreground/30 bg-muted/40' : 'border-border bg-background/95'
+                    isToday ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-border bg-background/95'
                   }`}
                 >
                   <div className="flex items-baseline gap-2">
-                    <span className="text-sm font-semibold capitalize text-foreground">
+                    <span className={cn("text-sm font-semibold capitalize", isToday ? "text-emerald-600 dark:text-emerald-400" : "text-foreground")}>
                       {col.dateLabel.split(' ')[0]}
                     </span>
                     <span className="text-xs text-muted-foreground">
@@ -447,7 +452,7 @@ export function WeeklyCalendar({
                     </span>
                   </div>
                   {isToday && (
-                    <span className="border border-border/60 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-foreground">
+                    <span className="border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 rounded-[4px]">
                       Hoy
                     </span>
                   )}
@@ -455,45 +460,53 @@ export function WeeklyCalendar({
 
                 <div className="grid grid-cols-1 gap-2 p-3">
                   {col.shifts.length === 0 ? (
-                    <div className="py-2 text-center text-xs italic text-muted-foreground">
+                    <div className="py-3 text-center text-xs italic text-muted-foreground border border-dashed border-border rounded-[6px] bg-muted/5">
                       Sin turnos
                     </div>
                   ) : (
-                    col.shifts.map((item, idx) => (
-                      <div
-                        key={`${item.op.id}-${idx}`}
-                        onClick={() => handleEditClick(item.op, col.dayIndex)}
-                        className="flex items-center justify-between border border-border/60 bg-card p-3"
-                      >
-                        <div className="flex min-w-0 items-center gap-3 overflow-hidden">
-                          <Avatar className="h-9 w-9 shrink-0 rounded-sm border border-border/60">
-                            <AvatarImage src={item.op.image} className="rounded-sm" />
-                            <AvatarFallback className="rounded-sm bg-muted/50 text-[10px] font-semibold text-muted-foreground">
-                              {getInitials(item.op.name || 'U')}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="min-w-0">
-                            <div className="truncate text-sm font-medium text-foreground">
-                              {item.op.name}
-                            </div>
-                            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                              {item.op.role === 'BOSS' ? (
-                                <>
-                                  <Shield className="h-3 w-3" /> Admin
-                                </>
-                              ) : (
-                                'Operador'
-                              )}
+                    col.shifts.map((item, idx) => {
+                      const isActiveNow = isToday &&
+                        new Date().getHours() >= item.shift.start &&
+                        new Date().getHours() < (item.shift.end === 0 ? 24 : item.shift.end);
+                      return (
+                        <div
+                          key={`${item.op.id}-${idx}`}
+                          onClick={() => handleEditClick(item.op, col.dayIndex)}
+                          className={cn(
+                            "flex items-center justify-between border border-border bg-card p-3 rounded-[6px] shadow-none cursor-pointer transition-colors hover:bg-muted/10",
+                            isActiveNow ? "border-emerald-500 bg-emerald-500/5 dark:bg-emerald-500/10 border-l-2" : ""
+                          )}
+                        >
+                          <div className="flex min-w-0 items-center gap-3 overflow-hidden">
+                            <Avatar className="h-9 w-9 shrink-0 rounded-[6px] border border-border">
+                              <AvatarImage src={item.op.image} className="rounded-[6px]" />
+                              <AvatarFallback className="rounded-[6px] bg-muted/50 text-[10px] font-bold text-muted-foreground">
+                                {getInitials(item.op.name || 'U')}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0">
+                              <div className={cn("truncate text-sm font-semibold", isActiveNow ? "text-emerald-700 dark:text-emerald-300" : "text-foreground")}>
+                                {item.op.name}
+                              </div>
+                              <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                                {item.op.role === 'BOSS' ? (
+                                  <>
+                                    <Shield className="h-3 w-3" /> Admin
+                                  </>
+                                ) : (
+                                  'Operador'
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
 
-                        <div className="flex shrink-0 flex-col items-end pl-2 font-mono text-xs">
-                          <span className="text-foreground">{formatTime(item.shift.start)}</span>
-                          <span className="text-muted-foreground">{formatTime(item.shift.end)}</span>
+                          <div className="flex shrink-0 flex-col items-end pl-2 font-mono text-xs">
+                            <span className={cn("font-medium", isActiveNow ? "text-emerald-600 dark:text-emerald-400" : "text-foreground")}>{formatTime(item.shift.start)}</span>
+                            <span className="text-muted-foreground">{formatTime(item.shift.end)}</span>
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               </div>
@@ -503,14 +516,14 @@ export function WeeklyCalendar({
       </ScrollArea>
 
       <Dialog open={!!editingState} onOpenChange={(o) => { if (!o) setEditingState(null); }}>
-        <DialogContent className="operadores-ui mb-0 flex max-h-[85vh] max-w-lg flex-col overflow-hidden rounded-sm border-border bg-card p-0 text-foreground shadow-none ring-1 ring-border">
+        <DialogContent className="operadores-ui mb-0 flex max-h-[85vh] max-w-lg flex-col overflow-hidden rounded-[6px] border-border bg-card p-0 text-foreground shadow-none ring-1 ring-border">
           <div className="p-6 space-y-6 flex-1 overflow-y-auto">
             <div className="flex justify-between items-start border-b border-border pb-4">
               <div>
-                <DialogTitle className="font-semibold text-2xl tracking-tight text-foreground">
+                <DialogTitle className="font-bold text-xl tracking-tight text-foreground">
                   Editar Turno
                 </DialogTitle>
-                <DialogDescription className="mt-1 text-sm text-muted-foreground">
+                <DialogDescription className="mt-1 text-xs text-muted-foreground">
                   {editingState && DAYS[editingState.dayIndex]} ({editingState && weekDates[editingState.dayIndex]?.dateStr})
                 </DialogDescription>
               </div>
@@ -521,13 +534,13 @@ export function WeeklyCalendar({
                     <Button
                       variant="outline"
                       size="sm"
-                      className="bg-rose-50 text-rose-500 hover:bg-rose-100 hover:text-rose-600 border-rose-200"
+                      className="bg-rose-500/5 text-rose-500 hover:bg-rose-500/10 border-rose-500/20 rounded-[6px] h-8 text-xs font-semibold"
                     >
-                      <Plane className="w-4 h-4 mr-2" />
+                      <Plane className="w-3.5 h-3.5 mr-1.5" />
                       Vacaciones
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="bg-card border-border max-w-sm">
+                  <DialogContent className="bg-card border-border max-w-sm rounded-[6px]">
                     <DialogTitle className="sr-only">Confirmar Vacaciones</DialogTitle>
                     <DialogDescription className="sr-only">Seleccione el rango de fechas para las vacaciones.</DialogDescription>
                     <div className="flex flex-col items-center text-center gap-4 py-4">
@@ -548,7 +561,7 @@ export function WeeklyCalendar({
                             type="date"
                             value={vacationStart}
                             onChange={(e) => setVacationStart(e.target.value)}
-                            className="bg-muted/10 border-border text-xs"
+                            className="bg-muted/10 border-border text-xs rounded-[6px]"
                           />
                         </div>
                         <div className="space-y-1">
@@ -557,19 +570,19 @@ export function WeeklyCalendar({
                             type="date"
                             value={vacationEnd}
                             onChange={(e) => setVacationEnd(e.target.value)}
-                            className="bg-muted/10 border-border text-xs"
+                            className="bg-muted/10 border-border text-xs rounded-[6px]"
                           />
                         </div>
                       </div>
 
                       <div className="flex gap-3 w-full mt-4">
-                        <Button variant="ghost" onClick={() => setConfirmingVacation(false)} className="flex-1">
+                        <Button variant="ghost" onClick={() => setConfirmingVacation(false)} className="flex-1 rounded-[6px]">
                           Cancelar
                         </Button>
                         <Button
                           onClick={handleVacationMode}
                           disabled={!vacationStart || !vacationEnd}
-                          className="flex-1 bg-rose-500 hover:bg-rose-600 disabled:opacity-50"
+                          className="flex-1 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 rounded-[6px]"
                         >
                           Aplicar
                         </Button>
@@ -582,15 +595,15 @@ export function WeeklyCalendar({
 
             <div className="space-y-4">
               {editingState?.shifts.length === 0 && (
-                <div className="border-2 border-dashed border-border/30 bg-muted/10 py-8 text-center text-sm text-muted-foreground">
+                <div className="border-2 border-dashed border-border/30 bg-muted/10 py-8 text-center text-sm text-muted-foreground rounded-[6px]">
                   No hay turnos asignados.
                 </div>
               )}
 
               {editingState?.shifts.map((shift) => (
-                <div key={shift.tempId} className="group relative space-y-5 border border-border bg-muted/20 p-4">
+                <div key={shift.tempId} className="group relative space-y-4 border border-border bg-muted/10 p-4 rounded-[6px]">
                   <div className="space-y-2">
-                    <div className="text-[10px] text-muted-foreground tracking-wide uppercase">Días aplicables</div>
+                    <div className="text-[10px] text-muted-foreground tracking-wide uppercase font-semibold">Días aplicables</div>
                     <div className="flex gap-1 flex-wrap">
                       {['D', 'L', 'M', 'M', 'J', 'V', 'S'].map((dayLabel, index) => {
                         const isSelected = shift.days.includes(index);
@@ -604,7 +617,7 @@ export function WeeklyCalendar({
                               updateEditingShift(shift.tempId, 'days', newDays);
                             }}
                             title={DAYS[index]}
-                            className={`h-8 w-8 rounded-sm border text-xs font-medium transition-colors ${isSelected ? 'border-foreground bg-foreground text-background' : 'border-border bg-card text-muted-foreground hover:bg-muted'}`}
+                            className={`h-8 w-8 rounded-[6px] border text-xs font-semibold transition-colors ${isSelected ? 'border-foreground bg-foreground text-background' : 'border-border bg-card text-muted-foreground hover:bg-muted'}`}
                           >
                             {dayLabel}
                           </button>
@@ -615,13 +628,13 @@ export function WeeklyCalendar({
 
                   <div className="flex justify-between items-start gap-4">
                     <div className="space-y-1.5 flex-1">
-                      <div className="text-[10px] text-muted-foreground tracking-wide uppercase">Horario</div>
+                      <div className="text-[10px] text-muted-foreground tracking-wide uppercase font-semibold">Horario</div>
                       <div className="flex items-center gap-2 w-full">
                         <Select value={String(shift.start)} onValueChange={(v) => updateEditingShift(shift.tempId, 'start', Number(v))}>
-                          <SelectTrigger className="h-10 text-sm bg-card border-border rounded-md flex-1 font-mono text-foreground">
+                          <SelectTrigger className="h-10 text-sm bg-card border-border rounded-[6px] flex-1 font-mono text-foreground">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent className="bg-card border-border">
+                          <SelectContent className="bg-card border-border rounded-[6px]">
                             {Array.from({ length: 24 }, (_, i) => i).map((h) => (
                               <SelectItem key={h} value={String(h)}>{formatTime(h)}</SelectItem>
                             ))}
@@ -629,10 +642,10 @@ export function WeeklyCalendar({
                         </Select>
                         <span className="text-muted-foreground">-</span>
                         <Select value={String(shift.end)} onValueChange={(v) => updateEditingShift(shift.tempId, 'end', Number(v))}>
-                          <SelectTrigger className="h-10 text-sm bg-card border-border rounded-md flex-1 font-mono text-foreground">
+                          <SelectTrigger className="h-10 text-sm bg-card border-border rounded-[6px] flex-1 font-mono text-foreground">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent className="bg-card border-border">
+                          <SelectContent className="bg-card border-border rounded-[6px]">
                             {Array.from({ length: 25 }, (_, i) => i).map((h) => (
                               <SelectItem key={h} value={String(h)}>{formatTime(h)}</SelectItem>
                             ))}
@@ -643,7 +656,7 @@ export function WeeklyCalendar({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 -mt-1"
+                      className="h-8 w-8 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 rounded-[6px] -mt-1"
                       onClick={() => removeShiftFromEdit(shift.tempId)}
                     >
                       <Trash2 className="w-4 h-4" />
@@ -651,12 +664,12 @@ export function WeeklyCalendar({
                   </div>
 
                   <div className="space-y-1.5">
-                    <div className="text-[10px] text-muted-foreground tracking-wide uppercase">Asignado a</div>
+                    <div className="text-[10px] text-muted-foreground tracking-wide uppercase font-semibold">Asignado a</div>
                     <Select value={shift.targetOpId} onValueChange={(v) => updateEditingShift(shift.tempId, 'targetOpId', v)}>
-                      <SelectTrigger className={`h-10 text-sm border-border rounded-md ${editingState && shift.targetOpId !== editingState.originalOpId ? 'bg-amber-500/10 text-amber-500 border-amber-500/20 font-medium' : 'bg-card text-foreground'}`}>
+                      <SelectTrigger className={`h-10 text-sm border-border rounded-[6px] ${editingState && shift.targetOpId !== editingState.originalOpId ? 'bg-amber-500/5 text-amber-600 dark:text-amber-400 border-amber-500/20 font-medium' : 'bg-card text-foreground'}`}>
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-card border-border">
+                      <SelectContent className="bg-card border-border rounded-[6px]">
                         {operators.map((op) => (
                           <SelectItem key={op.id} value={op.id}>{op.name}</SelectItem>
                         ))}
@@ -665,10 +678,10 @@ export function WeeklyCalendar({
                   </div>
 
                   {editingState && shift.targetOpId !== editingState.originalOpId && (
-                    <div className="bg-amber-500/10 text-amber-500/90 p-2.5 rounded-md text-xs flex items-center gap-2 border border-amber-500/20">
+                    <div className="bg-amber-500/5 text-amber-600 dark:text-amber-400 p-2.5 rounded-[6px] text-xs flex items-center gap-2 border border-amber-500/20">
                       <User className="w-3 h-3" />
                       Se moverá a{' '}
-                      <span className="font-medium">{operators.find((o) => o.id === shift.targetOpId)?.name}</span>
+                      <span className="font-semibold">{operators.find((o) => o.id === shift.targetOpId)?.name}</span>
                     </div>
                   )}
                 </div>
@@ -677,7 +690,7 @@ export function WeeklyCalendar({
               <Button
                 variant="outline"
                 onClick={addNewShiftToEdit}
-                className="w-full h-12 border-dashed border-border/40 text-muted-foreground hover:text-foreground hover:bg-muted/30 hover:border-border transition-all"
+                className="w-full h-12 border-dashed border-border bg-muted/5 text-muted-foreground hover:text-foreground hover:bg-muted/10 rounded-[6px] transition-all"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Agregar Turno
@@ -686,11 +699,11 @@ export function WeeklyCalendar({
           </div>
 
           <div className="p-4 bg-muted/20 border-t border-border flex gap-3">
-            <Button variant="ghost" onClick={() => setEditingState(null)} className="flex-1 rounded-md hover:bg-muted/50">
+            <Button variant="ghost" onClick={() => setEditingState(null)} className="flex-1 rounded-[6px] hover:bg-muted/50">
               Cancelar
             </Button>
             <Button
-              className="flex-1 rounded-sm bg-foreground font-medium text-background hover:bg-foreground/90"
+              className="flex-1 rounded-[6px] bg-foreground font-semibold text-background hover:bg-foreground/90"
               onClick={saveChanges}
             >
               Guardar cambios

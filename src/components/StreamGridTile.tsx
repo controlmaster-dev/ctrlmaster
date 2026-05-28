@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { cn } from "@/lib/utils";
 
 const SIGNAL_BARS = [4, 7, 5, 8, 3, 6];
 
@@ -21,13 +22,14 @@ export const StreamGridTile = React.memo(function StreamGridTile({
     <button
       type="button"
       onClick={onSelect}
-      className={`relative flex aspect-video min-h-[120px] w-full cursor-pointer flex-col justify-end overflow-hidden rounded-lg bg-black text-left ring-2 ring-offset-2 ring-offset-background transition-[ring-color] sm:min-h-[140px] lg:min-h-[160px] ${
+      className={cn(
+        "relative flex aspect-video min-h-[120px] w-full cursor-pointer flex-col justify-end overflow-hidden rounded-[6px] bg-black text-left transition-all duration-200 sm:min-h-[140px] lg:min-h-[160px] shadow-none",
         isOnAir
-          ? "ring-emerald-500/70"
+          ? "border-2 border-red-500"
           : isPreview
-            ? "ring-primary/80"
-            : "ring-transparent hover:ring-border"
-      }`}
+            ? "border-2 border-emerald-500"
+            : "border border-border/40 hover:border-foreground/20"
+      )}
     >
       <div
         className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-zinc-900/80"
@@ -50,12 +52,12 @@ export const StreamGridTile = React.memo(function StreamGridTile({
         {(isPreview || isOnAir) && (
           <div className="mb-1.5 flex flex-wrap gap-1">
             {isPreview && (
-              <span className="rounded bg-green-600 px-1.5 py-0.5 text-[9px] font-semibold text-white">
+              <span className="rounded-[4px] bg-emerald-500 px-1.5 py-0.5 text-[9px] font-semibold text-white">
                 Vista previa
               </span>
             )}
             {isOnAir && (
-              <span className="rounded bg-red-600 px-1.5 py-0.5 text-[9px] font-semibold text-white">
+              <span className="rounded-[4px] bg-red-500 px-1.5 py-0.5 text-[9px] font-semibold text-white">
                 Al aire
               </span>
             )}

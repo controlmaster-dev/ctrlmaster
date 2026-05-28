@@ -81,29 +81,31 @@ function DayShiftList({
   return (
     <div>
       <div className="mb-2 flex items-baseline justify-between gap-2 border-b border-border/40 pb-2">
-        <span className="text-[10px] font-medium uppercase tracking-wider text-foreground">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           {label}
         </span>
-        <span className="truncate text-[10px] capitalize text-muted-foreground">
+        <span className="truncate text-[10px] capitalize text-muted-foreground font-medium">
           {dateLabel}
         </span>
       </div>
 
       {list.length === 0 ? (
-        <p className="py-5 text-center text-xs text-muted-foreground">Sin turnos</p>
+        <p className="py-4 text-center text-xs text-muted-foreground border border-dashed border-border rounded-[6px] bg-muted/5">
+          Sin turnos
+        </p>
       ) : (
-        <ul className="divide-y divide-border/50 border border-border/60">
+        <ul className="space-y-1.5">
           {list.map((item, idx) => (
             <li
               key={`${item.op.id}-${idx}`}
-              className="flex items-center justify-between gap-3 bg-card px-3 py-2.5"
+              className="flex items-center justify-between gap-3 border border-border bg-card hover:bg-muted/10 rounded-[6px] p-2 transition-all duration-200"
             >
-              <div className="flex min-w-0 items-center gap-2.5">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center border border-border/60 bg-muted/40 text-[10px] font-semibold text-muted-foreground">
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center border border-border bg-muted/40 text-[10px] font-semibold text-muted-foreground rounded-[6px]">
                   {getInitials(item.op.name)}
                 </span>
                 <div className="min-w-0">
-                  <p className="flex items-center gap-1 truncate text-sm font-medium text-foreground">
+                  <p className="flex items-center gap-1 truncate text-xs font-semibold text-foreground">
                     {formatName(item.op.name)}
                     {item.op.role?.toUpperCase() === "BOSS" && (
                       <Shield className="h-3 w-3 shrink-0 text-muted-foreground" />
@@ -111,7 +113,7 @@ function DayShiftList({
                   </p>
                 </div>
               </div>
-              <span className="shrink-0 border border-border/50 bg-muted/30 px-2 py-0.5 font-mono text-[10px] text-muted-foreground">
+              <span className="shrink-0 border border-border bg-muted/30 px-2 py-0.5 font-mono text-[9px] text-muted-foreground rounded-[4px]">
                 {formatTime(item.shift.start)} – {formatTime(item.shift.end)}
               </span>
             </li>
@@ -145,24 +147,24 @@ export function AllDayWidget({ operators, specialEvents = [] }: AllDayWidgetProp
   }, [specialEvents]);
 
   return (
-    <section className="border border-border/60 bg-card shadow-sm">
-      <header className="flex items-center gap-3 border-b border-border/50 px-4 py-3">
-        <div className="flex h-8 w-8 items-center justify-center border border-border/60 bg-muted/30 text-muted-foreground">
+    <section className="border border-border bg-card rounded-[6px] overflow-hidden">
+      <header className="flex items-center gap-3 border-b border-border px-4 py-3 bg-muted/10">
+        <div className="flex h-8 w-8 items-center justify-center border border-border bg-muted/30 text-muted-foreground rounded-[6px]">
           <CalendarDays className="h-4 w-4" />
         </div>
         <div>
-          <h2 className="text-sm font-semibold tracking-tight">Turnos del día</h2>
-          <p className="text-[11px] text-muted-foreground">Hoy y mañana</p>
+          <h2 className="text-sm font-semibold tracking-tight text-foreground">Turnos del día</h2>
+          <p className="text-[10px] text-muted-foreground font-medium">Hoy y mañana</p>
         </div>
       </header>
 
       <div className="space-y-5 p-4">
         {activeEvent && (
-          <div className="border border-border/60 bg-muted/20 px-3 py-2">
-            <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+          <div className="border border-border bg-emerald-500/5 dark:bg-emerald-500/10 px-3 py-2 rounded-[6px]">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
               Evento activo
             </p>
-            <p className="mt-0.5 text-sm font-medium text-foreground">
+            <p className="mt-0.5 text-sm font-semibold text-foreground">
               {activeEvent.name}
             </p>
           </div>

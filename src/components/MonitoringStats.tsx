@@ -72,19 +72,19 @@ const MetricCard = React.memo(function MetricCard({
   accentClass: string;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-lg border border-border/60 bg-card p-5 shadow-sm">
+    <div className="relative overflow-hidden rounded-[6px] border border-border bg-card p-5 shadow-none">
       <div className="flex justify-between gap-3">
         <div className="min-w-0 space-y-1">
           <div className="flex items-center gap-2">
-            <span className={`h-3 w-0.5 shrink-0 rounded-full ${accentClass}`} />
-            <h4 className="text-xs font-medium text-muted-foreground">{title}</h4>
+            <span className={`h-3 w-1 shrink-0 rounded-[2px] ${accentClass}`} />
+            <h4 className="text-xs font-semibold text-muted-foreground">{title}</h4>
           </div>
-          <div className="text-3xl font-light tabular-nums tracking-tight text-foreground sm:text-4xl">
+          <div className="text-3xl font-bold tabular-nums tracking-tight text-foreground sm:text-4xl">
             {value}
           </div>
-          <p className="text-[11px] leading-snug text-muted-foreground">{subtext}</p>
+          <p className="text-[11px] leading-snug text-muted-foreground font-medium">{subtext}</p>
         </div>
-        <div className="shrink-0 rounded-md border border-border/50 bg-muted/30 p-2.5">
+        <div className="shrink-0 rounded-[6px] border border-border bg-muted/30 p-2.5">
           <Icon className={`h-4 w-4 ${color} opacity-90`} />
         </div>
       </div>
@@ -112,27 +112,27 @@ const ChannelCard = React.memo(function ChannelCard({ channel }: { channel: Chan
       : "border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-200";
 
   return (
-    <div className="group relative flex flex-col justify-between overflow-hidden rounded-lg border border-border/50 bg-card/80 p-4 shadow-sm">
+    <div className="group relative flex flex-col justify-between overflow-hidden rounded-[6px] border border-border bg-card p-4 shadow-none">
       <div className="mb-3 flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-foreground">{channel.name}</p>
+          <p className="truncate text-sm font-semibold text-foreground">{channel.name}</p>
         </div>
-        <span className={`shrink-0 rounded-md border px-2 py-0.5 text-[10px] font-medium ${statusStyles}`}>
+        <span className={`shrink-0 rounded-[4px] border px-2 py-0.5 text-[10px] font-semibold ${statusStyles}`}>
           {statusLabel}
         </span>
       </div>
       <div className="grid grid-cols-3 gap-1.5">
-        <div className="rounded-md border border-border/40 bg-muted/20 p-2">
-          <div className="text-sm font-medium tabular-nums text-foreground">{black}</div>
-          <div className="text-[10px] text-muted-foreground">En negro</div>
+        <div className="rounded-[6px] border border-border bg-muted/10 p-2">
+          <div className="text-sm font-bold tabular-nums text-foreground">{black}</div>
+          <div className="text-[10px] text-muted-foreground font-medium">En negro</div>
         </div>
-        <div className="rounded-md border border-border/40 bg-muted/20 p-2">
-          <div className="text-sm font-medium tabular-nums text-foreground">{silence}</div>
-          <div className="text-[10px] text-muted-foreground">Sin audio</div>
+        <div className="rounded-[6px] border border-border bg-muted/10 p-2">
+          <div className="text-sm font-bold tabular-nums text-foreground">{silence}</div>
+          <div className="text-[10px] text-muted-foreground font-medium">Sin audio</div>
         </div>
-        <div className="rounded-md border border-border/40 bg-muted/20 p-2">
-          <div className="text-sm font-medium tabular-nums text-muted-foreground">{err}</div>
-          <div className="text-[10px] text-muted-foreground">Otros avisos</div>
+        <div className="rounded-[6px] border border-border bg-muted/10 p-2">
+          <div className="text-sm font-bold tabular-nums text-muted-foreground">{err}</div>
+          <div className="text-[10px] text-muted-foreground font-medium">Otros</div>
         </div>
       </div>
     </div>
@@ -302,16 +302,16 @@ export function MonitoringStats() {
               ? Array.from({ length: 4 }).map((_, i) => (
                   <Skeleton
                     key={i}
-                    className="h-36 rounded-lg border border-border/40"
+                    className="h-36 rounded-[6px] border border-border"
                   />
                 ))
               : channelStats.length === 0
                 ? (
-                    <div className="col-span-full rounded-lg border border-dashed border-border/60 bg-muted/10 px-6 py-12 text-center">
-                      <p className="text-sm font-medium text-foreground">
+                    <div className="col-span-full rounded-[6px] border border-dashed border-border bg-muted/5 px-6 py-12 text-center">
+                      <p className="text-sm font-semibold text-foreground">
                         No hay registros en las últimas 24 horas
                       </p>
-                      <p className="mt-2 text-sm text-muted-foreground">
+                      <p className="mt-2 text-sm text-muted-foreground font-medium">
                         Cuando el sistema detecte algo en los canales, lo verás aquí.
                       </p>
                     </div>
