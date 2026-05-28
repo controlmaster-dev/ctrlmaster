@@ -32,8 +32,13 @@ const nextConfig = {
   },
   output: "standalone",
   productionBrowserSourceMaps: false,
+  poweredByHeader: false,
   eslint: {
     ignoreDuringBuilds: true,
+  },
+  experimental: {
+    // Tree-shake large barrel imports so only used icons/helpers ship.
+    optimizePackageImports: ['lucide-react', 'date-fns'],
   },
   // Code splitting optimization (production only — skip in dev for speed)
   webpack: (config, { isServer, dev }) => {
@@ -78,10 +83,37 @@ const nextConfig = {
     return config;
   },
   async headers() {
+    const isProd = process.env.NODE_ENV === 'production';
+    // In development we also allow plain http/ws so local services (e.g. the
+    // WhatsApp API on http://localhost:3001 and HMR websockets) keep working.
+    const connectSrc = isProd
+      ? "connect-src 'self' https:"
+      : "connect-src 'self' https: http: ws: wss:";
+    const csp = [
+      "default-src 'self'",
+      "base-uri 'self'",
+      "object-src 'none'",
+      "frame-ancestors 'self'",
+      "form-action 'self'",
+      "img-src 'self' data: blob: https:",
+      // Adobe Typekit serves the "obviously-variable" font files.
+      "font-src 'self' data: https://use.typekit.net",
+      // Typekit also delivers its font CSS via @import from p.typekit.net.
+      "style-src 'self' 'unsafe-inline' https://p.typekit.net https://use.typekit.net",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      connectSrc,
+      "frame-src 'self' https:",
+      "media-src 'self' https: blob:",
+    ].join('; ');
+
     return [
       {
         source: '/(.*)',
         headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: csp,
+          },
           {
             key: 'X-Frame-Options',
             value: 'DENY',

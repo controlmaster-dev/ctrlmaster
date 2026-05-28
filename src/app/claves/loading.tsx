@@ -1,3 +1,5 @@
+import { ClavesSkeleton } from "@/components/skeletons/ClavesSkeleton";
+
 export default function Loading() {
-  return null;
+  return <ClavesSkeleton />;
 }

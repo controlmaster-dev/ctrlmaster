@@ -3,8 +3,12 @@ import sql from '@/lib/db';
 import { sendEmail } from '@/lib/email';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
+import { requireCronAuth } from '@/lib/apiAuth';
 
-export async function GET() {
+export async function GET(req: Request) {
+  const cronCheck = requireCronAuth(req);
+  if (cronCheck) return cronCheck;
+
   try {
     const adminEmail = 'knunez@enlace.org';
 
@@ -16,7 +20,7 @@ export async function GET() {
     console.log(`[Cron Summary] Generating daily report for ${dateStr}`);
 
     const incompleteTasks = await sql`
-      SELECT t.*, row_to_json(u.*) AS "user"
+      SELECT t.*, json_build_object('id', u."id", 'name', u."name", 'email', u."email") AS "user"
       FROM "Task" t
       JOIN "User" u ON u."id" = t."userId"
       WHERE t."scheduledDate" = ${dateStr}

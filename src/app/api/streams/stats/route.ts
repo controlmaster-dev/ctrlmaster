@@ -1,31 +1,36 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import sql from '@/lib/db';
 import { subDays } from 'date-fns';
+import { validateApiAuth } from '@/lib/apiAuth';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const authResult = await validateApiAuth(req);
+    if (authResult instanceof NextResponse) return authResult;
+
     const since = subDays(new Date(), 1);
 
-    const metrics = await sql`
-      SELECT * FROM "StreamMetric"
+    // Aggregate counts in SQL instead of pulling every row into Node.
+    const rows = await sql`
+      SELECT "channel",
+             COUNT(*) FILTER (WHERE "type" = 'ERROR')::int AS "errors",
+             COUNT(*) FILTER (WHERE "type" = 'BLACK_SCREEN')::int AS "blackScreen",
+             COUNT(*) FILTER (WHERE "type" = 'SILENCE')::int AS "silence"
+      FROM "StreamMetric"
       WHERE "createdAt" >= ${since.toISOString()}
+      GROUP BY "channel"
     `;
 
-    const aggregation: Record<string, any> = {};
+    const result = rows.map((r: any) => ({
+      name: r.channel,
+      errors: r.errors,
+      blackScreen: r.blackScreen,
+      silence: r.silence,
+    }));
 
-    metrics.forEach((m: any) => {
-      if (!aggregation[m.channel]) {
-        aggregation[m.channel] = { name: m.channel, errors: 0, blackScreen: 0, silence: 0 };
-      }
-
-      if (m.type === 'ERROR') aggregation[m.channel].errors++;
-      if (m.type === 'BLACK_SCREEN') aggregation[m.channel].blackScreen++;
-      if (m.type === 'SILENCE') aggregation[m.channel].silence++;
+    return NextResponse.json(result, {
+      headers: { 'Cache-Control': 'private, max-age=30' },
     });
-
-    const result = Object.values(aggregation);
-
-    return NextResponse.json(result);
   } catch (error) {
     console.error('Error fetching stream stats:', error);
     return NextResponse.json({ error: 'Failed to fetch stats' }, { status: 500 });

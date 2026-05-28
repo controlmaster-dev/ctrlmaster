@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import type { Report } from "@/types/report";
 import type { User } from "@/types/auth";
 import { UI_CONFIG, STORAGE_KEYS } from "@/config/constants";
-import { prefetchReportDetails } from "@/lib/reportDetailCache";
+import { prefetchReportDetails, invalidateReportDetailCache } from "@/lib/reportDetailCache";
 import { prefetchBitcentralNearby } from "@/lib/bitcentralCache";
 import {
   getDashboardCache,
@@ -219,6 +219,9 @@ export function useDashboardBundle() {
     registerRefetch("reports", refetch);
 
     const waInterval = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+        return;
+      }
       fetch("/api/proxy/whatsapp")
         .then((r) => r.json())
         .then((data) => {
@@ -484,11 +487,11 @@ export function useResolveReport(
           credentials: "include",
         });
         if (res.ok) {
+          invalidateReportDetailCache(id);
           invalidateDashboardCache();
           triggerRefetch("dashboard");
           triggerRefetch("reports");
           onSuccess("¡Incidencia resuelta!");
-          setTimeout(() => window.location.reload(), 1500);
         } else {
           throw new Error("Response not OK");
         }

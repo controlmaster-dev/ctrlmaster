@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import sql from '@/lib/db';
 import { withRateLimit } from '@/lib/rateLimitEnhanced';
+import { hashPassword } from '@/lib/crypto';
 
 export async function POST(req: NextRequest) {
     try {
@@ -29,9 +30,9 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        if (password.length < 6) {
+        if (password.length < 8) {
             return NextResponse.json(
-                { error: 'La contraseña debe tener al menos 6 caracteres' },
+                { error: 'La contraseña debe tener al menos 8 caracteres' },
                 { status: 400 }
             );
         }
@@ -79,10 +80,11 @@ export async function POST(req: NextRequest) {
 
         const username = email.split('@')[0].toLowerCase();
         const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff&bold=true&size=128`;
+        const hashedPassword = await hashPassword(password);
 
         const [newUser] = await sql`
             INSERT INTO "User" ("name", "email", "username", "password", "role", "image")
-            VALUES (${name.trim()}, ${email.toLowerCase().trim()}, ${username}, ${password}, 'OPERATOR', ${avatarUrl})
+            VALUES (${name.trim()}, ${email.toLowerCase().trim()}, ${username}, ${hashedPassword}, 'OPERATOR', ${avatarUrl})
             RETURNING *
         `;
 
@@ -105,10 +107,7 @@ export async function POST(req: NextRequest) {
     } catch (error) {
         console.error('Registration Error:', error);
         return NextResponse.json(
-            {
-                error: 'Error en el servidor',
-                details: error instanceof Error ? error.message : String(error),
-            },
+            { error: 'Error en el servidor' },
             { status: 500 }
         );
     }

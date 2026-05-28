@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import sql from '@/lib/db';
+import { validateApiAuth } from '@/lib/apiAuth';
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { userId, path } = body;
+    const authResult = await validateApiAuth(req);
+    if (authResult instanceof NextResponse) return authResult;
 
-    if (!userId) {
-      return NextResponse.json({ error: "User ID required" }, { status: 400 });
-    }
+    const body = await req.json();
+    const { path } = body;
+    const userId = authResult.user.id;
 
     await sql`
       UPDATE "User"

@@ -96,7 +96,10 @@ export function useOperadoresBundle(currentWeekStart: string) {
       void fetchAll(false);
     }
 
-    const timer = setInterval(() => void fetchAll(true), 60000);
+    const timer = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+      void fetchAll(true);
+    }, 60000);
     return () => {
       mountedRef.current = false;
       clearInterval(timer);

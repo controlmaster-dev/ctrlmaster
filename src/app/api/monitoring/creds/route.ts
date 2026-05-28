@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateApiAuth } from "@/lib/apiAuth";
 
 export async function GET(req: NextRequest) {
-  // Simple check for MONITOR_USER and MONITOR_PASS in environment
+  const authResult = await validateApiAuth(req);
+  if (authResult instanceof NextResponse) return authResult;
+
   const user = process.env.MONITOR_USER;
   const pass = process.env.MONITOR_PASS;
 
@@ -12,11 +15,6 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  // We return them. 
-  // IMPORTANT: In a real production app, we would check the session here.
-  // Since we are useAuth() in the frontend, the monitoring page itself 
-  // is protected. But let's add a basic check if possible.
-  
   return NextResponse.json({
     user,
     pass,

@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
   const YT_CHANNEL_ID = 'UC0qFX9cnDZCMSJriRqcN37A';
 
   try {

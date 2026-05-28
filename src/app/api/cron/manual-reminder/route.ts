@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     const formattedDate = format(targetDate, "EEEE d 'de' MMMM", { locale: es });
 
     const baseScheduleData = await sql`
-      SELECT ws.*, row_to_json(u.*) AS "user"
+      SELECT ws.*, json_build_object('id', u."id", 'name', u."name") AS "user"
       FROM "WeeklySchedule" ws
       JOIN "User" u ON u."id" = ws."userId"
     `;
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     }, {});
 
     const overridesData = await sql`
-      SELECT ws.*, row_to_json(u.*) AS "user"
+      SELECT ws.*, json_build_object('id', u."id", 'name', u."name") AS "user"
       FROM "WorkSchedule" ws
       JOIN "User" u ON u."id" = ws."userId"
       WHERE ws."date" >= ${addDays(targetDate, -3).toISOString().split('T')[0]}::date
@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
           const transporter = nodemailer.createTransport({
             host: 'smtp.office365.com', port: 587, secure: false,
             auth: { user: process.env.SMTP_EMAIL, pass: process.env.SMTP_PASSWORD },
-            tls: { ciphers: 'SSLv3', rejectUnauthorized: false }
+            tls: { minVersion: 'TLSv1.2' }
           });
           await transporter.sendMail({
             from: `"Control Master" <${process.env.SMTP_EMAIL}>`,

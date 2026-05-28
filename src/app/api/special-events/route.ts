@@ -1,14 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import sql from '@/lib/db';
+import { validateApiAuth, requireRole } from '@/lib/apiAuth';
 
 export const dynamic = 'force-dynamic';
+
+const EVENT_ADMIN_ROLES = ['ADMIN', 'BOSS', 'ENGINEER'];
 
 export async function GET() {
   try {
     const events = await sql`
-      SELECT se.*,
-             (SELECT COUNT(*)::int FROM "SpecialEventShift" ses WHERE ses."eventId" = se."id") AS "shiftCount"
+      SELECT se."id", se."name", se."startDate", se."endDate", se."isActive", se."createdAt",
+             COALESCE(ses."shiftCount", 0)::int AS "shiftCount"
       FROM "SpecialEvent" se
+      LEFT JOIN (
+        SELECT "eventId", COUNT(*) AS "shiftCount" FROM "SpecialEventShift" GROUP BY "eventId"
+      ) ses ON ses."eventId" = se."id"
       ORDER BY se."startDate" DESC
     `;
 
@@ -17,7 +23,9 @@ export async function GET() {
       _count: { shifts: e.shiftCount },
     }));
 
-    return NextResponse.json(mapped);
+    return NextResponse.json(mapped, {
+      headers: { 'Cache-Control': 'private, max-age=60' },
+    });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : String(error) },
@@ -28,6 +36,11 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
+    const authResult = await validateApiAuth(req);
+    if (authResult instanceof NextResponse) return authResult;
+    const roleResult = requireRole(authResult.user, EVENT_ADMIN_ROLES);
+    if (roleResult instanceof NextResponse) return roleResult;
+
     const body = await req.json();
     const { name, startDate, endDate } = body;
 
@@ -52,6 +65,11 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
+    const authResult = await validateApiAuth(req);
+    if (authResult instanceof NextResponse) return authResult;
+    const roleResult = requireRole(authResult.user, EVENT_ADMIN_ROLES);
+    if (roleResult instanceof NextResponse) return roleResult;
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: "ID required" }, { status: 400 });
@@ -68,6 +86,11 @@ export async function DELETE(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
+    const authResult = await validateApiAuth(req);
+    if (authResult instanceof NextResponse) return authResult;
+    const roleResult = requireRole(authResult.user, EVENT_ADMIN_ROLES);
+    if (roleResult instanceof NextResponse) return roleResult;
+
     const body = await req.json();
     const { id, isActive, name, startDate, endDate } = body;
 

@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import sql from '@/lib/db';
 import { sendEmail } from '@/lib/email';
 import { ApiError, ValidationError } from '@/lib/errors';
+import { validateApiAuth } from '@/lib/apiAuth';
 import { z } from 'zod';
 
 const createCommentSchema = z.object({
   reportId: z.string().min(1, 'ID de reporte es requerido'),
-  authorId: z.string().min(1, 'ID de autor es requerido'),
   content: z.string().min(1, 'El contenido del comentario es requerido').max(2000),
   parentId: z.string().nullable().optional(),
   mentionedUserIds: z.array(z.string()).nullable().optional(),
@@ -84,6 +84,9 @@ function buildEmailTemplate(
 
 export async function POST(req: NextRequest) {
   try {
+    const authResult = await validateApiAuth(req);
+    if (authResult instanceof NextResponse) return authResult;
+
     const body = await req.json();
     const result = createCommentSchema.safeParse(body);
 
@@ -91,7 +94,8 @@ export async function POST(req: NextRequest) {
       throw new ValidationError('Datos de entrada inválidos', result.error.issues);
     }
 
-    const { reportId, authorId, content, parentId, mentionedUserIds } = result.data;
+    const { reportId, content, parentId, mentionedUserIds } = result.data;
+    const authorId = authResult.user.id;
 
     const [newComment] = await sql`
       INSERT INTO "Comment" ("id", "reportId", "authorId", "content", "parentId", "createdAt")

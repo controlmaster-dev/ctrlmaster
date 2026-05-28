@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import sql from '@/lib/db';
+import { validateApiAuth, requireRole } from '@/lib/apiAuth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
+    const authResult = await validateApiAuth(req);
+    if (authResult instanceof NextResponse) return authResult;
+
     const { searchParams } = new URL(req.url);
     const eventId = searchParams.get('eventId');
 
@@ -30,6 +34,11 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const authResult = await validateApiAuth(req);
+    if (authResult instanceof NextResponse) return authResult;
+    const roleResult = requireRole(authResult.user, ['ADMIN', 'BOSS', 'ENGINEER']);
+    if (roleResult instanceof NextResponse) return roleResult;
+
     const body = await req.json();
     const { eventId, userId, shifts } = body;
 

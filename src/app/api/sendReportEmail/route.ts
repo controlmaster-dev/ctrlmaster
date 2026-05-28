@@ -2,10 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import { emailRateLimiter } from '@/lib/rateLimit';
 import sql from '@/lib/db';
+import { validateApiAuth } from '@/lib/apiAuth';
 
 export async function POST(req: NextRequest) {
   let reportId = "";
   try {
+    const authResult = await validateApiAuth(req);
+    if (authResult instanceof NextResponse) return authResult;
+
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
     if (!file) throw new Error('No se envió el archivo PDF');
@@ -241,8 +245,7 @@ export async function POST(req: NextRequest) {
         pass: process.env.SMTP_PASSWORD
       },
       tls: {
-        ciphers: 'SSLv3',
-        rejectUnauthorized: false
+        minVersion: 'TLSv1.2'
       }
     });
 

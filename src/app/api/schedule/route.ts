@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import sql from '@/lib/db';
 import { ApiError, ValidationError } from '@/lib/errors';
+import { validateApiAuth } from '@/lib/apiAuth';
 import { z } from 'zod';
 
 const getScheduleSchema = z.object({
@@ -15,6 +16,9 @@ const upsertScheduleSchema = z.object({
 
 export async function GET(req: NextRequest) {
   try {
+    const authResult = await validateApiAuth(req);
+    if (authResult instanceof NextResponse) return authResult;
+
     const { searchParams } = new URL(req.url);
     const start = searchParams.get('start');
     const end = searchParams.get('end');
@@ -27,7 +31,7 @@ export async function GET(req: NextRequest) {
     }
 
     const overrides = await sql`
-      SELECT ws.*, row_to_json(u.*) AS "user"
+      SELECT ws.*, json_build_object('id', u."id", 'name', u."name", 'image', u."image") AS "user"
       FROM "WorkSchedule" ws
       JOIN "User" u ON u."id" = ws."userId"
       WHERE ws."date" >= ${result.data.start}::date
@@ -50,6 +54,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const authResult = await validateApiAuth(req);
+    if (authResult instanceof NextResponse) return authResult;
+
     const body = await req.json();
     const result = upsertScheduleSchema.safeParse(body);
 

@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import sql from '@/lib/db';
 import { sendEmail } from '@/lib/email';
 import { loginSchema } from '@/lib/validation';
-import { verifyPassword } from '@/lib/crypto';
+import { verifyPassword, needsRehash, hashPassword } from '@/lib/crypto';
 import { withRateLimit } from '@/lib/rateLimitEnhanced';
 import { AuthenticationError, ValidationError, ApiError } from '@/lib/errors';
 import { createToken } from '@/lib/auth';
@@ -121,6 +121,16 @@ export async function POST(req: NextRequest) {
 
     if (!isValidPassword) {
       throw new AuthenticationError('Credenciales inválidas');
+    }
+
+    // Lazily upgrade legacy (plaintext / SHA-256) hashes to salted scrypt.
+    if (needsRehash(user.password)) {
+      try {
+        const upgraded = await hashPassword(password);
+        await sql`UPDATE "User" SET "password" = ${upgraded} WHERE "id" = ${user.id}`;
+      } catch (rehashError) {
+        console.error('Password rehash failed:', rehashError);
+      }
     }
 
     const forwardedFor = req.headers.get('x-forwarded-for');

@@ -1,16 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import sql from '@/lib/db';
 import { ApiError, ValidationError } from '@/lib/errors';
+import { validateApiAuth } from '@/lib/apiAuth';
 import { z } from 'zod';
 
 const reactionSchema = z.object({
   reportId: z.string().min(1, 'ID de reporte es requerido'),
-  authorId: z.string().min(1, 'ID de autor es requerido'),
   emoji: z.string().min(1, 'Emoji es requerido'),
 });
 
 export async function POST(req: NextRequest) {
   try {
+    const authResult = await validateApiAuth(req);
+    if (authResult instanceof NextResponse) return authResult;
+
     const body = await req.json();
     const result = reactionSchema.safeParse(body);
 
@@ -18,7 +21,8 @@ export async function POST(req: NextRequest) {
       throw new ValidationError('Datos de reacción inválidos', result.error.issues);
     }
 
-    const { reportId, authorId, emoji } = result.data;
+    const { reportId, emoji } = result.data;
+    const authorId = authResult.user.id;
 
     const [existingReaction] = await sql`
       SELECT * FROM "Reaction"

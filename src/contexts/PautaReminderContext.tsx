@@ -1,11 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { addDays, format, isSameDay, startOfWeek } from "date-fns";
+import { addDays, format, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { getBitcentralUser, scheduleDateKey } from "@/lib/schedule";
+import {
+  getBitcentralWeekStart,
+  prefetchBitcentralWeek,
+} from "@/lib/bitcentralCache";
 import {
   PautaReminderNotice,
   type PautaReminderInfo,
@@ -42,21 +46,24 @@ export function PautaReminderProvider({ children }: { children: ReactNode }) {
   const [dismissedKey, setDismissedKey] = useState<string | null>(null);
 
   const fetchSchedule = useCallback(async () => {
-    const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
-    const end = addDays(weekStart, 8);
+    // Reuse the shared Bitcentral cache (same data the widget/prefetch use) to
+    // avoid duplicate /api/schedule + /api/special-events + /api/schedule/config
+    // requests. The reminder targets today/tomorrow, so cover current + next week.
+    const currentWeek = getBitcentralWeekStart();
+    const nextWeek = addDays(currentWeek, 7);
 
     try {
-      const [overridesRes, eventsRes, configRes] = await Promise.all([
-        fetch(
-          `/api/schedule?start=${weekStart.toISOString()}&end=${end.toISOString()}`
-        ),
-        fetch("/api/special-events"),
-        fetch("/api/schedule/config"),
+      const [current, next] = await Promise.all([
+        prefetchBitcentralWeek(currentWeek),
+        prefetchBitcentralWeek(nextWeek),
       ]);
 
-      if (overridesRes.ok) setOverrides(await overridesRes.json());
-      if (eventsRes.ok) setEvents(await eventsRes.json());
-      if (configRes.ok) setBaseSchedule(await configRes.json());
+      setOverrides([
+        ...(current?.overrides ?? []),
+        ...(next?.overrides ?? []),
+      ]);
+      setEvents(current?.events ?? next?.events ?? []);
+      setBaseSchedule(current?.baseSchedule ?? []);
     } catch (error) {
       console.error("Pauta reminder fetch:", error);
     } finally {
@@ -74,10 +81,13 @@ export function PautaReminderProvider({ children }: { children: ReactNode }) {
     fetchSchedule();
 
     const interval = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+        return;
+      }
       const now = new Date();
       setToday((prev) => (isSameDay(prev, now) ? prev : now));
       fetchSchedule();
-    }, 60_000);
+    }, 5 * 60_000);
 
     return () => clearInterval(interval);
   }, [user, authLoading, pathname, fetchSchedule]);

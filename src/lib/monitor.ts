@@ -1,4 +1,19 @@
 import puppeteer from 'puppeteer';
+
+/**
+ * Screenshots are best-effort: on serverless hosts (Vercel) the filesystem is
+ * read-only, so a failed write must not abort the monitoring run.
+ */
+async function safeScreenshot(page: any, path: string, fullPage = false) {
+  try {
+    await page.screenshot({ path, fullPage });
+    return path;
+  } catch (err) {
+    console.warn(`[Monitor] Screenshot skipped (${path}):`, err instanceof Error ? err.message : err);
+    return undefined;
+  }
+}
+
 export async function checkMultiviewStatus() {
   let browser = null;
   try {
@@ -17,9 +32,12 @@ export async function checkMultiviewStatus() {
     const page = await browser.newPage();
     console.log("[Monitor] Navigating to login...");
     await page.goto('https://componentes.enlace.org/live/multiview/', { waitUntil: 'networkidle2', timeout: 60000 });
-    await page.screenshot({ path: './public/monitor_login_page.png' });
-    const email = process.env.MONITOR_USER || 'controlmaster';
-    const password = process.env.MONITOR_PASS || 'Ae$QC9?3U';
+    await safeScreenshot(page, './public/monitor_login_page.png');
+    const email = process.env.MONITOR_USER;
+    const password = process.env.MONITOR_PASS;
+    if (!email || !password) {
+      throw new Error('MONITOR_USER / MONITOR_PASS no están configurados en el servidor.');
+    }
     const emailInput = await page.$('input[placeholder="Usuario"]');
     if (emailInput) {
       console.log('[Monitor] Login form detected via Placeholders. Entering credentials...');
@@ -51,9 +69,8 @@ export async function checkMultiviewStatus() {
     await new Promise((r) => setTimeout(r, 10000));
 
 
-    const screenshotPath = './public/monitor_result.png';
-    await page.screenshot({ path: screenshotPath, fullPage: true });
-    console.log(`[Monitor] Result screenshot saved to ${screenshotPath}`);
+    const screenshotPath = await safeScreenshot(page, './public/monitor_result.png', true);
+    if (screenshotPath) console.log(`[Monitor] Result screenshot saved to ${screenshotPath}`);
 
     let totalVideos = 0;
     const allStatuses = [];

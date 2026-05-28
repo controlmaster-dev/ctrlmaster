@@ -1,20 +1,30 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import sql from '@/lib/db';
+import { validateApiAuth, requireRole } from '@/lib/apiAuth';
 
 export const dynamic = 'force-dynamic';
 
+const ADMIN_ROLES = ['ADMIN', 'BOSS', 'ENGINEER'];
+
 function generateCode(): string {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const bytes = new Uint8Array(8);
+    crypto.getRandomValues(bytes);
     let code = '';
     for (let i = 0; i < 8; i++) {
-        code += chars.charAt(Math.floor(Math.random() * chars.length));
+        code += chars.charAt(bytes[i] % chars.length);
     }
     return code;
 }
 
 // GET - List all registration codes (admin only)
-export async function GET() {
+export async function GET(req: NextRequest) {
     try {
+        const authResult = await validateApiAuth(req);
+        if (authResult instanceof NextResponse) return authResult;
+        const roleResult = requireRole(authResult.user, ADMIN_ROLES);
+        if (roleResult instanceof NextResponse) return roleResult;
+
         const codes = await sql`
             SELECT * FROM "RegistrationCode" ORDER BY "createdAt" DESC
         `;
@@ -38,14 +48,14 @@ export async function GET() {
 }
 
 // POST - Generate a new registration code
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
     try {
-        const body = await req.json();
-        const { createdById } = body;
+        const authResult = await validateApiAuth(req);
+        if (authResult instanceof NextResponse) return authResult;
+        const roleResult = requireRole(authResult.user, ADMIN_ROLES);
+        if (roleResult instanceof NextResponse) return roleResult;
 
-        if (!createdById) {
-            return NextResponse.json({ error: 'createdById is required' }, { status: 400 });
-        }
+        const createdById = authResult.user.id;
 
         let code = generateCode();
         let attempts = 0;
@@ -74,8 +84,13 @@ export async function POST(req: Request) {
 }
 
 // DELETE - Remove a registration code
-export async function DELETE(req: Request) {
+export async function DELETE(req: NextRequest) {
     try {
+        const authResult = await validateApiAuth(req);
+        if (authResult instanceof NextResponse) return authResult;
+        const roleResult = requireRole(authResult.user, ADMIN_ROLES);
+        if (roleResult instanceof NextResponse) return roleResult;
+
         const { searchParams } = new URL(req.url);
         const id = searchParams.get('id');
 

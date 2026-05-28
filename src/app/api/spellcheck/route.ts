@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { validateApiAuth } from '@/lib/apiAuth';
 
 export async function POST(req: NextRequest) {
   try {
+    const authResult = await validateApiAuth(req);
+    if (authResult instanceof NextResponse) return authResult;
+
     let { text } = await req.json();
 
     if (!text) {

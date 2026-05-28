@@ -13,14 +13,19 @@ const PUBLIC_ROUTES = [
   '/operadores/monitoreo',
 ];
 
-// API routes that are public (no auth required)
+// API routes that are public (no session cookie required).
+// NOTE: /api/cron/* is reachable without a cookie because Vercel Cron does not
+// send one; those routes enforce a Bearer CRON_SECRET internally instead.
+// /api/users and /api/special-events stay readable for the public "/operadores"
+// kiosk, but their GET handlers strip sensitive PII for unauthenticated callers.
 const PUBLIC_API_ROUTES = [
   '/api/auth/login',
   '/api/auth/register',
-  '/api/auth/registration-codes',
   '/api/auth/verify',
   '/api/users',
   '/api/special-events',
+  // ICS calendar feeds are subscribed to by external calendar apps that do
+  // not send cookies; the feed is gated by an unguessable user UUID.
   '/api/calendar',
   '/api/health',
   '/api/cron',
@@ -42,8 +47,6 @@ const SECURITY_HEADERS = {
   // Permissions policy
   'Permissions-Policy':
     'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
-  // HTTP Strict Transport Security (production only)
-  // 'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
 } as const;
 
 /**
@@ -138,6 +141,14 @@ export async function middleware(request: NextRequest) {
   Object.entries(SECURITY_HEADERS).forEach(([key, value]) => {
     response.headers.set(key, value);
   });
+
+  // HSTS only in production (avoids pinning HTTPS on localhost)
+  if (process.env.NODE_ENV === 'production') {
+    response.headers.set(
+      'Strict-Transport-Security',
+      'max-age=31536000; includeSubDomains; preload'
+    );
+  }
 
   return response;
 }

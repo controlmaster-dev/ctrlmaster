@@ -44,11 +44,15 @@ export function prefetchReportDetail(id: string): Promise<unknown | null> {
   return promise;
 }
 
-/** Precarga varios reportes en paralelo (máx. 4 a la vez) */
+/**
+ * Precarga unos pocos reportes (los más relevantes). El resto se precarga al
+ * pasar el cursor (hover) sobre cada fila, evitando 10-20 requests por carga.
+ */
+const MAX_BULK_PREFETCH = 3;
+
 export async function prefetchReportDetails(ids: string[]) {
-  const todo = ids.filter((id) => !getReportDetailCache(id) && !inflight.has(id));
-  const chunk = 4;
-  for (let i = 0; i < todo.length; i += chunk) {
-    await Promise.all(todo.slice(i, i + chunk).map((id) => prefetchReportDetail(id)));
-  }
+  const todo = ids
+    .filter((id) => !getReportDetailCache(id) && !inflight.has(id))
+    .slice(0, MAX_BULK_PREFETCH);
+  await Promise.all(todo.map((id) => prefetchReportDetail(id)));
 }

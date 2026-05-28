@@ -138,10 +138,12 @@ export async function prefetchBitcentralWeek(
   }
 }
 
-/** Precarga semana actual y adyacentes (navegación más fluida) */
+/**
+ * Precarga solo la semana actual al iniciar sesión.
+ * Las semanas adyacentes se cargan bajo demanda al navegar (prefetchBitcentralWeek),
+ * evitando 2 fetches extra (x3 endpoints) en cada login.
+ */
 export async function prefetchBitcentralNearby(anchor = new Date()) {
   const current = getBitcentralWeekStart(anchor);
   await prefetchBitcentralWeek(current);
-  void prefetchBitcentralWeek(addDays(current, -7));
-  void prefetchBitcentralWeek(addDays(current, 7));
 }

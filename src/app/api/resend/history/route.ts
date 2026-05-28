@@ -1,18 +1,20 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { validateApiAuth, requireRole } from '@/lib/apiAuth';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
-  console.log("🔍 API /api/resend/history HIT");
+export async function GET(req: NextRequest) {
   try {
+    const authResult = await validateApiAuth(req);
+    if (authResult instanceof NextResponse) return authResult;
+    const roleResult = requireRole(authResult.user, ['ADMIN', 'BOSS', 'ENGINEER']);
+    if (roleResult instanceof NextResponse) return roleResult;
+
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) {
-      console.error("❌ No RESEND_API_KEY found in environment");
+      console.error("No RESEND_API_KEY found in environment");
       return NextResponse.json({ data: [] });
     }
-
-    console.log("🔑 API Key found (starts with):", apiKey.substring(0, 5) + "...");
-
 
     const res = await fetch('https://api.resend.com/emails', {
       headers: {

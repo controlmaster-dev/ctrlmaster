@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
 import { checkMultiviewStatus } from '@/lib/monitor';
 import sql from '@/lib/db';
+import { requireCronAuth } from '@/lib/apiAuth';
 
-export async function GET() {
+export async function GET(req: Request) {
+  const cronCheck = requireCronAuth(req);
+  if (cronCheck) return cronCheck;
+
   try {
     console.log("[Cron] Starting Multiview Monitor...");
     const result = await checkMultiviewStatus();

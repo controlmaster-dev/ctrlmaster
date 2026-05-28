@@ -25,6 +25,11 @@ export function WeeklyTrendChart({ loading, chartData }: WeeklyTrendChartProps) 
     return { fillPath, linePath };
   }, [chartData.values]);
 
+  const maxValue = useMemo(
+    () => Math.max(...(chartData.values.length ? chartData.values : [0]), 5),
+    [chartData.values]
+  );
+
   if (loading) {
     return (
       <div className="w-full h-full flex items-end justify-between gap-2">
@@ -54,9 +59,8 @@ export function WeeklyTrendChart({ loading, chartData }: WeeklyTrendChartProps) 
         </svg>
 
         {chartData.values.map((val, i) => {
-          const max = Math.max(...chartData.values, 5);
           const xPercent = (i / (chartData.values.length - 1)) * 100;
-          const yPercent = 90 - (val / max) * 80;
+          const yPercent = 90 - (val / maxValue) * 80;
 
           return (
             <div

@@ -22,6 +22,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { getReportDetailCache, prefetchReportDetail } from "@/lib/reportDetailCache";
+import { fetchMentionUsers, getCachedMentionUsers } from "@/lib/mentionUsersCache";
 import { cn } from "@/lib/utils";
 
 interface ReportDetailModalProps {
@@ -96,6 +97,9 @@ export function ReportDetailModal({
 }: ReportDetailModalProps) {
   const [fullReport, setFullReport] = React.useState<any>(null);
   const [loadingSocials, setLoadingSocials] = React.useState(false);
+  const [mentionUsers, setMentionUsers] = React.useState<any[]>(
+    () => getCachedMentionUsers() ?? []
+  );
 
   const loadDetail = React.useCallback(async (reportId: string, silent = false) => {
     if (!silent) setLoadingSocials(true);
@@ -140,6 +144,9 @@ export function ReportDetailModal({
         body: JSON.stringify({ reportId: report.id, userId: currentUser.id }),
       }).catch(console.error);
     }
+
+    // Load the mention user list lazily (cached across opens).
+    void fetchMentionUsers().then((users) => setMentionUsers(users));
   }, [isOpen, report?.id, currentUser, loadDetail, initialDetail]);
 
   React.useEffect(() => {
@@ -337,7 +344,7 @@ export function ReportDetailModal({
                   currentUser={currentUser}
                   initialComments={displayReport.comments || []}
                   initialReactions={displayReport.reactions || []}
-                  availableUsers={displayReport.mentionUsers || []}
+                  availableUsers={displayReport.mentionUsers || mentionUsers}
                   onUpdate={handleSocialUpdate}
                 />
               )}

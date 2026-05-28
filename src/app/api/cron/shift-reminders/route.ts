@@ -1,23 +1,29 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import sql from '@/lib/db';
 import { addDays, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { getBitcentralUser } from '@/lib/schedule';
+import { validateApiAuth, requireRole, requireCronAuth } from '@/lib/apiAuth';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const testEmail = searchParams.get('email');
     const isTest = searchParams.get('test') === 'true';
 
-    if (process.env.CRON_SECRET) {
-      const authHeader = req.headers.get('authorization');
-      if (!isTest && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
+    if (isTest) {
+      // Manual test trigger from the UI: require an authenticated elevated user.
+      const authResult = await validateApiAuth(req);
+      if (authResult instanceof NextResponse) return authResult;
+      const roleResult = requireRole(authResult.user, ['ADMIN', 'BOSS', 'ENGINEER']);
+      if (roleResult instanceof NextResponse) return roleResult;
+    } else {
+      // Scheduled run: require the cron secret (Vercel Cron Bearer token).
+      const cronCheck = requireCronAuth(req);
+      if (cronCheck) return cronCheck;
     }
 
     const crTimeStr = new Date().toLocaleString("en-US", { timeZone: "America/Costa_Rica" });
@@ -25,7 +31,7 @@ export async function GET(req: Request) {
     const targetDate = addDays(todayCR, 2);
 
     const baseScheduleData = await sql`
-      SELECT ws.*, row_to_json(u.*) AS "user"
+      SELECT ws.*, json_build_object('id', u."id", 'name', u."name") AS "user"
       FROM "WeeklySchedule" ws
       JOIN "User" u ON u."id" = ws."userId"
     `;
@@ -39,7 +45,7 @@ export async function GET(req: Request) {
     const endRange = addDays(targetDate, 3);
 
     const overridesData = await sql`
-      SELECT ws.*, row_to_json(u.*) AS "user"
+      SELECT ws.*, json_build_object('id', u."id", 'name', u."name") AS "user"
       FROM "WorkSchedule" ws
       JOIN "User" u ON u."id" = ws."userId"
       WHERE ws."date" >= ${startRange.toISOString().split('T')[0]}::date
@@ -120,7 +126,7 @@ export async function GET(req: Request) {
       const transporter = nodemailer.createTransport({
         host: 'smtp.office365.com', port: 587, secure: false,
         auth: { user: process.env.SMTP_EMAIL, pass: process.env.SMTP_PASSWORD },
-        tls: { ciphers: 'SSLv3', rejectUnauthorized: false }
+        tls: { minVersion: 'TLSv1.2' }
       });
       const infoMail = await transporter.sendMail({
         from: `"Control Master" <${process.env.SMTP_EMAIL}>`,

@@ -163,6 +163,10 @@ export function BitcentralWidget({
         return prev;
       });
 
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+        return;
+      }
+
       if (now.getMinutes() % 5 === 0 && now.getSeconds() < 10) {
         void fetchData(true);
       }

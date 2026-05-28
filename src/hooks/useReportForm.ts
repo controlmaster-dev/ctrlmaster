@@ -8,7 +8,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { generateReportPDF } from "@/utils/pdfGenerator";
 import { STORAGE_KEYS, UI_CONFIG } from "@/config/constants";
 
 export interface Attachment {
@@ -230,6 +229,7 @@ export function useReportForm() {
             .map((e) => e.trim())
             .filter((e) => e);
 
+          const { generateReportPDF } = await import("@/utils/pdfGenerator");
           const emailRes = await generateReportPDF(reportForPdf, {
             download: false,
             email: true,

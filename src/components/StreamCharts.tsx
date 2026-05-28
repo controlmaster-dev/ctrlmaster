@@ -71,7 +71,10 @@ export function StreamCharts() {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 30000);
+    const interval = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+      fetchData();
+    }, 60000);
     return () => clearInterval(interval);
   }, []);
 

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import sql from '@/lib/db';
 import { createReportSchema, updateReportSchema } from '@/lib/validation';
 import { ValidationError, ApiError } from '@/lib/errors';
-import { validateApiAuth } from '@/lib/apiAuth';
+import { validateApiAuth, requireRole } from '@/lib/apiAuth';
 import { sendWhatsApp } from '@/lib/whatsapp';
 
 export async function GET(req: NextRequest) {
@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const page = Number(searchParams.get('page')) || 1;
-    const limit = Math.min(Number(searchParams.get('limit')) || 50, 200);
+    const limit = Math.min(Number(searchParams.get('limit')) || 50, 500);
     const skip = (page - 1) * limit;
 
     const status = searchParams.get('status');
@@ -38,9 +38,15 @@ export async function GET(req: NextRequest) {
           r."dateResolved",
           r."emailStatus",
           r."emailRecipients",
-          (SELECT COUNT(*) FROM "Comment" c WHERE c."reportId" = r."id")::int AS "commentCount",
-          (SELECT COUNT(*) FROM "Reaction" re WHERE re."reportId" = r."id")::int AS "reactionCount"
+          COALESCE(cc."commentCount", 0)::int AS "commentCount",
+          COALESCE(rc."reactionCount", 0)::int AS "reactionCount"
         FROM "Report" r
+        LEFT JOIN (
+          SELECT "reportId", COUNT(*) AS "commentCount" FROM "Comment" GROUP BY "reportId"
+        ) cc ON cc."reportId" = r."id"
+        LEFT JOIN (
+          SELECT "reportId", COUNT(*) AS "reactionCount" FROM "Reaction" GROUP BY "reportId"
+        ) rc ON rc."reportId" = r."id"
         WHERE 1=1
         ${status && status !== 'all' ? sql`AND r."status" = ${status}` : sql``}
         ${priority && priority !== 'all' ? sql`AND r."priority" = ${priority}` : sql``}
@@ -147,17 +153,19 @@ export async function POST(req: NextRequest) {
       RETURNING *
     `;
 
-    // Insert attachments if provided
-    const createdAttachments: any[] = [];
+    // Batch-insert attachments if provided (single round-trip instead of N).
+    let createdAttachments: any[] = [];
     if (attachments && attachments.length > 0) {
-      for (const att of attachments) {
-        const [created] = await sql`
-          INSERT INTO "Attachment" ("url", "type", "data", "reportId")
-          VALUES (${att.url}, ${att.type}, ${att.data || null}, ${newReport.id})
-          RETURNING *
-        `;
-        createdAttachments.push(created);
-      }
+      const rows = attachments.map((att) => ({
+        url: att.url,
+        type: att.type,
+        data: att.data || null,
+        reportId: newReport.id,
+      }));
+      createdAttachments = await sql`
+        INSERT INTO "Attachment" ${sql(rows, 'url', 'type', 'data', 'reportId')}
+        RETURNING *
+      `;
     }
 
     return NextResponse.json({ ...newReport, attachments: createdAttachments }, { status: 201 });
@@ -181,6 +189,9 @@ export async function DELETE(req: NextRequest) {
   try {
     const authResult = await validateApiAuth(req);
     if (authResult instanceof NextResponse) return authResult;
+
+    const roleResult = requireRole(authResult.user, ['ENGINEER', 'ADMIN', 'BOSS']);
+    if (roleResult instanceof NextResponse) return roleResult;
 
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');

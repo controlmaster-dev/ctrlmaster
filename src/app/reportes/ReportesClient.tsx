@@ -43,14 +43,17 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-import { generateReportPDF } from "@/utils/pdfGenerator";
 import { ProcessingModal } from "@/components/ProcessingModal";
 import { EmailSendModal } from "@/components/EmailSendModal";
 import { SuccessModal } from "@/components/SuccessModal";
 
 import Link from "next/link";
 import { StatsCard } from "@/components/dashboard/StatsCard";
-import { ReportDetailModal } from "@/components/ReportDetailModal";
+import dynamic from "next/dynamic";
+const ReportDetailModal = dynamic(
+  () => import("@/components/ReportDetailModal").then((m) => m.ReportDetailModal),
+  { ssr: false }
+);
 import { pageContainerClass } from "@/lib/page-layout";
 import {
   getReportDetailCache,
@@ -353,6 +356,7 @@ export function ReportesClient() {
       const download = type === "download" || type === "both";
       const email = type === "email" || type === "both";
       await new Promise((r) => setTimeout(r, 1200));
+      const { generateReportPDF } = await import("@/utils/pdfGenerator");
       const res = await generateReportPDF(report, { download, email, recipients } as any) as any;
       setProcessing((prev) => ({ ...prev, isOpen: false }));
       if (res?.success) {

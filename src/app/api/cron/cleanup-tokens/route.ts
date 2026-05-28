@@ -5,20 +5,13 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { cleanupExpiredTokens } from '@/lib/auth';
+import { requireCronAuth } from '@/lib/apiAuth';
 
 export async function GET(req: NextRequest) {
+  const cronCheck = requireCronAuth(req);
+  if (cronCheck) return cronCheck;
+
   try {
-    // Verify this is a cron request
-    const authHeader = req.headers.get('authorization');
-    const cronSecret = process.env.CRON_SECRET;
-
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
     const deletedCount = await cleanupExpiredTokens();
 
     console.log(`[Cron] Cleaned up ${deletedCount} expired session tokens`);

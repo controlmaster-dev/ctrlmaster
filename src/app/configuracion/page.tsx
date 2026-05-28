@@ -59,7 +59,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { LoginMap } from "@/components/LoginMap";
+import dynamic from "next/dynamic";
+const LoginMap = dynamic(
+  () => import("@/components/LoginMap").then((m) => m.LoginMap),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[400px] w-full animate-pulse rounded-[2px] bg-muted/40" />
+    ),
+  }
+);
 import { ActiveUsersWidget } from "@/components/ActiveUsersWidget";
 import { SpecialEventsManager } from "@/components/SpecialEventsManager";
 import { ConfiguracionSkeleton } from "@/components/skeletons/ConfiguracionSkeleton";
@@ -126,7 +135,10 @@ export default function ConfigurationPage() {
 
   useEffect(() => {
     if (!isAdmin) return;
-    const interval = setInterval(() => void refresh(), 30000);
+    const interval = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+      void refresh();
+    }, 60000);
     return () => clearInterval(interval);
   }, [isAdmin, refresh]);
 

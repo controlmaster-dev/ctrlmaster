@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server';
+import { getBooleanSetting } from '@/lib/appSettings';
 
 export async function GET() {
   const YT_CHANNEL_ID = 'UC0qFX9cnDZCMSJriRqcN37A';
   const FB_PAGE_URL = 'https://www.facebook.com/enlacetv';
   const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
+  const [youtubeManual, facebookManual] = await Promise.all([
+    getBooleanSetting('YOUTUBE_MANUAL_LIVE'),
+    getBooleanSetting('FACEBOOK_MANUAL_LIVE'),
+  ]);
 
   try {
 
@@ -57,7 +62,7 @@ export async function GET() {
       }
     } else {
 
-      isYoutubeLive = process.env.YOUTUBE_MANUAL_LIVE === 'true';
+      isYoutubeLive = youtubeManual;
       if (isYoutubeLive) {
         console.log('[YouTube Manual Override] ✅ SIMULATED LIVE');
       } else {
@@ -69,7 +74,7 @@ export async function GET() {
     let isFacebookLive = false;
 
 
-    const fbManualOverride = process.env.FACEBOOK_MANUAL_LIVE === 'true';
+    const fbManualOverride = facebookManual;
 
     if (fbManualOverride) {
       isFacebookLive = true;

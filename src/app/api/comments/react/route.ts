@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import sql from '@/lib/db';
+import { validateApiAuth } from '@/lib/apiAuth';
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { commentId, authorId, emoji } = body;
+    const authResult = await validateApiAuth(req);
+    if (authResult instanceof NextResponse) return authResult;
 
-    if (!commentId || !authorId || !emoji) {
+    const body = await req.json();
+    const { commentId, emoji } = body;
+    const authorId = authResult.user.id;
+
+    if (!commentId || !emoji) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 

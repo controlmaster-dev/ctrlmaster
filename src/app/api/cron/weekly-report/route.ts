@@ -6,9 +6,16 @@ import { toZonedTime } from 'date-fns-tz';
 import { es } from 'date-fns/locale';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { validateApiAuth, requireRole, requireCronAuth } from '@/lib/apiAuth';
 
 export async function POST(req: NextRequest) {
   try {
+    const authResult = await validateApiAuth(req);
+    if (authResult instanceof NextResponse) return authResult;
+
+    const roleResult = requireRole(authResult.user, ['ADMIN', 'BOSS', 'ENGINEER']);
+    if (roleResult instanceof NextResponse) return roleResult;
+
     const body = await req.json();
     const { emails } = body;
     if (!emails || !Array.isArray(emails)) {
@@ -17,11 +24,15 @@ export async function POST(req: NextRequest) {
 
     return await generateAndSendReport(emails, 'CURRENT');
   } catch (error: unknown) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'Internal server error' }, { status: 500 });
+    console.error('[Weekly Report] POST error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  const cronCheck = requireCronAuth(req);
+  if (cronCheck) return cronCheck;
+
   return await generateAndSendReport(['knunez@enlace.org'], 'LAST');
 }
 

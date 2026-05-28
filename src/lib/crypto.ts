@@ -1,74 +1,84 @@
 /**
- * Cryptography utilities for password hashing and verification
+ * Cryptography utilities for password hashing and verification.
+ *
+ * Passwords are hashed with scrypt (Node's built-in KDF) using a random
+ * per-password salt. Stored format: `scrypt$<saltHex>$<hashHex>`.
+ *
+ * Legacy values (plaintext or unsalted SHA-256) are still accepted on verify
+ * so existing accounts keep working; callers should use `needsRehash()` after
+ * a successful login to lazily upgrade the stored hash.
  */
 
+import { scrypt, randomBytes, timingSafeEqual, createHash } from 'node:crypto';
+import { promisify } from 'node:util';
+
+const scryptAsync = promisify(scrypt);
+const KEY_LENGTH = 64;
+const SCRYPT_PREFIX = 'scrypt$';
+
 /**
- * Hash a password using bcrypt (simple implementation for now)
- * In production, use bcrypt or argon2
- * 
- * @param password - Plain text password
- * @returns Hashed password
+ * Hash a password using scrypt with a random salt.
  */
 export async function hashPassword(password: string): Promise<string> {
-  // For now, we'll use a simple hash since we're maintaining backward compatibility
-  // In production, this should be replaced with bcrypt or argon2
-  // Example: await bcrypt.hash(password, 10);
-  
-  // Simple hash for backward compatibility
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map((byte) => byte.toString(16).padStart(2, '0')).join('');
-  
-  return hashHex;
+  const salt = randomBytes(16).toString('hex');
+  const derived = (await scryptAsync(password, salt, KEY_LENGTH)) as Buffer;
+  return `${SCRYPT_PREFIX}${salt}$${derived.toString('hex')}`;
 }
 
 /**
- * Verify a password against a hash
- * 
- * @param password - Plain text password
- * @param hash - Hashed password to compare against
- * @returns True if password matches hash
+ * Legacy unsalted SHA-256 hash (kept only to verify old records).
+ */
+function legacySha256(password: string): string {
+  return createHash('sha256').update(password).digest('hex');
+}
+
+/**
+ * Verify a password against a stored hash.
+ * Supports the current scrypt format and legacy (plaintext / SHA-256) values.
  */
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  // For backward compatibility with plain text passwords
-  if (password === hash) {
-    return true;
+  if (!hash) return false;
+
+  if (hash.startsWith(SCRYPT_PREFIX)) {
+    const [, salt, key] = hash.split('$');
+    if (!salt || !key) return false;
+    const derived = (await scryptAsync(password, salt, KEY_LENGTH)) as Buffer;
+    const stored = Buffer.from(key, 'hex');
+    if (stored.length !== derived.length) return false;
+    return timingSafeEqual(stored, derived);
   }
-  
-  // Compare with hashed password
-  const hashedPassword = await hashPassword(password);
-  return hashedPassword === hash;
+
+  // Legacy plaintext comparison
+  if (password === hash) return true;
+
+  // Legacy unsalted SHA-256 comparison
+  return legacySha256(password) === hash;
 }
 
 /**
- * Generate a random token
- * 
- * @param length - Length of the token in bytes
- * @returns Hex encoded random token
+ * Returns true when a stored hash is not in the current scrypt format and
+ * should be re-hashed (call after a successful verify to upgrade lazily).
+ */
+export function needsRehash(hash: string): boolean {
+  return !hash || !hash.startsWith(SCRYPT_PREFIX);
+}
+
+/**
+ * Generate a random token (hex encoded).
  */
 export function generateToken(length: number = 32): string {
-  const array = new Uint8Array(length);
-  crypto.getRandomValues(array);
-  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+  return randomBytes(length).toString('hex');
 }
 
 /**
- * Generate a secure random string
- * 
- * @param length - Length of the string
- * @returns Random string
+ * Generate a secure random string from an unambiguous alphabet.
  */
 export function generateRandomString(length: number = 16): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const bytes = randomBytes(length);
   let result = '';
-  const array = new Uint8Array(length);
-  crypto.getRandomValues(array);
-  
   for (let i = 0; i < length; i++) {
-    result += chars[array[i] % chars.length];
+    result += chars[bytes[i] % chars.length];
   }
-  
   return result;
 }

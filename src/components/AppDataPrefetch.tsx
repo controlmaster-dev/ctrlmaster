@@ -41,58 +41,87 @@ export function AppDataPrefetch() {
     started.current = true;
 
     const weekStart = getSundayWeekStart();
+    const reportesQuery = "page=1&limit=20";
 
-    if (!getDashboardCache()) {
+    const needDashboard = !getDashboardCache();
+    const needOperadores = !getOperadoresBundle(weekStart);
+    const needReportes = !getReportesListCache(reportesQuery);
+
+    // Single shared users fetch (current week availability) reused by the
+    // dashboard, operadores and configuración caches — was previously fetched
+    // up to 4 separate times on login.
+    const usersPromise: Promise<any[]> =
+      needDashboard || needOperadores
+        ? fetch("/api/users")
+            .then((r) => (r.ok ? r.json() : []))
+            .then((d) => (Array.isArray(d) ? d : []))
+            .catch(() => [])
+        : Promise.resolve([]);
+
+    // One consolidated request feeds both the dashboard and the reports list.
+    if (needDashboard || needReportes) {
       Promise.all([
-        fetch("/api/reports?limit=50").then((r) => r.json()),
-        fetch("/api/users").then((r) => r.json()),
-        fetch("/api/comments/recent").then((r) => r.json()),
-        fetch("/api/proxy/whatsapp")
-          .then((r) => r.json())
-          .catch(() => null),
+        fetch("/api/bootstrap").then((r) => (r.ok ? r.json() : null)),
+        needDashboard
+          ? fetch("/api/proxy/whatsapp").then((r) => r.json()).catch(() => null)
+          : Promise.resolve(null),
+        usersPromise,
       ])
-        .then(([reportsData, usersData, commentsData, waData]) => {
-          const reportsList: Report[] = Array.isArray(reportsData)
-            ? reportsData
-            : reportsData.reports || [];
-          const reports = reportsList.filter(
-            (r) => r.operatorName !== "Monitoreo Automático"
-          );
+        .then(([boot, waData, usersData]) => {
+          if (!boot) return;
+          const allReports: Report[] = Array.isArray(boot.reports) ? boot.reports : [];
+          const stats = boot.stats ?? { total: 0, pending: 0, resolved: 0 };
 
-          setDashboardCache({
-            reports,
-            users: Array.isArray(usersData) ? usersData : [],
-            comments: Array.isArray(commentsData) ? commentsData : [],
-            whatsappHealth: waData,
-            fetchedAt: Date.now(),
-          });
+          if (needDashboard) {
+            const reports = allReports.filter(
+              (r) => r.operatorName !== "Monitoreo Automático"
+            );
+            setDashboardCache({
+              reports,
+              users: usersData,
+              comments: Array.isArray(boot.recentComments) ? boot.recentComments : [],
+              whatsappHealth: waData,
+              fetchedAt: Date.now(),
+            });
 
-          const sorted = [...reports].sort(
-            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          );
-          const ids = [
-            ...sorted.slice(0, UI_CONFIG.RECENT_REPORTS_LIMIT).map((r) => r.id),
-            ...sorted
-              .filter((r) => r.status === "pending")
-              .slice(0, 3)
-              .map((r) => r.id),
-          ];
-          void prefetchReportDetails([...new Set(ids)]);
+            const sorted = [...reports].sort(
+              (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
+            const ids = [
+              ...sorted.slice(0, UI_CONFIG.RECENT_REPORTS_LIMIT).map((r) => r.id),
+              ...sorted
+                .filter((r) => r.status === "pending")
+                .slice(0, 3)
+                .map((r) => r.id),
+            ];
+            void prefetchReportDetails([...new Set(ids)]);
+          }
+
+          if (needReportes) {
+            const pageReports = allReports.slice(0, 20);
+            setReportesListCache({
+              queryKey: reportesQuery,
+              reports: pageReports,
+              total: stats.total ?? 0,
+              totalPages: Math.max(1, Math.ceil((stats.total ?? 0) / 20)),
+              globalStats: {
+                total: stats.total ?? 0,
+                pending: stats.pending ?? 0,
+                resolved: stats.resolved ?? 0,
+              },
+              fetchedAt: Date.now(),
+            });
+            void prefetchReportDetails(pageReports.map((r) => r.id));
+          }
         })
         .catch(() => {});
     }
 
-    if (!getOperadoresBundle(weekStart)) {
-      Promise.all([
-        fetch(`/api/users?weekStart=${weekStart}`, { cache: "no-store" }).then((r) =>
-          r.json()
-        ),
-        fetch("/api/users").then((r) => r.json()),
-        fetch("/api/special-events").then((r) => r.json()),
-      ])
-        .then(([weekData, allData, eventsData]) => {
-          const ops = sortOperators(Array.isArray(weekData) ? weekData : []);
+    if (needOperadores) {
+      Promise.all([usersPromise, fetch("/api/special-events").then((r) => r.json())])
+        .then(([allData, eventsData]) => {
           const all = Array.isArray(allData) ? allData : [];
+          const ops = sortOperators(all);
           const events = Array.isArray(eventsData) ? eventsData : [];
           setOperadoresBundle({
             weekStart,
@@ -111,44 +140,6 @@ export function AppDataPrefetch() {
     }
 
     void prefetchBitcentralNearby();
-
-    const reportesQuery = "page=1&limit=20";
-    if (!getReportesListCache(reportesQuery)) {
-      Promise.all([
-        fetch(`/api/reports?${reportesQuery}`).then((r) => r.json()),
-        fetch("/api/reports?limit=1").then((r) => r.json()),
-        fetch("/api/reports?limit=1&status=pending").then((r) => r.json()),
-        fetch("/api/reports?limit=1&status=resolved").then((r) => r.json()),
-      ])
-        .then(([listRes, all, pending, resolved]) => {
-          let reports: unknown[] = [];
-          let total = 0;
-          let totalPages = 1;
-          if (listRes.reports) {
-            reports = listRes.reports;
-            total = listRes.total || 0;
-            totalPages = listRes.totalPages || 1;
-          } else if (Array.isArray(listRes)) {
-            reports = listRes;
-            total = listRes.length;
-          }
-          setReportesListCache({
-            queryKey: reportesQuery,
-            reports,
-            total,
-            totalPages,
-            globalStats: {
-              total: all.total ?? 0,
-              pending: pending.total ?? 0,
-              resolved: resolved.total ?? 0,
-            },
-            fetchedAt: Date.now(),
-          });
-          const ids = (reports as Report[]).slice(0, 12).map((r) => r.id);
-          void prefetchReportDetails(ids);
-        })
-        .catch(() => {});
-    }
 
     if (!getClavesCache()) {
       fetch("/api/credentials")

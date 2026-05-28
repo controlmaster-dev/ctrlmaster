@@ -31,7 +31,11 @@ import { ProcessingModal } from "@/components/ProcessingModal";
 import { SuccessModal } from "@/components/SuccessModal";
 import { ReminderModal } from "@/components/ReminderModal";
 import { motion, AnimatePresence } from "framer-motion";
-import { BitcentralWidget } from "@/components/BitcentralWidget";
+import dynamic from "next/dynamic";
+const BitcentralWidget = dynamic(
+  () => import("@/components/BitcentralWidget").then((m) => m.BitcentralWidget),
+  { ssr: false }
+);
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { DashboardHero } from "@/components/dashboard/DashboardHero";
 import { DashboardSectionCard } from "@/components/dashboard/DashboardSectionCard";
@@ -41,7 +45,10 @@ import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
 import { BirthdayWidget } from "@/components/BirthdayWidget";
 import { STATUS_COLORS, STATUS_LABELS } from "@/config/constants";
 import { pageContainerClass } from "@/lib/page-layout";
-import { ReportDetailModal } from "@/components/ReportDetailModal";
+const ReportDetailModal = dynamic(
+  () => import("@/components/ReportDetailModal").then((m) => m.ReportDetailModal),
+  { ssr: false }
+);
 import {
   getReportDetailCache,
   prefetchReportDetail,

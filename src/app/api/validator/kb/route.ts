@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import sql from "@/lib/db";
+import { validateApiAuth, requireRole } from "@/lib/apiAuth";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const authResult = await validateApiAuth(req);
+    if (authResult instanceof NextResponse) return authResult;
+
     const programs = await sql`
       SELECT "code" FROM "ValidProgram" ORDER BY "code" ASC
     `;
@@ -15,6 +19,11 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const authResult = await validateApiAuth(request);
+    if (authResult instanceof NextResponse) return authResult;
+    const roleResult = requireRole(authResult.user, ['ADMIN', 'BOSS', 'ENGINEER']);
+    if (roleResult instanceof NextResponse) return roleResult;
+
     const body = await request.json();
     const text = body.text;
 

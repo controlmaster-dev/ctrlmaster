@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import sql from '@/lib/db';
 import { ApiError, ValidationError } from '@/lib/errors';
+import { validateApiAuth, requireRole } from '@/lib/apiAuth';
 import { z } from 'zod';
+
+const TASK_ADMIN_ROLES = ['ADMIN', 'BOSS', 'ENGINEER'];
 
 const getTasksSchema = z.object({
   userId: z.string().min(1, 'ID de usuario es requerido'),
@@ -32,6 +35,9 @@ const deleteTaskSchema = z.object({
 
 export async function GET(req: NextRequest) {
   try {
+    const authResult = await validateApiAuth(req);
+    if (authResult instanceof NextResponse) return authResult;
+
     const { searchParams } = new URL(req.url);
     const result = getTasksSchema.safeParse({
       userId: searchParams.get('userId'),
@@ -71,6 +77,11 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const authResult = await validateApiAuth(req);
+    if (authResult instanceof NextResponse) return authResult;
+    const roleResult = requireRole(authResult.user, TASK_ADMIN_ROLES);
+    if (roleResult instanceof NextResponse) return roleResult;
+
     const body = await req.json();
     const result = createTasksSchema.safeParse(body);
 
@@ -111,6 +122,9 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
+    const authResult = await validateApiAuth(req);
+    if (authResult instanceof NextResponse) return authResult;
+
     const body = await req.json();
     const result = updateTaskSchema.safeParse(body);
 
@@ -154,6 +168,11 @@ export async function PATCH(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
+    const authResult = await validateApiAuth(req);
+    if (authResult instanceof NextResponse) return authResult;
+    const roleResult = requireRole(authResult.user, TASK_ADMIN_ROLES);
+    if (roleResult instanceof NextResponse) return roleResult;
+
     const { searchParams } = new URL(req.url);
     const result = deleteTaskSchema.safeParse({ id: searchParams.get('id') });
 

@@ -9,10 +9,19 @@ declare global {
   var __sql: ReturnType<typeof postgres> | undefined;
 }
 
+// On serverless (Vercel) each function instance keeps its own pool, so a high
+// `max` multiplied by many concurrent lambdas can exhaust Neon's connections
+// even behind the pooler. Keep the per-instance pool small in production.
+const poolMax = process.env.DB_POOL_MAX
+  ? Number(process.env.DB_POOL_MAX)
+  : process.env.NODE_ENV === 'production'
+    ? 5
+    : 10;
+
 const sql: ReturnType<typeof postgres> =
   globalThis.__sql ??
   postgres(dbUrl, {
-    max: 10,
+    max: poolMax,
     idle_timeout: 30,
     connect_timeout: 10,
     ssl: 'require',

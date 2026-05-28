@@ -42,9 +42,6 @@ export async function GET(req: NextRequest) {
     {
       status: overallStatus,
       timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      memoryUsage: process.memoryUsage(),
-      nodeVersion: process.version,
       checks,
     },
     {

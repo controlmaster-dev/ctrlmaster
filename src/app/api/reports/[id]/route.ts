@@ -1,16 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import sql from '@/lib/db';
+import { validateApiAuth } from '@/lib/apiAuth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const authResult = await validateApiAuth(req);
+    if (authResult instanceof NextResponse) return authResult;
+
     const { id } = await params;
 
-    const [reportRows, comments, reactions, views, attachments, mentionUsers] =
+    const [reportRows, comments, reactions, views, attachments] =
       await Promise.all([
         sql`SELECT * FROM "Report" WHERE "id" = ${id} LIMIT 1`,
 
@@ -47,8 +51,6 @@ export async function GET(
         `,
 
         sql`SELECT "id", "url", "type", "data", "reportId", "createdAt" FROM "Attachment" WHERE "reportId" = ${id}`,
-
-        sql`SELECT "id", "name", "email", "image" FROM "User" ORDER BY "name" ASC`,
       ]);
 
     const report = reportRows[0];
@@ -89,7 +91,6 @@ export async function GET(
       reactions,
       views,
       attachments,
-      mentionUsers,
     });
   } catch (error: unknown) {
     console.error('Error fetching report:', error);

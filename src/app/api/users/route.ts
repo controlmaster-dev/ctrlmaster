@@ -6,6 +6,18 @@ import { z } from 'zod';
 import { hashPassword } from '@/lib/crypto';
 import { Shift } from '@/lib/types';
 import { validateApiAuth, requireRole } from '@/lib/apiAuth';
+import { getUserFromToken } from '@/lib/auth';
+
+// Fields that must not be exposed to unauthenticated (public kiosk) callers.
+const SENSITIVE_USER_FIELDS = [
+  'email',
+  'phone',
+  'lastLogin',
+  'lastLoginIP',
+  'lastLoginCountry',
+  'currentPath',
+  'lastActive',
+] as const;
 
 export const dynamic = 'force-dynamic';
 
@@ -85,8 +97,18 @@ const LEGACY_SCHEDULES: Record<string, { shifts: Shift[]; label: string }> = {
 
 export async function GET(request: NextRequest) {
   try {
+    // The /operadores kiosk is public, so this endpoint stays reachable without
+    // a session, but PII is only returned to authenticated callers.
+    const token = request.cookies.get('auth-token')?.value;
+    const sessionUser = token ? await getUserFromToken(token) : null;
+    const isAuthenticated = !!sessionUser;
+
     const users = await sql`
-      SELECT * FROM "User"
+      SELECT "id", "name", "email", "username", "role", "image", "phone",
+             "birthday", "schedule", "tempSchedule",
+             "lastLogin", "lastLoginIP", "lastLoginCountry",
+             "currentPath", "lastActive", "createdAt"
+      FROM "User"
       ORDER BY "role" ASC, "name" ASC
     `;
 
@@ -232,6 +254,12 @@ export async function GET(request: NextRequest) {
       }
 
       const { password: _, ...userInfo } = user;
+
+      if (!isAuthenticated) {
+        for (const field of SENSITIVE_USER_FIELDS) {
+          delete (userInfo as Record<string, unknown>)[field];
+        }
+      }
 
       return {
         ...userInfo,

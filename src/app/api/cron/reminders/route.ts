@@ -3,6 +3,7 @@ import sql from '@/lib/db';
 import { sendEmail } from '@/lib/email';
 import { format, addMinutes } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
+import { requireCronAuth } from '@/lib/apiAuth';
 
 interface TaskQueryResult {
   id: string;
@@ -16,7 +17,10 @@ interface TaskQueryResult {
   userEmail: string;
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  const cronCheck = requireCronAuth(req);
+  if (cronCheck) return cronCheck;
+
   try {
     console.log('[Cron Reminders] Starting...');
     const now = new Date();

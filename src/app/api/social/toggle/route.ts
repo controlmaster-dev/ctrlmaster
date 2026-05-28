@@ -1,51 +1,54 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, readFile } from 'fs/promises';
-import { join } from 'path';
+import { validateApiAuth, requireRole } from '@/lib/apiAuth';
+import { getBooleanSetting, setSetting } from '@/lib/appSettings';
 
-export async function GET() {
+export const dynamic = 'force-dynamic';
+
+const PLATFORM_KEYS: Record<string, string> = {
+  youtube: 'YOUTUBE_MANUAL_LIVE',
+  facebook: 'FACEBOOK_MANUAL_LIVE',
+};
+
+export async function GET(req: NextRequest) {
   try {
-    const envPath = join(process.cwd(), '.env');
-    const envContent = await readFile(envPath, 'utf-8');
+    const authResult = await validateApiAuth(req);
+    if (authResult instanceof NextResponse) return authResult;
 
-    const youtubeMatch = envContent.match(/YOUTUBE_MANUAL_LIVE=(true|false)/);
-    const facebookMatch = envContent.match(/FACEBOOK_MANUAL_LIVE=(true|false)/);
+    const [youtube, facebook] = await Promise.all([
+      getBooleanSetting('YOUTUBE_MANUAL_LIVE'),
+      getBooleanSetting('FACEBOOK_MANUAL_LIVE'),
+    ]);
 
-    return NextResponse.json({
-      youtube: youtubeMatch ? youtubeMatch[1] === 'true' : false,
-      facebook: facebookMatch ? facebookMatch[1] === 'true' : false
-    });
+    return NextResponse.json({ youtube, facebook });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
+    console.error('[social/toggle] GET error:', error);
+    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
+    const authResult = await validateApiAuth(request);
+    if (authResult instanceof NextResponse) return authResult;
+
+    const roleResult = requireRole(authResult.user, ['ADMIN', 'BOSS', 'ENGINEER']);
+    if (roleResult instanceof NextResponse) return roleResult;
+
     const { platform, enabled } = await request.json();
 
-    if (!['youtube', 'facebook'].includes(platform)) {
+    const key = PLATFORM_KEYS[platform];
+    if (!key) {
       return NextResponse.json({ error: 'Invalid platform' }, { status: 400 });
     }
 
-    const envPath = join(process.cwd(), '.env');
-    let envContent = await readFile(envPath, 'utf-8');
-
-    const varName = platform === 'youtube' ? 'YOUTUBE_MANUAL_LIVE' : 'FACEBOOK_MANUAL_LIVE';
-    const regex = new RegExp(`${varName}=(true|false)`, 'g');
-
-    if (regex.test(envContent)) {
-      envContent = envContent.replace(regex, `${varName}=${enabled}`);
-    } else {
-      envContent += `\n${varName}=${enabled}`;
-    }
-
-    await writeFile(envPath, envContent, 'utf-8');
+    await setSetting(key, enabled ? 'true' : 'false');
 
     return NextResponse.json({
       success: true,
-      message: `${platform} monitor ${enabled ? 'enabled' : 'disabled'}. Restart required.`
+      message: `${platform} monitor ${enabled ? 'enabled' : 'disabled'}.`,
     });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
+    console.error('[social/toggle] POST error:', error);
+    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
   }
 }

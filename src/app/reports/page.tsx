@@ -34,7 +34,6 @@ import {
   ArrowLeft,
 } from "lucide-react";
 
-import { generateReportPDF } from "@/utils/pdfGenerator";
 import Link from "next/link";
 import { pageContainerClass } from "@/lib/page-layout";
 
@@ -117,9 +116,10 @@ export default function ReportsPage() {
     return labels[category] || category;
   };
 
-  const downloadPDF = (report: any) => {
+  const downloadPDF = async (report: any) => {
     try {
-      generateReportPDF(report);
+      const { generateReportPDF } = await import("@/utils/pdfGenerator");
+      await generateReportPDF(report);
     } catch (error) {
       console.error(error);
       alert("Error al generar el PDF.");
