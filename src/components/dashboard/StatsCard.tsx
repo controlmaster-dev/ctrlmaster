@@ -30,7 +30,7 @@ export function StatsCard({
   return (
     <div
       className={cn(
-        "rounded-[6px] border border-border bg-card p-4 backdrop-blur-sm transition-all duration-300 hover:border-foreground/15 dark:hover:border-foreground/20 md:p-5",
+        "rounded-lg border border-border bg-card p-4 backdrop-blur-sm transition-all duration-300 hover:border-foreground/15 dark:hover:border-foreground/20 md:p-5",
         className
       )}
     >
@@ -57,7 +57,7 @@ export function StatsCard({
 
         <div
           className={cn(
-            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border/40 bg-muted/40",
+            "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border/40 bg-muted/40",
             iconTint[variant]
           )}
         >

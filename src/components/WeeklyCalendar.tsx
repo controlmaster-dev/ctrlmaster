@@ -291,26 +291,26 @@ export function WeeklyCalendar({
   };
 
   return (
-    <div className="operadores-ui relative flex h-full w-full flex-col overflow-hidden border border-border bg-card md:rounded-[6px]">
+    <div className="operadores-ui relative flex h-full w-full flex-col overflow-hidden border border-border bg-card md:rounded-lg">
       <div className="flex items-center justify-between border-b border-border bg-muted/15 px-4 py-3">
         <div className="flex items-center gap-2">
-          <span className="border border-border/60 bg-background px-2 py-0.5 font-mono text-[11px] text-muted-foreground rounded-[4px]">
+          <span className="border border-border/60 bg-background px-2 py-0.5 font-mono text-[11px] text-muted-foreground rounded-md">
             {currentWeekStart}
           </span>
           {isCurrentRealWeek && (
-            <span className="border border-border/60 bg-muted/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-foreground rounded-[4px]">
+            <span className="border border-border/60 bg-muted/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-foreground rounded-md">
               Semana actual
             </span>
           )}
         </div>
 
         {onWeekChange && (
-          <div className="flex items-center border border-border/60 bg-background p-0.5 rounded-[6px]">
+          <div className="flex items-center border border-border/60 bg-background p-0.5 rounded-lg">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => adjustWeek('prev')}
-              className="h-7 w-7 rounded-[4px] text-muted-foreground hover:text-foreground"
+              className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -321,7 +321,7 @@ export function WeeklyCalendar({
               variant="ghost"
               size="icon"
               onClick={() => adjustWeek('next')}
-              className="h-7 w-7 rounded-[4px] text-muted-foreground hover:text-foreground"
+              className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
@@ -375,16 +375,16 @@ export function WeeklyCalendar({
                         key={`${item.op.id}-${idx}`}
                         onClick={() => handleEditClick(item.op, col.dayIndex)}
                         className={cn(
-                          "group/card relative cursor-pointer border bg-card p-2.5 transition-all duration-200 hover:border-foreground/20 rounded-[6px] shadow-none",
+                          "group/card relative cursor-pointer border bg-card p-2.5 transition-all duration-200 hover:border-foreground/20 rounded-lg shadow-none",
                           isActiveNow
                             ? 'border-emerald-500 bg-emerald-500/5 dark:bg-emerald-500/10 border-l-2'
                             : 'border-border'
                         )}
                       >
                         <div className="mb-2 flex items-center gap-2">
-                          <Avatar className="h-6 w-6 shrink-0 rounded-[4px] border border-border">
-                            <AvatarImage src={item.op.image} className="rounded-[4px]" />
-                            <AvatarFallback className="rounded-[4px] bg-muted/50 text-[8px] font-bold text-muted-foreground">
+                          <Avatar className="h-6 w-6 shrink-0 rounded-md border border-border">
+                            <AvatarImage src={item.op.image} className="rounded-md" />
+                            <AvatarFallback className="rounded-md bg-muted/50 text-[8px] font-bold text-muted-foreground">
                               {getInitials(item.op.name || 'U')}
                             </AvatarFallback>
                           </Avatar>
@@ -419,7 +419,7 @@ export function WeeklyCalendar({
 
                   {isEditingEnabled && (
                     <button
-                      className="flex w-full items-center justify-center gap-1 border border-dashed border-border/50 py-1.5 text-xs text-muted-foreground/60 opacity-0 transition-all hover:border-border hover:bg-muted/20 hover:text-foreground rounded-[6px] group-hover:opacity-100"
+                      className="flex w-full items-center justify-center gap-1 border border-dashed border-border/50 py-1.5 text-xs text-muted-foreground/60 opacity-0 transition-all hover:border-border hover:bg-muted/20 hover:text-foreground rounded-lg group-hover:opacity-100"
                       onClick={() => {
                         if (operators.length > 0) handleEditClick(operators[0], col.dayIndex);
                       }}
@@ -452,7 +452,7 @@ export function WeeklyCalendar({
                     </span>
                   </div>
                   {isToday && (
-                    <span className="border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 rounded-[4px]">
+                    <span className="border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 rounded-md">
                       Hoy
                     </span>
                   )}
@@ -460,7 +460,7 @@ export function WeeklyCalendar({
 
                 <div className="grid grid-cols-1 gap-2 p-3">
                   {col.shifts.length === 0 ? (
-                    <div className="py-3 text-center text-xs italic text-muted-foreground border border-dashed border-border rounded-[6px] bg-muted/5">
+                    <div className="py-3 text-center text-xs italic text-muted-foreground border border-dashed border-border rounded-lg bg-muted/5">
                       Sin turnos
                     </div>
                   ) : (
@@ -473,14 +473,14 @@ export function WeeklyCalendar({
                           key={`${item.op.id}-${idx}`}
                           onClick={() => handleEditClick(item.op, col.dayIndex)}
                           className={cn(
-                            "flex items-center justify-between border border-border bg-card p-3 rounded-[6px] shadow-none cursor-pointer transition-colors hover:bg-muted/10",
+                            "flex items-center justify-between border border-border bg-card p-3 rounded-lg shadow-none cursor-pointer transition-colors hover:bg-muted/10",
                             isActiveNow ? "border-emerald-500 bg-emerald-500/5 dark:bg-emerald-500/10 border-l-2" : ""
                           )}
                         >
                           <div className="flex min-w-0 items-center gap-3 overflow-hidden">
-                            <Avatar className="h-9 w-9 shrink-0 rounded-[6px] border border-border">
-                              <AvatarImage src={item.op.image} className="rounded-[6px]" />
-                              <AvatarFallback className="rounded-[6px] bg-muted/50 text-[10px] font-bold text-muted-foreground">
+                            <Avatar className="h-9 w-9 shrink-0 rounded-lg border border-border">
+                              <AvatarImage src={item.op.image} className="rounded-lg" />
+                              <AvatarFallback className="rounded-lg bg-muted/50 text-[10px] font-bold text-muted-foreground">
                                 {getInitials(item.op.name || 'U')}
                               </AvatarFallback>
                             </Avatar>
@@ -516,7 +516,7 @@ export function WeeklyCalendar({
       </ScrollArea>
 
       <Dialog open={!!editingState} onOpenChange={(o) => { if (!o) setEditingState(null); }}>
-        <DialogContent className="operadores-ui mb-0 flex max-h-[85vh] max-w-lg flex-col overflow-hidden rounded-[6px] border-border bg-card p-0 text-foreground shadow-none ring-1 ring-border">
+        <DialogContent className="operadores-ui mb-0 flex max-h-[85vh] max-w-lg flex-col overflow-hidden rounded-lg border-border bg-card p-0 text-foreground shadow-none ring-1 ring-border">
           <div className="p-6 space-y-6 flex-1 overflow-y-auto">
             <div className="flex justify-between items-start border-b border-border pb-4">
               <div>
@@ -534,13 +534,13 @@ export function WeeklyCalendar({
                     <Button
                       variant="outline"
                       size="sm"
-                      className="bg-rose-500/5 text-rose-500 hover:bg-rose-500/10 border-rose-500/20 rounded-[6px] h-8 text-xs font-semibold"
+                      className="bg-rose-500/5 text-rose-500 hover:bg-rose-500/10 border-rose-500/20 rounded-lg h-8 text-xs font-semibold"
                     >
                       <Plane className="w-3.5 h-3.5 mr-1.5" />
                       Vacaciones
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="bg-card border-border max-w-sm rounded-[6px]">
+                  <DialogContent className="bg-card border-border max-w-sm rounded-lg">
                     <DialogTitle className="sr-only">Confirmar Vacaciones</DialogTitle>
                     <DialogDescription className="sr-only">Seleccione el rango de fechas para las vacaciones.</DialogDescription>
                     <div className="flex flex-col items-center text-center gap-4 py-4">
@@ -561,7 +561,7 @@ export function WeeklyCalendar({
                             type="date"
                             value={vacationStart}
                             onChange={(e) => setVacationStart(e.target.value)}
-                            className="bg-muted/10 border-border text-xs rounded-[6px]"
+                            className="bg-muted/10 border-border text-xs rounded-lg"
                           />
                         </div>
                         <div className="space-y-1">
@@ -570,19 +570,19 @@ export function WeeklyCalendar({
                             type="date"
                             value={vacationEnd}
                             onChange={(e) => setVacationEnd(e.target.value)}
-                            className="bg-muted/10 border-border text-xs rounded-[6px]"
+                            className="bg-muted/10 border-border text-xs rounded-lg"
                           />
                         </div>
                       </div>
 
                       <div className="flex gap-3 w-full mt-4">
-                        <Button variant="ghost" onClick={() => setConfirmingVacation(false)} className="flex-1 rounded-[6px]">
+                        <Button variant="ghost" onClick={() => setConfirmingVacation(false)} className="flex-1 rounded-lg">
                           Cancelar
                         </Button>
                         <Button
                           onClick={handleVacationMode}
                           disabled={!vacationStart || !vacationEnd}
-                          className="flex-1 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 rounded-[6px]"
+                          className="flex-1 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 rounded-lg"
                         >
                           Aplicar
                         </Button>
@@ -595,13 +595,13 @@ export function WeeklyCalendar({
 
             <div className="space-y-4">
               {editingState?.shifts.length === 0 && (
-                <div className="border-2 border-dashed border-border/30 bg-muted/10 py-8 text-center text-sm text-muted-foreground rounded-[6px]">
+                <div className="border-2 border-dashed border-border/30 bg-muted/10 py-8 text-center text-sm text-muted-foreground rounded-lg">
                   No hay turnos asignados.
                 </div>
               )}
 
               {editingState?.shifts.map((shift) => (
-                <div key={shift.tempId} className="group relative space-y-4 border border-border bg-muted/10 p-4 rounded-[6px]">
+                <div key={shift.tempId} className="group relative space-y-4 border border-border bg-muted/10 p-4 rounded-lg">
                   <div className="space-y-2">
                     <div className="text-[10px] text-muted-foreground tracking-wide uppercase font-semibold">Días aplicables</div>
                     <div className="flex gap-1 flex-wrap">
@@ -617,7 +617,7 @@ export function WeeklyCalendar({
                               updateEditingShift(shift.tempId, 'days', newDays);
                             }}
                             title={DAYS[index]}
-                            className={`h-8 w-8 rounded-[6px] border text-xs font-semibold transition-colors ${isSelected ? 'border-foreground bg-foreground text-background' : 'border-border bg-card text-muted-foreground hover:bg-muted'}`}
+                            className={`h-8 w-8 rounded-lg border text-xs font-semibold transition-colors ${isSelected ? 'border-foreground bg-foreground text-background' : 'border-border bg-card text-muted-foreground hover:bg-muted'}`}
                           >
                             {dayLabel}
                           </button>
@@ -631,10 +631,10 @@ export function WeeklyCalendar({
                       <div className="text-[10px] text-muted-foreground tracking-wide uppercase font-semibold">Horario</div>
                       <div className="flex items-center gap-2 w-full">
                         <Select value={String(shift.start)} onValueChange={(v) => updateEditingShift(shift.tempId, 'start', Number(v))}>
-                          <SelectTrigger className="h-10 text-sm bg-card border-border rounded-[6px] flex-1 font-mono text-foreground">
+                          <SelectTrigger className="h-10 text-sm bg-card border-border rounded-lg flex-1 font-mono text-foreground">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent className="bg-card border-border rounded-[6px]">
+                          <SelectContent className="bg-card border-border rounded-lg">
                             {Array.from({ length: 24 }, (_, i) => i).map((h) => (
                               <SelectItem key={h} value={String(h)}>{formatTime(h)}</SelectItem>
                             ))}
@@ -642,10 +642,10 @@ export function WeeklyCalendar({
                         </Select>
                         <span className="text-muted-foreground">-</span>
                         <Select value={String(shift.end)} onValueChange={(v) => updateEditingShift(shift.tempId, 'end', Number(v))}>
-                          <SelectTrigger className="h-10 text-sm bg-card border-border rounded-[6px] flex-1 font-mono text-foreground">
+                          <SelectTrigger className="h-10 text-sm bg-card border-border rounded-lg flex-1 font-mono text-foreground">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent className="bg-card border-border rounded-[6px]">
+                          <SelectContent className="bg-card border-border rounded-lg">
                             {Array.from({ length: 25 }, (_, i) => i).map((h) => (
                               <SelectItem key={h} value={String(h)}>{formatTime(h)}</SelectItem>
                             ))}
@@ -656,7 +656,7 @@ export function WeeklyCalendar({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 rounded-[6px] -mt-1"
+                      className="h-8 w-8 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 rounded-lg -mt-1"
                       onClick={() => removeShiftFromEdit(shift.tempId)}
                     >
                       <Trash2 className="w-4 h-4" />
@@ -666,10 +666,10 @@ export function WeeklyCalendar({
                   <div className="space-y-1.5">
                     <div className="text-[10px] text-muted-foreground tracking-wide uppercase font-semibold">Asignado a</div>
                     <Select value={shift.targetOpId} onValueChange={(v) => updateEditingShift(shift.tempId, 'targetOpId', v)}>
-                      <SelectTrigger className={`h-10 text-sm border-border rounded-[6px] ${editingState && shift.targetOpId !== editingState.originalOpId ? 'bg-amber-500/5 text-amber-600 dark:text-amber-400 border-amber-500/20 font-medium' : 'bg-card text-foreground'}`}>
+                      <SelectTrigger className={`h-10 text-sm border-border rounded-lg ${editingState && shift.targetOpId !== editingState.originalOpId ? 'bg-amber-500/5 text-amber-600 dark:text-amber-400 border-amber-500/20 font-medium' : 'bg-card text-foreground'}`}>
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-card border-border rounded-[6px]">
+                      <SelectContent className="bg-card border-border rounded-lg">
                         {operators.map((op) => (
                           <SelectItem key={op.id} value={op.id}>{op.name}</SelectItem>
                         ))}
@@ -678,7 +678,7 @@ export function WeeklyCalendar({
                   </div>
 
                   {editingState && shift.targetOpId !== editingState.originalOpId && (
-                    <div className="bg-amber-500/5 text-amber-600 dark:text-amber-400 p-2.5 rounded-[6px] text-xs flex items-center gap-2 border border-amber-500/20">
+                    <div className="bg-amber-500/5 text-amber-600 dark:text-amber-400 p-2.5 rounded-lg text-xs flex items-center gap-2 border border-amber-500/20">
                       <User className="w-3 h-3" />
                       Se moverá a{' '}
                       <span className="font-semibold">{operators.find((o) => o.id === shift.targetOpId)?.name}</span>
@@ -690,7 +690,7 @@ export function WeeklyCalendar({
               <Button
                 variant="outline"
                 onClick={addNewShiftToEdit}
-                className="w-full h-12 border-dashed border-border bg-muted/5 text-muted-foreground hover:text-foreground hover:bg-muted/10 rounded-[6px] transition-all"
+                className="w-full h-12 border-dashed border-border bg-muted/5 text-muted-foreground hover:text-foreground hover:bg-muted/10 rounded-lg transition-all"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Agregar Turno
@@ -699,11 +699,11 @@ export function WeeklyCalendar({
           </div>
 
           <div className="p-4 bg-muted/20 border-t border-border flex gap-3">
-            <Button variant="ghost" onClick={() => setEditingState(null)} className="flex-1 rounded-[6px] hover:bg-muted/50">
+            <Button variant="ghost" onClick={() => setEditingState(null)} className="flex-1 rounded-lg hover:bg-muted/50">
               Cancelar
             </Button>
             <Button
-              className="flex-1 rounded-[6px] bg-foreground font-semibold text-background hover:bg-foreground/90"
+              className="flex-1 rounded-lg bg-foreground font-semibold text-background hover:bg-foreground/90"
               onClick={saveChanges}
             >
               Guardar cambios

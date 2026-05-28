@@ -35,6 +35,7 @@ import {
   Copy,
   Clock,
   Loader2,
+  Users,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -48,24 +49,16 @@ import {
   Dialog,
   DialogContent,
   DialogTrigger,
-  DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import { WeeklyCalendar } from "@/components/WeeklyCalendar";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import dynamic from "next/dynamic";
+
 const LoginMap = dynamic(
   () => import("@/components/LoginMap").then((m) => m.LoginMap),
   {
     ssr: false,
     loading: () => (
-      <div className="h-[400px] w-full animate-pulse rounded-[2px] bg-muted/40" />
+      <div className="h-[400px] w-full animate-pulse rounded-lg bg-muted/40" />
     ),
   }
 );
@@ -301,7 +294,6 @@ export default function ConfigurationPage() {
             credentials: "include",
           });
           if (res.ok) {
-            // Force immediate refetch
             await refresh();
             toast.success("Reporte eliminado");
           } else {
@@ -346,7 +338,7 @@ export default function ConfigurationPage() {
 
   if (!isAdmin)
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center text-foreground">
+      <div className="min-h-screen bg-background flex items-center justify-center text-foreground font-medium">
         Verificando...
       </div>
     );
@@ -368,196 +360,187 @@ export default function ConfigurationPage() {
 
     return (
       <div className="space-y-4">
-        <div className="flex items-center gap-2 px-1">
-          <div className="w-8 h-8 rounded-md bg-card border border-border flex items-center justify-center">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-muted/40 border border-border flex items-center justify-center">
             {icon}
           </div>
-          <h3 className="text-[10px] font-medium text-muted-foreground tracking-wide uppercase">
-            {title}
+          <h3 className="text-[10px] font-semibold text-muted-foreground tracking-widest uppercase">
+            {title} ({filteredUsers.length})
           </h3>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredUsers.map((u) => (
-            <div
-              key={u.id}
-              className="group relative bg-card border border-border hover:border-primary/30 rounded-xl overflow-hidden transition-all duration-300 shadow-sm hover:shadow-md"
-            >
-              <div className="p-5 flex flex-col gap-4">
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-3">
-                    <div className="relative">
-                      <Avatar className="w-12 h-12 border border-border rounded-lg shadow-sm">
-                        <AvatarImage src={u.image} className="rounded-lg object-cover" />
-                        <AvatarFallback className="bg-muted text-muted-foreground font-semibold text-sm rounded-lg">
-                          {u.name.substring(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div
-                        className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-background"
-                        style={{ backgroundColor: u.lastLogin ? "#10b981" : "#6b7280" }}
-                      />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-semibold text-foreground tracking-tight leading-none">
-                        {u.name}
-                      </h4>
-                      <span className="text-[10px] text-muted-foreground font-mono font-medium opacity-60">
-                        #{u.id.slice(0, 8)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {u.role === "BOSS" ? (
-                    <div className="inline-flex items-center px-2 py-1 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-[9px] font-semibold tracking-wide uppercase">
-                      <Crown className="w-3 h-3 mr-1" /> Coord
-                    </div>
-                  ) : u.role === "ENGINEER" ? (
-                    <div className="inline-flex items-center px-2 py-1 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 text-[9px] font-semibold tracking-wide uppercase">
-                      <Wrench className="w-3 h-3 mr-1" /> Ing
-                    </div>
-                  ) : (
-                    <div className="inline-flex items-center px-2 py-1 rounded-md bg-muted text-muted-foreground border border-border text-[9px] font-semibold tracking-wide uppercase">
-                      Operador
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-3">
-                  <div className="bg-background/50 rounded-lg p-3 border border-border/50">
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 opacity-70">
-                      Contacto
-                    </p>
-                    <p className="text-xs text-foreground font-medium truncate">
-                      {u.email}
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-background/50 rounded-lg p-3 border border-border/50">
-                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 opacity-70">
-                        Última Vez
-                      </p>
-                      <p className="text-xs text-foreground font-medium">
-                        {u.lastLogin
-                          ? new Date(u.lastLogin).toLocaleDateString("es-CR", {
-                              month: "short",
-                              day: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })
-                          : "Desconectado"}
-                      </p>
-                    </div>
-                    <div className="bg-background/50 rounded-lg p-3 border border-border/50">
-                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 opacity-70">
-                        Ubicación
-                      </p>
-                      <div className="flex items-center gap-1.5 opacity-80">
-                        <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span className="text-xs font-medium text-foreground truncate">
-                          {u.lastLoginCountry || "N/A"}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filteredUsers.map((u) => {
+            const initials = u.name
+              ?.split(" ")
+              .filter(Boolean)
+              .map((n: string) => n[0])
+              .join("")
+              .substring(0, 2)
+              .toUpperCase() || "OP";
+            const roleBadge = u.role === "BOSS"
+              ? { text: "Coordinador", bg: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20" }
+              : u.role === "ENGINEER"
+              ? { text: "Ingeniero", bg: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20" }
+              : { text: "Operador", bg: "bg-[#FF0C60]/10 text-[#FF0C60] border-[#FF0C60]/20" };
+            return (
+              <div
+                key={u.id}
+                className="group relative bg-card border border-border hover:border-foreground/15 rounded-lg overflow-hidden transition-all duration-200 shadow-none flex flex-col justify-between"
+              >
+                <div className="p-4 flex flex-col gap-3">
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="relative shrink-0">
+                        <Avatar className="w-10 h-10 border border-border/80 rounded-lg">
+                          <AvatarImage src={u.image} className="rounded-lg object-cover" />
+                          <AvatarFallback className="bg-muted text-muted-foreground font-semibold text-xs rounded-lg">
+                            {initials}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div
+                          className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-background shadow-sm"
+                          style={{ backgroundColor: u.lastLogin ? "#10b981" : "#6b7280" }}
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="text-xs font-semibold text-foreground leading-snug truncate group-hover:text-[#FF0C60] transition-colors">
+                          {u.name}
+                        </h4>
+                        <span className="text-[9px] text-muted-foreground font-mono font-medium opacity-50 block mt-0.5">
+                          #{u.id.slice(0, 8)}
                         </span>
                       </div>
                     </div>
+
+                    <span className={cn("shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-[2px] border text-[8px] font-semibold tracking-wider uppercase", roleBadge.bg)}>
+                      {roleBadge.text}
+                    </span>
+                  </div>
+
+                  <div className="space-y-2 text-[11px]">
+                    <div className="bg-muted/10 rounded-lg p-2 border border-border/40">
+                      <p className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider mb-0.5 opacity-60">
+                        Correo Electrónico
+                      </p>
+                      <p className="text-foreground font-medium truncate leading-tight">
+                        {u.email}
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <div className="bg-muted/10 rounded-lg p-2 border border-border/40 min-w-0">
+                        <p className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider mb-0.5 opacity-60">
+                          Último Acceso
+                        </p>
+                        <p className="text-foreground font-medium truncate leading-tight">
+                          {u.lastLogin
+                            ? new Date(u.lastLogin).toLocaleDateString("es-CR", {
+                                month: "short",
+                                day: "numeric",
+                              })
+                            : "Nunca"}
+                        </p>
+                      </div>
+                      <div className="bg-muted/10 rounded-lg p-2 border border-border/40 min-w-0">
+                        <p className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider mb-0.5 opacity-60">
+                          Ubicación
+                        </p>
+                        <p className="text-foreground font-medium truncate leading-tight">
+                          {u.lastLoginCountry || "N/A"}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="px-5 py-3 border-t border-border/50 bg-muted/20 flex justify-between items-center">
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
-                    >
-                      <Search className="w-3.5 h-3.5 mr-1.5" /> Detalles
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="bg-card border-border text-foreground max-w-md p-0 overflow-hidden shadow-2xl rounded-xl ring-1 ring-border">
-                    <div className="bg-muted/30 border-b border-border p-8">
-                      <div className="flex items-center gap-6">
-                        <Avatar className="w-20 h-20 border border-border rounded-xl shadow-sm">
-                          <AvatarImage src={u.image} className="rounded-xl object-cover" />
-                          <AvatarFallback className="bg-background text-muted-foreground text-2xl font-semibold rounded-xl">
-                            {u.name.substring(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="text-primary font-medium text-[10px] uppercase tracking-wide mb-2">
-                            {u.role}
+                <div className="px-4 py-2 bg-muted/10 border-t border-border/40 flex justify-between items-center">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground p-0 px-2"
+                      >
+                        <Search className="w-3.5 h-3.5 mr-1" /> Detalles
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="bg-card border-border text-foreground max-w-md p-0 overflow-hidden shadow-2xl rounded-lg ring-1 ring-border">
+                      <div className="bg-muted/30 border-b border-border p-6">
+                        <div className="flex items-center gap-4">
+                          <Avatar className="w-16 h-16 border border-border rounded-lg shadow-sm">
+                            <AvatarImage src={u.image} className="rounded-lg object-cover" />
+                            <AvatarFallback className="bg-background text-muted-foreground text-lg font-semibold rounded-lg">
+                              {initials}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="text-primary font-semibold text-[9px] uppercase tracking-wider mb-1">
+                              {roleBadge.text}
+                            </div>
+                            <h3 className="text-2xl font-semibold tracking-tight text-foreground leading-none">
+                              {u.name}
+                            </h3>
+                            <p className="text-muted-foreground text-xs font-medium mt-1.5 tracking-tight">
+                              {u.email}
+                            </p>
                           </div>
-                          <h3 className="text-3xl font-semibold tracking-tight text-foreground leading-none">
-                            {u.name}
-                          </h3>
-                          <p className="text-muted-foreground text-xs font-medium mt-2 tracking-tight">
-                            {u.email}
-                          </p>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="p-8 space-y-6">
-                      <div className="grid grid-cols-2 gap-8">
-                        <div className="space-y-2">
-                          <p className="text-muted-foreground text-[10px] font-semibold uppercase tracking-widest opacity-70">
-                            Último acceso
-                          </p>
-                          <p className="text-foreground font-semibold text-sm">
-                            {u.lastLogin
-                              ? new Date(u.lastLogin).toLocaleString("es-CR")
-                              : "Nunca"}
-                          </p>
-                        </div>
-                        <div className="space-y-2">
-                          <p className="text-muted-foreground text-[10px] font-semibold uppercase tracking-widest opacity-70">
-                            IP de conexión
-                          </p>
-                          <p className="text-foreground font-mono font-medium text-sm tracking-tighter">
-                            {u.lastLoginIP || "N/A"}
-                          </p>
+                      <div className="p-6 space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-1">
+                            <p className="text-muted-foreground text-[9px] font-semibold uppercase tracking-widest opacity-60">
+                              Último acceso
+                            </p>
+                            <p className="text-foreground font-medium text-xs">
+                              {u.lastLogin
+                                ? new Date(u.lastLogin).toLocaleString("es-CR")
+                                : "Nunca"}
+                            </p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-muted-foreground text-[9px] font-semibold uppercase tracking-widest opacity-60">
+                              IP de conexión
+                            </p>
+                            <p className="text-foreground font-mono font-medium text-xs tracking-tighter">
+                              {u.lastLoginIP || "N/A"}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                    </DialogContent>
+                  </Dialog>
 
-                <div className="flex gap-1.5">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleEditUser(u)}
-                    className="h-8 w-8 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                  >
-                    <Settings className="w-3.5 h-3.5" />
-                  </Button>
-                  {u.role !== "BOSS" && (
+                  <div className="flex gap-1">
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => confirmDeleteUser(u.id)}
-                      className="h-8 w-8 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                      onClick={() => handleEditUser(u)}
+                      className="h-7 w-7 rounded-md text-muted-foreground hover:text-[#FF0C60] hover:bg-[#FF0C60]/10 transition-colors"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Settings className="w-3.5 h-3.5" />
                     </Button>
-                  )}
+                    {u.role !== "BOSS" && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => confirmDeleteUser(u.id)}
+                        className="h-7 w-7 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     );
   };
-
-  const tabClass = (active: boolean) =>
-    cn(
-      "rounded-sm px-3 py-2 text-xs font-medium transition-colors whitespace-nowrap shrink-0",
-      active
-        ? "bg-[#FF0C60]/10 text-[#FF0C60]"
-        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-    );
 
   return (
     <div className="configuracion-ui relative min-h-screen overflow-hidden bg-background pb-20 text-foreground selection:bg-[#FF0C60] selection:text-white">
@@ -583,19 +566,22 @@ export default function ConfigurationPage() {
         />
 
         <div className={`${pageContainerClass} space-y-5`}>
-          <section className="border border-border/60 bg-card shadow-sm">
-            <div className="flex flex-col gap-4 p-4 xl:flex-row xl:items-start xl:justify-between">
-              <div className="space-y-2">
-                <span className="inline-flex items-center gap-1 rounded-sm border border-border/60 bg-muted/30 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                  <Settings className="h-3 w-3" />
-                  Administración
-                </span>
+          {/* Header Card — Clean & Organized */}
+          <section className="rounded-lg border border-border bg-card shadow-none p-5 md:p-6 transition-all duration-300">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-sm border border-[#FF0C60]/20 bg-[#FF0C60]/5 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#FF0C60]">
+                    <Settings className="h-3 w-3" />
+                    Panel de Administración
+                  </span>
+                </div>
                 <div>
-                  <h1 className="text-xl font-semibold tracking-tight md:text-2xl">
-                    Configuración
+                  <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                    Configuración del Sistema
                   </h1>
-                  <p className="mt-1 max-w-xl text-sm text-muted-foreground">
-                    Usuarios, horarios, eventos, códigos de registro y depuración de reportes.
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Gestione usuarios, horarios de turnos, eventos especiales, códigos de seguridad y depuración de reportes.
                   </p>
                 </div>
               </div>
@@ -604,30 +590,42 @@ export default function ConfigurationPage() {
                   cancelEdit();
                   setIsUserModalOpen(true);
                 }}
-                className="h-10 shrink-0 gap-2 rounded-sm bg-[#FF0C60] px-4 text-white hover:bg-[#E00A54]"
+                className="h-10 shrink-0 gap-2 rounded-lg bg-[#FF0C60] px-4 font-medium text-white shadow-none hover:bg-[#E00A54] transition-all duration-200"
               >
                 <UserPlus className="h-4 w-4" />
-                Nuevo operador
+                Registrar Operador
               </Button>
             </div>
           </section>
 
-          <div className="flex gap-1 overflow-x-auto border border-border/60 bg-card p-1 shadow-sm no-scrollbar">
-            <button type="button" onClick={() => setActiveTab("users")} className={tabClass(activeTab === "users")}>
-              Usuarios
-            </button>
-            <button type="button" onClick={() => setActiveTab("schedule")} className={tabClass(activeTab === "schedule")}>
-              Horarios
-            </button>
-            <button type="button" onClick={() => setActiveTab("events")} className={tabClass(activeTab === "events")}>
-              Eventos
-            </button>
-            <button type="button" onClick={() => setActiveTab("security")} className={tabClass(activeTab === "security")}>
-              Seguridad
-            </button>
-            <button type="button" onClick={() => setActiveTab("reports")} className={tabClass(activeTab === "reports")}>
-              Reportes
-            </button>
+          {/* Premium Segmented Navigation */}
+          <div className="flex gap-1.5 overflow-x-auto rounded-lg border border-border bg-card p-1 shadow-none no-scrollbar">
+            {[
+              { id: "users", label: "Personal", icon: Shield },
+              { id: "schedule", label: "Horarios", icon: CalendarIcon },
+              { id: "events", label: "Eventos Especiales", icon: Wrench },
+              { id: "security", label: "Códigos de Registro", icon: KeyRound },
+              { id: "reports", label: "Depuración", icon: Trash2 },
+            ].map((tab) => {
+              const active = activeTab === tab.id;
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={cn(
+                    "flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-medium uppercase tracking-wider transition-all duration-200 whitespace-nowrap shrink-0 border-b-2",
+                    active
+                      ? "bg-[#FF0C60]/10 border-b-[#FF0C60] text-[#FF0C60] shadow-none"
+                      : "border-b-transparent text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+                  )}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {tab.label}
+                </button>
+              );
+            })}
           </div>
 
           <AnimatePresence mode="wait">
@@ -640,93 +638,120 @@ export default function ConfigurationPage() {
                 transition={{ duration: 0.3, ease: "easeOut" }}
                 className="space-y-6"
               >
-                <div className="space-y-8">
-                  <div className="flex flex-col gap-6">
-                    <LoginMap users={usersList} />
-                    <ActiveUsersWidget users={usersList} />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {[
-                      {
-                        label: "Equipo Total",
-                        value: usersList.length,
-                        icon: Shield,
-                        color: "text-blue-500",
-                      },
-                      {
-                        label: "Coordinadores",
-                        value: usersList.filter((u) => u.role === "BOSS").length,
-                        icon: Crown,
-                        color: "text-amber-500",
-                      },
-                      {
-                        label: "Ingenieros",
-                        value: usersList.filter((u) => u.role === "ENGINEER").length,
-                        icon: Wrench,
-                        color: "text-purple-500",
-                      },
-                      {
-                        label: "Operadores",
-                        value: usersList.filter(
-                          (u) => !["BOSS", "ENGINEER"].includes(u.role || "")
-                        ).length,
-                        icon: Shield,
-                        color: "text-emerald-500",
-                      },
-                    ].map((stat, i) => (
-                      <Card
-                        key={i}
-                        className="bg-card border border-border shadow-sm rounded-xl p-5 flex items-center justify-between group hover:border-primary/30 transition-all duration-300"
+                {/* 1. Stats Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {[
+                    {
+                      label: "Equipo Total",
+                      value: usersList.length,
+                      icon: Users,
+                      color: "text-[#FF0C60]",
+                      bg: "bg-[#FF0C60]/5 border-[#FF0C60]/10",
+                    },
+                    {
+                      label: "Coordinadores",
+                      value: usersList.filter((u) => u.role === "BOSS").length,
+                      icon: Crown,
+                      color: "text-amber-500",
+                      bg: "bg-amber-500/5 border-amber-500/10",
+                    },
+                    {
+                      label: "Ingenieros",
+                      value: usersList.filter((u) => u.role === "ENGINEER").length,
+                      icon: Wrench,
+                      color: "text-purple-500",
+                      bg: "bg-purple-500/5 border-purple-500/10",
+                    },
+                    {
+                      label: "Operadores",
+                      value: usersList.filter(
+                        (u) => !["BOSS", "ENGINEER"].includes(u.role || "")
+                      ).length,
+                      icon: Shield,
+                      color: "text-blue-500",
+                      bg: "bg-blue-500/5 border-blue-500/10",
+                    },
+                  ].map((stat, i) => (
+                    <Card
+                      key={i}
+                      className="bg-card border border-border shadow-none rounded-lg p-5 flex items-center justify-between group hover:border-foreground/15 transition-all duration-200"
+                    >
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-medium text-muted-foreground tracking-widest uppercase">
+                          {stat.label}
+                        </p>
+                        <p className="text-3xl font-semibold text-foreground mt-1 tracking-tight">
+                          {stat.value}
+                        </p>
+                      </div>
+                      <div
+                        className={cn("w-10 h-10 border rounded-lg flex items-center justify-center transition-all group-hover:scale-105 duration-200", stat.bg, stat.color)}
                       >
-                        <div>
-                          <p className="text-[10px] font-semibold text-muted-foreground tracking-widest uppercase opacity-60">
-                            {stat.label}
-                          </p>
-                          <p className="text-3xl font-semibold text-foreground mt-1 tracking-tight">
-                            {stat.value}
-                          </p>
-                        </div>
-                        <div
-                          className={`w-12 h-12 bg-muted/30 border border-border rounded-md flex items-center justify-center ${stat.color}`}
-                        >
-                          <stat.icon className="w-6 h-6" />
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
+                        <stat.icon className="w-5 h-5 shrink-0" />
+                      </div>
+                    </Card>
+                  ))}
                 </div>
 
-                <Card className="bg-card border border-border shadow-sm rounded-xl overflow-hidden">
-                  <CardHeader className="bg-muted/30 border-b border-border py-4 px-8">
+                {/* 2. Personal Explorer */}
+                <Card className="bg-card border border-border shadow-none rounded-lg overflow-hidden">
+                  <CardHeader className="bg-muted/10 border-b border-border py-4 px-6">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-muted/30 text-muted-foreground rounded-md flex items-center justify-center border border-border shadow-inner">
-                        <Search className="w-5 h-5 opacity-50" />
+                      <div className="w-8 h-8 bg-muted/40 text-muted-foreground rounded-lg flex items-center justify-center border border-border">
+                        <Search className="w-4 h-4 opacity-75" />
                       </div>
-                      <h3 className="text-[11px] font-semibold tracking-tight text-muted-foreground">
-                        Explorador de Personal
-                      </h3>
+                      <div>
+                        <h3 className="text-sm font-semibold text-foreground">
+                          Explorador de Personal
+                        </h3>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          Listado de colaboradores registrados según su cargo y perfil de usuario.
+                        </p>
+                      </div>
                     </div>
                   </CardHeader>
-                  <div className="p-8">
-                    <div className="space-y-16">
+                  <CardContent className="p-6">
+                    <div className="space-y-12">
                       {renderUserGrid(
                         "Coordinadores",
                         (role) => role === "BOSS",
-                        <Crown className="w-5 h-5 text-amber-500" />
+                        <Crown className="w-4 h-4 text-amber-500" />
                       )}
                       {renderUserGrid(
                         "Ingenieros",
                         (role) => role === "ENGINEER",
-                        <Wrench className="w-5 h-5 text-purple-500" />
+                        <Wrench className="w-4 h-4 text-purple-500" />
                       )}
                       {renderUserGrid(
                         "Operadores",
                         (role) => !["BOSS", "ENGINEER"].includes(role || ""),
-                        <Shield className="w-5 h-5 text-blue-500" />
+                        <Shield className="w-4 h-4 text-blue-500" />
                       )}
                     </div>
-                  </div>
+                  </CardContent>
+                </Card>
+
+                {/* 3. Platform Activity — elegantly placed at the bottom */}
+                <Card className="bg-card border border-border shadow-none rounded-lg overflow-hidden">
+                  <CardHeader className="bg-muted/10 border-b border-border py-4 px-6">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-muted/40 text-muted-foreground rounded-lg flex items-center justify-center border border-border">
+                        <MapPin className="w-4 h-4 opacity-75" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-semibold text-foreground">
+                          Actividad y Conexión de la Plataforma
+                        </h3>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          Ubicación geográfica de los accesos y estado en tiempo real del personal.
+                        </p>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-6 flex flex-col gap-6">
+                    <LoginMap users={usersList} />
+                    <ActiveUsersWidget users={usersList} />
+                  </CardContent>
                 </Card>
               </motion.div>
             )}
@@ -739,40 +764,45 @@ export default function ConfigurationPage() {
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.2 }}
               >
-                <Card className="bg-card border border-border shadow-sm rounded-xl overflow-hidden h-fit flex flex-col">
-                  <div className="p-4 border-b border-border bg-muted/10 flex justify-between items-center">
+                <Card className="bg-card border border-border shadow-none rounded-lg overflow-hidden h-fit flex flex-col">
+                  <div className="p-4 border-b border-border bg-muted/10 flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center">
                     <div className="flex items-center gap-2">
                       <CalendarIcon className="w-5 h-5 text-muted-foreground" />
-                      <h3 className="text-sm font-semibold text-foreground">
-                        Gestión de Horarios
-                      </h3>
+                      <div>
+                        <h3 className="text-sm font-semibold text-foreground leading-none">
+                          Gestión de Horarios
+                        </h3>
+                        <p className="text-[10px] text-muted-foreground mt-1">
+                          Configuración del esquema y asignación semanal de turnos.
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 bg-muted/30 p-1 rounded-lg border border-border">
+                    <div className="flex items-center gap-1.5 bg-muted/40 p-1 rounded-lg border border-border shrink-0">
                       <button
                         onClick={() => setScheduleMode("weekly")}
-                        className={`px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide rounded-md transition-all ${
+                        className={`px-3 py-1 rounded-[4px] text-[9px] font-semibold uppercase tracking-wider transition-all ${
                           scheduleMode === "weekly"
                             ? "bg-primary text-primary-foreground shadow-sm"
                             : "text-muted-foreground hover:text-foreground"
                         }`}
                       >
-                        Esta Semana (Temp)
+                        Semanal (Temp)
                       </button>
                       <button
                         onClick={() => setScheduleMode("default")}
-                        className={`px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide rounded-md transition-all ${
+                        className={`px-3 py-1 rounded-[4px] text-[9px] font-semibold uppercase tracking-wider transition-all ${
                           scheduleMode === "default"
                             ? "bg-primary text-primary-foreground shadow-sm"
                             : "text-muted-foreground hover:text-foreground"
                         }`}
                       >
-                        Fijo (Predeterminado)
+                        Predeterminado
                       </button>
                     </div>
                   </div>
                   <div className="relative">
                     {scheduleMode === "default" && (
-                      <div className="absolute top-0 left-0 w-full h-1 bg-primary z-20 animate-pulse" />
+                      <div className="absolute top-0 left-0 w-full h-0.5 bg-[#FF0C60] z-20 animate-pulse" />
                     )}
                     <WeeklyCalendar
                       operators={usersList.map((u) => ({
@@ -803,6 +833,7 @@ export default function ConfigurationPage() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.2 }}
+                className="rounded-lg border border-border bg-card overflow-hidden shadow-none p-5"
               >
                 <SpecialEventsManager />
               </motion.div>
@@ -816,24 +847,21 @@ export default function ConfigurationPage() {
                 exit={{ opacity: 0, scale: 0.98, y: 10 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
               >
-                <Card className="bg-card border border-border shadow-sm rounded-xl">
-                  <CardHeader className="bg-muted/10 p-8 border-b border-border">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                      <div className="space-y-2">
-                        <CardTitle className="text-3xl font-semibold text-foreground tracking-tight leading-none flex items-center gap-3">
-                          <KeyRound className="w-8 h-8 text-primary" /> Códigos de
-                          Registro
+                <Card className="bg-card border border-border shadow-none rounded-lg">
+                  <CardHeader className="bg-muted/10 p-6 border-b border-border">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                      <div className="space-y-1">
+                        <CardTitle className="text-lg font-semibold text-foreground tracking-tight flex items-center gap-2">
+                          <KeyRound className="w-5 h-5 text-[#FF0C60]" /> Autorizaciones de Registro
                         </CardTitle>
-                        <CardDescription className="text-muted-foreground font-semibold text-[10px] tracking-tight mt-2 opacity-60">
-                          Genere códigos de seguridad para autorizar nuevos
-                          operadores. Cada código expira en 24 horas y solo puede
-                          usarse una vez.
+                        <CardDescription className="text-muted-foreground text-xs opacity-80 mt-1">
+                          Genere códigos de seguridad únicos para registrar nuevos operadores. Expiran en 24 horas y son monouso.
                         </CardDescription>
                       </div>
                       <Button
                         onClick={generateCode}
                         disabled={codesLoading}
-                        className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs uppercase tracking-wide shadow-md h-11"
+                        className="bg-[#FF0C60] hover:bg-[#E00A54] text-white font-medium text-xs uppercase tracking-wider shadow-none h-10 rounded-lg px-4"
                       >
                         {codesLoading ? (
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -844,36 +872,35 @@ export default function ConfigurationPage() {
                       </Button>
                     </div>
                   </CardHeader>
-                  <CardContent className="p-8">
+                  <CardContent className="p-6">
                     {securityCodes.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-16 text-center space-y-4">
-                        <div className="w-16 h-16 rounded-xl bg-muted/30 border border-border flex items-center justify-center">
-                          <KeyRound className="w-8 h-8 text-muted-foreground opacity-40" />
+                      <div className="flex flex-col items-center justify-center py-12 text-center space-y-3">
+                        <div className="w-12 h-12 rounded-lg bg-muted/30 border border-border flex items-center justify-center">
+                          <KeyRound className="w-6 h-6 text-muted-foreground opacity-40" />
                         </div>
-                        <p className="text-sm font-semibold text-muted-foreground">
+                        <p className="text-sm font-medium text-muted-foreground">
                           No hay códigos generados
                         </p>
-                        <p className="text-xs text-muted-foreground opacity-60 max-w-sm">
-                          Genere un código de seguridad y compártalo con el operador
-                          que desea registrarse.
+                        <p className="text-xs text-muted-foreground opacity-60 max-w-xs">
+                          Cree un código seguro para compartirlo con el personal que deba registrarse.
                         </p>
                       </div>
                     ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {securityCodes.map((c) => (
                           <div
                             key={c.id}
-                            className={`relative bg-card/60 border rounded-xl p-5 space-y-4 transition-all duration-300 ${
+                            className={`relative bg-muted/5 border rounded-lg p-4 space-y-3.5 transition-all duration-200 ${
                               c.status === "available"
-                                ? "border-emerald-500/20 hover:border-emerald-500/40 shadow-sm hover:shadow-emerald-500/5"
+                                ? "border-emerald-500/20 hover:border-emerald-500/40"
                                 : c.status === "used"
                                 ? "border-border opacity-50"
                                 : "border-amber-500/20 opacity-60"
                             }`}
                           >
-                            <div className="flex justify-between items-start">
-                              <div
-                                className={`text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 ${
+                            <div className="flex justify-between items-center">
+                              <span
+                                className={`text-[8px] font-semibold uppercase tracking-widest flex items-center gap-1 ${
                                   c.status === "available"
                                     ? "text-emerald-500"
                                     : c.status === "used"
@@ -893,13 +920,13 @@ export default function ConfigurationPage() {
                                   : c.status === "used"
                                   ? "Usado"
                                   : "Expirado"}
-                              </div>
+                              </span>
                               {c.status === "available" && (
                                 <Button
                                   variant="ghost"
                                   size="icon"
                                   onClick={() => deleteCode(c.id)}
-                                  className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md"
+                                  className="h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </Button>
@@ -908,7 +935,7 @@ export default function ConfigurationPage() {
                             <div className="space-y-2">
                               <p
                                 id={`code-${c.code}`}
-                                className="text-2xl font-mono font-bold tracking-widest text-center py-2 bg-muted/30 rounded-lg border border-border/50 text-foreground"
+                                className="text-xl font-mono font-semibold tracking-widest text-center py-1.5 bg-background rounded-lg border border-border/80 text-foreground"
                               >
                                 {c.code}
                               </p>
@@ -917,29 +944,25 @@ export default function ConfigurationPage() {
                                   variant="outline"
                                   size="sm"
                                   onClick={() => copyCode(c.code)}
-                                  className="w-full h-9 text-[10px] font-semibold uppercase tracking-wide border-border hover:border-primary/30 hover:text-primary hover:bg-primary/5"
+                                  className="w-full h-8 text-[9px] font-semibold uppercase tracking-wider border-border hover:border-primary/20 hover:text-primary hover:bg-primary/5 rounded-md"
                                 >
-                                  <Copy className="w-3 h-3 mr-2" /> Copiar Código
+                                  <Copy className="w-3 h-3 mr-1.5" /> Copiar Código
                                 </Button>
                               )}
                             </div>
-                            <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-2 border-t border-border/50">
+                            <div className="flex items-center justify-between text-[9px] text-muted-foreground pt-2 border-t border-border/40">
                               <span>
-                                {new Date(c.createdAt).toLocaleString("es-CR", {
+                                Creado: {new Date(c.createdAt).toLocaleDateString("es-CR", {
                                   month: "short",
                                   day: "numeric",
                                   hour: "2-digit",
                                   minute: "2-digit",
                                 })}
                               </span>
-                              <span className="flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
-                                Exp:{" "}
-                                {new Date(c.expiresAt).toLocaleString("es-CR", {
+                              <span className="flex items-center gap-0.5">
+                                Exp: {new Date(c.expiresAt).toLocaleDateString("es-CR", {
                                   month: "short",
                                   day: "numeric",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
                                 })}
                               </span>
                             </div>
@@ -961,89 +984,89 @@ export default function ConfigurationPage() {
                 transition={{ duration: 0.3, ease: "easeOut" }}
               >
                 {!reportsReady ? (
-                  <div className="flex min-h-[280px] flex-col items-center justify-center gap-3 border border-border/60 bg-card">
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">Cargando reportes…</p>
+                  <div className="flex min-h-[200px] flex-col items-center justify-center gap-3 border border-border bg-card rounded-lg shadow-none">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    <p className="text-xs text-muted-foreground">Cargando base de datos de reportes…</p>
                   </div>
                 ) : (
-                <Card className="rounded-sm border border-border bg-card shadow-sm">
-                  <CardHeader className="bg-muted/10 p-8 border-b border-border">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                      <div className="space-y-2">
-                        <CardTitle className="text-3xl font-semibold text-foreground tracking-tight leading-none">
-                          Gestión de reportes
-                        </CardTitle>
-                        <CardDescription className="text-muted-foreground font-semibold text-[10px] tracking-tight mt-2 opacity-60">
-                          Filtro y depuración de la base de datos de incidencias.
-                        </CardDescription>
+                  <Card className="rounded-lg border border-border bg-card shadow-none">
+                    <CardHeader className="bg-muted/10 p-6 border-b border-border">
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div className="space-y-1">
+                          <CardTitle className="text-lg font-semibold text-foreground tracking-tight">
+                            Depuración de Reportes
+                          </CardTitle>
+                          <CardDescription className="text-muted-foreground text-xs opacity-80">
+                            Filtre e inspeccione el registro de incidencias del sistema para su depuración o auditoría.
+                          </CardDescription>
+                        </div>
+                        <div className="relative w-full sm:w-[260px]">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <Input
+                            placeholder="Buscar por ID o descripción..."
+                            className="pl-9 bg-background border border-input w-full text-xs font-medium tracking-tight h-10 text-foreground focus-visible:ring-1 focus-visible:ring-[#FF0C60]/30 rounded-lg"
+                          />
+                        </div>
                       </div>
-                      <div className="relative w-full md:w-[300px]">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input
-                          placeholder="Buscar por ID o descripción..."
-                          className="pl-12 bg-background border border-input w-full text-sm font-medium tracking-tight h-12 text-foreground focus-visible:ring-2 focus-visible:ring-ring rounded-lg ring-offset-background"
-                        />
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    <Table>
-                      <TableHeader className="bg-muted/30 border-b border-border">
-                        <TableRow className="border-none hover:bg-transparent">
-                          <TableHead className="pl-8 h-12 text-[10px] font-semibold tracking-tight text-muted-foreground">
-                            ID Interno
-                          </TableHead>
-                          <TableHead className="h-12 text-[10px] font-semibold tracking-tight text-muted-foreground">
-                            Marca de Tiempo
-                          </TableHead>
-                          <TableHead className="h-12 text-[10px] font-semibold tracking-tight text-muted-foreground">
-                            Operador
-                          </TableHead>
-                          <TableHead className="h-12 text-[10px] font-semibold tracking-tight text-muted-foreground w-[40%]">
-                            Descripción del Suceso
-                          </TableHead>
-                          <TableHead className="text-right pr-8 h-12 text-[10px] font-semibold tracking-tight text-muted-foreground">
-                            Acciones
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody className="divide-y divide-border">
-                        {reportsList.map((report) => (
-                          <TableRow
-                            key={report.id}
-                            className="border-none hover:bg-muted/20 transition-all duration-200 group"
-                          >
-                            <TableCell className="pl-8 font-mono text-[10px] text-primary font-medium tracking-tight">
-                              #{report.id.slice(0, 8)}
-                            </TableCell>
-                            <TableCell className="text-foreground text-xs font-semibold tracking-tight">
-                              {new Date(report.createdAt).toLocaleDateString(
-                                "es-CR",
-                                { day: "2-digit", month: "short", year: "numeric" }
-                              )}
-                            </TableCell>
-                            <TableCell className="text-foreground text-xs font-semibold tracking-tight">
-                              {report.operatorName}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground text-xs font-medium max-w-md truncate">
-                              {report.problemDescription}
-                            </TableCell>
-                            <TableCell className="text-right pr-8">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => confirmDeleteReport(report.id)}
-                                className="h-9 w-9 text-destructive hover:text-destructive-foreground hover:bg-destructive transition-all rounded-md"
-                              >
-                                <Trash2 className="w-4 h-4 stroke-[3]" />
-                              </Button>
-                            </TableCell>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      <Table className="text-xs">
+                        <TableHeader className="bg-muted/30 border-b border-border">
+                          <TableRow className="border-none hover:bg-transparent">
+                            <TableHead className="pl-6 h-10 text-[9px] font-semibold tracking-wider text-muted-foreground uppercase">
+                              ID Interno
+                            </TableHead>
+                            <TableHead className="h-10 text-[9px] font-semibold tracking-wider text-muted-foreground uppercase">
+                              Fecha
+                            </TableHead>
+                            <TableHead className="h-10 text-[9px] font-semibold tracking-wider text-muted-foreground uppercase">
+                              Operador
+                            </TableHead>
+                            <TableHead className="h-10 text-[9px] font-semibold tracking-wider text-muted-foreground uppercase w-[40%]">
+                              Descripción del Reporte
+                            </TableHead>
+                            <TableHead className="text-right pr-6 h-10 text-[9px] font-semibold tracking-wider text-muted-foreground uppercase">
+                              Acción
+                            </TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                </Card>
+                        </TableHeader>
+                        <TableBody className="divide-y divide-border/60">
+                          {reportsList.map((report) => (
+                            <TableRow
+                              key={report.id}
+                              className="border-none hover:bg-muted/10 transition-all duration-150 group"
+                            >
+                              <TableCell className="pl-6 font-mono text-[10px] text-primary font-semibold tracking-tight">
+                                #{report.id.slice(0, 8)}
+                              </TableCell>
+                              <TableCell className="text-foreground font-medium tracking-tight">
+                                {new Date(report.createdAt).toLocaleDateString(
+                                  "es-CR",
+                                  { day: "2-digit", month: "short", year: "numeric" }
+                                )}
+                              </TableCell>
+                              <TableCell className="text-foreground font-medium tracking-tight">
+                                {report.operatorName}
+                              </TableCell>
+                              <TableCell className="text-muted-foreground font-medium max-w-md truncate">
+                                {report.problemDescription}
+                              </TableCell>
+                              <TableCell className="text-right pr-6">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => confirmDeleteReport(report.id)}
+                                  className="h-8 w-8 text-destructive hover:text-destructive-foreground hover:bg-destructive/10 transition-all rounded-[2px]"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </CardContent>
+                  </Card>
                 )}
               </motion.div>
             )}

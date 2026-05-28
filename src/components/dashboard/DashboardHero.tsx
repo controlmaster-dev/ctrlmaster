@@ -48,18 +48,11 @@ export function DashboardHero({
     <BentoCard variant="elevated" className={cn("p-5 md:p-6", className)}>
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="min-w-0 flex-1 space-y-3">
-          {/* Top badges row */}
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-border/50 bg-background px-3 py-1 text-[11px] font-medium text-muted-foreground">
-              <Sparkles className="h-3 w-3 text-[#FF0C60]" />
-              Panel de control
-            </span>
-            <span className="rounded-full border border-border/40 bg-background px-3 py-1 text-[11px] capitalize text-muted-foreground">
-              {dateLabel}
-            </span>
-            <span className="ml-auto text-[11px] tabular-nums text-muted-foreground/60">
-              {timeLabel}
-            </span>
+          {/* Top date/time row */}
+          <div className="flex items-center text-[11px] font-medium text-muted-foreground/70 capitalize tracking-wider select-none">
+            <span>{dateLabel}</span>
+            <span className="mx-1.5 text-muted-foreground/40 font-normal">·</span>
+            <span className="tabular-nums text-muted-foreground/60">{timeLabel}</span>
           </div>
 
           {/* Greeting + title */}

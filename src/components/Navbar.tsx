@@ -86,7 +86,6 @@ export function Navbar() {
   const secondaryLinks = [
     { href: "/operadores", icon: Headset, label: "Operadores", show: true },
     { href: "/operadores/monitoreo", icon: MonitorPlay, label: "Monitoreo", show: true },
-    { href: "/configuracion", icon: Settings, label: "Configuración", show: user?.role !== "ENGINEER" },
   ];
 
   const closeSearch = () => {
@@ -152,20 +151,20 @@ export function Navbar() {
                 type="button"
                 onClick={() => { setSearchOpen(true); setTimeout(() => searchInputRef.current?.focus(), 50); }}
                 className={cn(
-                  "group flex h-9 w-[180px] lg:w-[220px] items-center gap-2 rounded-md border border-border/80 bg-muted/20 px-3 text-[13px] text-muted-foreground transition-all duration-200 hover:border-border hover:bg-muted/40 hover:text-foreground",
+                  "group flex h-9 w-[180px] lg:w-[220px] items-center gap-2 rounded-[2px] border border-border/80 bg-muted/20 px-3 text-[13px] text-muted-foreground transition-all duration-200 hover:border-border hover:bg-muted/40 hover:text-foreground",
                   searchOpen && "hidden"
                 )}
               >
                 <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                 <span className="flex-1 text-left">Buscar...</span>
-                <kbd className="hidden h-5 items-center gap-0.5 rounded border border-border/80 bg-background px-1.5 font-mono text-[9px] font-bold text-muted-foreground/80 sm:inline-flex">
+                <kbd className="hidden h-5 items-center gap-0.5 rounded-[2px] border border-border/80 bg-background px-1.5 font-mono text-[9px] font-bold text-muted-foreground/80 sm:inline-flex">
                   ⌘K
                 </kbd>
               </button>
 
               {searchOpen && (
                 <div className="relative z-[101]">
-                  <div className="flex h-9 w-[260px] lg:w-[300px] items-center gap-2 rounded-md border border-border bg-card px-3 transition-all">
+                  <div className="flex h-9 w-[260px] lg:w-[300px] items-center gap-2 rounded-[2px] border border-border bg-card px-3 transition-all">
                     <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                     <input
                       ref={searchInputRef}
@@ -188,7 +187,7 @@ export function Navbar() {
                     <button
                       type="button"
                       onClick={closeSearch}
-                      className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:text-foreground"
+                      className="flex h-5 w-5 items-center justify-center rounded-[2px] text-muted-foreground hover:text-foreground"
                     >
                       <X className="h-3.5 w-3.5" />
                     </button>
@@ -235,17 +234,28 @@ export function Navbar() {
                   <Ellipsis className="h-[18px] w-[18px]" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 z-[10050] border-border bg-popover text-popover-foreground">
+              <DropdownMenuContent align="end" className="w-56 z-[10050] border-border bg-popover/95 backdrop-blur-md text-popover-foreground shadow-2xl p-1 rounded-[2px] overflow-hidden">
+                <div className="h-0.5 w-full bg-gradient-to-r from-[#FF0C60] via-[#FF0C60]/50 to-transparent -mt-1 mb-1 shrink-0" />
                 {secondaryLinks
                   .filter((l) => l.show)
-                  .map(({ href, icon: Icon, label }) => (
-                    <Link key={href} href={href}>
-                      <DropdownMenuItem className="cursor-pointer gap-2.5 text-xs font-medium">
-                        <Icon className="h-4 w-4" />
-                        {label}
-                      </DropdownMenuItem>
-                    </Link>
-                  ))}
+                  .map(({ href, icon: Icon, label }) => {
+                    const desc = label === "Operadores"
+                      ? "Disponibilidad y turnos"
+                      : label === "Monitoreo"
+                      ? "Señales en tiempo real"
+                      : "Ajustes y preferencias";
+                    return (
+                      <Link key={href} href={href}>
+                        <DropdownMenuItem className="cursor-pointer flex items-center gap-3 px-3 py-2 text-left rounded-[2px] border-l-[3px] border-l-transparent hover:border-l-[#FF0C60] hover:bg-[#FF0C60]/8 focus:bg-[#FF0C60]/10 focus:text-foreground focus:border-l-[#FF0C60] pl-2.5 transition-all duration-150 group">
+                          <Icon className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-[#FF0C60] group-focus:text-[#FF0C60] transition-colors" />
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-xs font-semibold text-foreground/90">{label}</span>
+                            <span className="text-[10px] text-muted-foreground group-hover:text-muted-foreground/80 mt-0.5 leading-none">{desc}</span>
+                          </div>
+                        </DropdownMenuItem>
+                      </Link>
+                    );
+                  })}
               </DropdownMenuContent>
             </DropdownMenu>
           )}
@@ -262,9 +272,9 @@ export function Navbar() {
                   className="ml-1.5 rounded-full outline-none transition-all duration-200 hover:opacity-80"
                   title={user?.name || "Mi cuenta"}
                 >
-                  <Avatar className="h-8 w-8 border border-border/60">
-                    <AvatarImage src={user?.avatar || ""} alt={user?.name || "Usuario"} />
-                    <AvatarFallback className="bg-muted text-[11px] font-bold text-foreground">
+                  <Avatar className="h-8 w-8 rounded-[2px] border border-border/60">
+                    <AvatarImage src={user?.avatar || ""} alt={user?.name || "Usuario"} className="rounded-[2px]" />
+                    <AvatarFallback className="rounded-[2px] bg-muted text-[11px] font-bold text-foreground">
                       {user?.name
                         ?.split(" ")
                         .filter(Boolean)
@@ -276,24 +286,60 @@ export function Navbar() {
                   </Avatar>
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-52 z-[10050] border-border bg-popover text-popover-foreground">
-                <DropdownMenuLabel className="font-normal px-3 py-2.5">
-                  <p className="text-sm font-semibold text-foreground">{user?.name || "Usuario"}</p>
-                  <p className="truncate text-xs text-muted-foreground mt-0.5">{user?.email}</p>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {user?.role !== "ENGINEER" && (
-                  <Link href="/configuracion">
-                    <DropdownMenuItem className="cursor-pointer gap-2.5 text-xs font-medium">
-                      <Settings className="h-4 w-4" />
-                      Configuración
-                    </DropdownMenuItem>
-                  </Link>
-                )}
-                <DropdownMenuItem className="cursor-pointer gap-2.5 text-xs font-medium text-red-500 focus:text-red-500" onClick={logout}>
-                  <LogOut className="h-4 w-4" />
-                  Cerrar sesión
-                </DropdownMenuItem>
+              <DropdownMenuContent align="end" className="w-60 z-[10050] border-border bg-popover/95 backdrop-blur-md text-popover-foreground shadow-2xl p-1 rounded-[2px] overflow-hidden">
+                <div className="h-0.5 w-full bg-gradient-to-r from-[#FF0C60] via-[#FF0C60]/50 to-transparent -mt-1 mb-1 shrink-0" />
+                
+                {/* Rich Header Card */}
+                <div className="flex items-center gap-3 px-3 py-2.5 border-b border-border/40 bg-muted/10">
+                  <Avatar className="h-10 w-10 rounded-[2px] border border-border/60 shrink-0">
+                    <AvatarImage src={user?.avatar || ""} alt="" className="rounded-[2px]" />
+                    <AvatarFallback className="rounded-[2px] bg-muted text-xs font-bold text-foreground">
+                      {user?.name?.split(" ").filter(Boolean).map((n) => n[0]).join("").substring(0, 2).toUpperCase() || "CM"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-bold text-foreground leading-tight truncate">{user?.name || "Usuario"}</p>
+                    <p className="truncate text-[10px] text-muted-foreground mt-0.5 leading-none">{user?.email}</p>
+                    {user?.role && (
+                      <span className="inline-flex mt-1.5 px-1.5 py-0.5 rounded-[2px] border border-[#FF0C60]/20 bg-[#FF0C60]/5 text-[8px] font-bold text-[#FF0C60] uppercase tracking-wider">
+                        {user.role === "ENGINEER"
+                          ? "Ingeniero"
+                          : user.role === "ADMIN"
+                          ? "Administrador"
+                          : user.role === "BOSS"
+                          ? "Con permisos de admin"
+                          : user.role === "OPERATOR"
+                          ? "Operador"
+                          : user.role}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="p-0.5 space-y-0.5">
+                  {user?.role !== "ENGINEER" && user?.role !== "OPERATOR" && (
+                    <Link href="/configuracion">
+                      <DropdownMenuItem className="cursor-pointer flex items-center gap-3 px-2.5 py-2 text-left rounded-[2px] border-l-[3px] border-l-transparent hover:border-l-[#FF0C60] hover:bg-[#FF0C60]/8 focus:bg-[#FF0C60]/10 focus:text-foreground focus:border-l-[#FF0C60] transition-all duration-150 group">
+                        <Settings className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-[#FF0C60] group-focus:text-[#FF0C60] transition-colors" />
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-xs font-semibold text-foreground/90">Configuración</span>
+                          <span className="text-[10px] text-muted-foreground group-hover:text-muted-foreground/80 mt-0.5 leading-none">Ajustes y preferencias</span>
+                        </div>
+                      </DropdownMenuItem>
+                    </Link>
+                  )}
+                  
+                  <DropdownMenuItem 
+                    className="cursor-pointer flex items-center gap-3 px-2.5 py-2 text-left rounded-[2px] border-l-[3px] border-l-transparent hover:border-l-red-500 hover:bg-red-500/[0.06] focus:bg-red-500/[0.08] focus:text-red-500 focus:border-l-red-500 transition-all duration-150 text-red-500 group"
+                    onClick={logout}
+                  >
+                    <LogOut className="h-4 w-4 shrink-0 text-red-400 group-hover:text-red-500 group-focus:text-red-500 transition-colors" />
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs font-semibold">Cerrar sesión</span>
+                      <span className="text-[10px] text-red-400/80 group-hover:text-red-500/70 mt-0.5 leading-none">Salir de tu cuenta</span>
+                    </div>
+                  </DropdownMenuItem>
+                </div>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
@@ -301,7 +347,7 @@ export function Navbar() {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-9 rounded-[6px] border-border bg-card px-4 text-[13px] font-semibold text-foreground hover:bg-muted"
+                className="h-9 rounded-lg border-border bg-card px-4 text-[13px] font-semibold text-foreground hover:bg-muted"
               >
                 Iniciar sesión
               </Button>
@@ -352,22 +398,50 @@ export function Navbar() {
                           </Avatar>
                         </button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-52 z-[10050] border-border bg-popover text-popover-foreground">
-                        <DropdownMenuLabel className="font-normal px-3 py-2.5">
-                          <p className="text-sm font-semibold text-foreground">{user?.name}</p>
-                          <p className="truncate text-xs text-muted-foreground mt-0.5">{user?.email}</p>
+                      <DropdownMenuContent align="end" className="w-56 z-[10050] border-border bg-popover/95 backdrop-blur-md text-popover-foreground shadow-2xl p-1 rounded-[2px] overflow-hidden">
+                        <div className="h-0.5 w-full bg-gradient-to-r from-[#FF0C60] via-[#FF0C60]/50 to-transparent -mt-1 mb-1 shrink-0" />
+                        <DropdownMenuLabel className="font-normal px-3 py-2">
+                          <p className="text-xs font-bold text-foreground truncate">{user?.name}</p>
+                          <p className="truncate text-[10px] text-muted-foreground mt-0.5 leading-none">{user?.email}</p>
                         </DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        {secondaryLinks.filter((l) => l.show).map(({ href, icon: Icon, label }) => (
-                          <Link key={href} href={href}>
-                            <DropdownMenuItem className="gap-2.5 text-xs font-medium">
-                              <Icon className="h-4 w-4" /> {label}
+                        <DropdownMenuSeparator className="opacity-40" />
+                        {secondaryLinks.filter((l) => l.show).map(({ href, icon: Icon, label }) => {
+                          const desc = label === "Operadores"
+                            ? "Disponibilidad y turnos"
+                            : "Señales en vivo";
+                          return (
+                            <Link key={href} href={href}>
+                              <DropdownMenuItem className="cursor-pointer flex items-center gap-3 px-3 py-2 text-left rounded-[2px] border-l-[3px] border-l-transparent hover:border-l-[#FF0C60] hover:bg-[#FF0C60]/8 focus:bg-[#FF0C60]/10 focus:text-foreground focus:border-l-[#FF0C60] pl-2.5 transition-all duration-150 group">
+                                <Icon className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-[#FF0C60] transition-colors" />
+                                <div className="flex flex-col min-w-0">
+                                  <span className="text-xs font-semibold text-foreground/90">{label}</span>
+                                  <span className="text-[9px] text-muted-foreground group-hover:text-muted-foreground/80 mt-0.5 leading-none">{desc}</span>
+                                </div>
+                              </DropdownMenuItem>
+                            </Link>
+                          );
+                        })}
+                        {user?.role !== "ENGINEER" && user?.role !== "OPERATOR" && (
+                          <Link href="/configuracion">
+                            <DropdownMenuItem className="cursor-pointer flex items-center gap-3 px-3 py-2 text-left rounded-[2px] border-l-[3px] border-l-transparent hover:border-l-[#FF0C60] hover:bg-[#FF0C60]/8 focus:bg-[#FF0C60]/10 focus:text-foreground focus:border-l-[#FF0C60] pl-2.5 transition-all duration-150 group">
+                              <Settings className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-[#FF0C60] transition-colors" />
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-xs font-semibold text-foreground/90">Configuración</span>
+                                <span className="text-[9px] text-muted-foreground group-hover:text-muted-foreground/80 mt-0.5 leading-none">Ajustes y preferencias</span>
+                              </div>
                             </DropdownMenuItem>
                           </Link>
-                        ))}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="gap-2.5 text-xs font-medium text-red-500 focus:text-red-500" onClick={logout}>
-                          <LogOut className="h-4 w-4" /> Cerrar sesión
+                        )}
+                        <DropdownMenuSeparator className="opacity-40" />
+                        <DropdownMenuItem 
+                          className="cursor-pointer flex items-center gap-3 px-3 py-2 text-left rounded-[2px] border-l-[3px] border-l-transparent hover:border-l-red-500 hover:bg-red-500/[0.06] focus:bg-red-500/[0.08] focus:text-red-500 focus:border-l-red-500 transition-all duration-150 text-red-500 group"
+                          onClick={logout}
+                        >
+                          <LogOut className="h-4 w-4 shrink-0 text-red-400 group-hover:text-red-500 transition-colors" />
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-xs font-semibold">Cerrar sesión</span>
+                            <span className="text-[9px] text-red-400/80 group-hover:text-red-500/70 mt-0.5 leading-none">Salir de tu cuenta</span>
+                          </div>
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -376,7 +450,7 @@ export function Navbar() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-8 rounded-[6px] border-border bg-card px-2.5 text-xs font-semibold text-foreground hover:bg-muted"
+                        className="h-8 rounded-lg border-border bg-card px-2.5 text-xs font-semibold text-foreground hover:bg-muted"
                       >
                         Iniciar sesión
                       </Button>
@@ -392,40 +466,76 @@ export function Navbar() {
                 className="fixed bottom-0 left-0 right-0 z-[9999] border-t border-border bg-background/95 pb-safe backdrop-blur-md md:hidden"
                 aria-label="Navegación móvil"
               >
-                <div className="relative mx-auto flex h-[60px] max-w-lg items-stretch justify-around px-2">
-                  {mainNav.map(({ href, icon: Icon, label, exact }) => {
-                    const active = exact ? isPath(href) : pathname.startsWith(href) && href !== "/";
-                    return (
-                      <Link
-                        key={href}
-                        href={href}
-                        className={cn(
-                          "flex flex-1 flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors",
-                          active ? "text-foreground" : "text-muted-foreground"
-                        )}
-                      >
-                        <div
+                <div className="relative mx-auto flex h-[60px] max-w-lg items-stretch justify-between px-4">
+                  {/* Left Side Links */}
+                  <div className="flex flex-1 items-stretch justify-around">
+                    {[
+                      { href: "/", icon: Home, label: "Inicio", exact: true },
+                      { href: "/reportes", icon: Layout, label: "Reportes" },
+                    ].map(({ href, icon: Icon, label, exact }) => {
+                      const active = exact ? isPath(href) : pathname.startsWith(href) && href !== "/";
+                      return (
+                        <Link
+                          key={href}
+                          href={href}
                           className={cn(
-                            "flex h-8 w-14 items-center justify-center rounded-md transition-colors",
-                            active && "bg-muted text-foreground"
+                            "flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors w-14",
+                            active ? "text-foreground" : "text-muted-foreground"
                           )}
                         >
-                          <Icon className="h-5 w-5" />
-                        </div>
-                        {label}
-                      </Link>
-                    );
-                  })}
+                          <div
+                            className={cn(
+                              "flex h-8 w-12 items-center justify-center rounded-[2px] transition-colors",
+                              active && "bg-muted text-foreground"
+                            )}
+                          >
+                            <Icon className="h-5 w-5" />
+                          </div>
+                          <span>{label}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
 
                   {/* Central FAB */}
                   <div className="relative flex w-14 shrink-0 items-center justify-center">
                     <Link
                       href="/crear-reporte"
-                      className="absolute -top-4 flex h-11 w-11 items-center justify-center rounded-full border border-border bg-[#FF0C60] text-white transition-transform active:scale-95"
+                      className="absolute -top-4 flex h-11 w-11 items-center justify-center rounded-full border border-border bg-[#FF0C60] text-white shadow-lg shadow-[#FF0C60]/20 transition-transform active:scale-95"
                       aria-label="Nuevo reporte"
                     >
                       <Plus className="h-5 w-5 stroke-[2.5]" />
                     </Link>
+                  </div>
+
+                  {/* Right Side Links */}
+                  <div className="flex flex-1 items-stretch justify-around">
+                    {[
+                      { href: "/operadores/monitoreo", icon: MonitorPlay, label: "Monitoreo", exact: false },
+                      { href: "/claves", icon: Key, label: "Claves", exact: false },
+                    ].map(({ href, icon: Icon, label, exact }) => {
+                      const active = exact ? isPath(href) : pathname.startsWith(href) && href !== "/";
+                      return (
+                        <Link
+                          key={href}
+                          href={href}
+                          className={cn(
+                            "flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors w-14",
+                            active ? "text-foreground" : "text-muted-foreground"
+                          )}
+                        >
+                          <div
+                            className={cn(
+                              "flex h-8 w-12 items-center justify-center rounded-[2px] transition-colors",
+                              active && "bg-muted text-foreground"
+                            )}
+                          >
+                            <Icon className="h-5 w-5" />
+                          </div>
+                          <span>{label}</span>
+                        </Link>
+                      );
+                    })}
                   </div>
                 </div>
               </nav>

@@ -29,7 +29,7 @@ export function BentoCard({
   return (
     <Component
       className={cn(
-        "rounded-[6px] transition-all duration-300 hover:border-foreground/15 dark:hover:border-foreground/20",
+        "rounded-lg transition-all duration-300 hover:border-foreground/15 dark:hover:border-foreground/20",
         variantClasses[variant],
         className
       )}

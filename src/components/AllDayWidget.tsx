@@ -90,7 +90,7 @@ function DayShiftList({
       </div>
 
       {list.length === 0 ? (
-        <p className="py-4 text-center text-xs text-muted-foreground border border-dashed border-border rounded-[6px] bg-muted/5">
+        <p className="py-4 text-center text-xs text-muted-foreground border border-dashed border-border rounded-lg bg-muted/5">
           Sin turnos
         </p>
       ) : (
@@ -98,10 +98,10 @@ function DayShiftList({
           {list.map((item, idx) => (
             <li
               key={`${item.op.id}-${idx}`}
-              className="flex items-center justify-between gap-3 border border-border bg-card hover:bg-muted/10 rounded-[6px] p-2 transition-all duration-200"
+              className="flex items-center justify-between gap-3 border border-border bg-card hover:bg-muted/10 rounded-lg p-2 transition-all duration-200"
             >
               <div className="flex min-w-0 items-center gap-2">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center border border-border bg-muted/40 text-[10px] font-semibold text-muted-foreground rounded-[6px]">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center border border-border bg-muted/40 text-[10px] font-semibold text-muted-foreground rounded-lg">
                   {getInitials(item.op.name)}
                 </span>
                 <div className="min-w-0">
@@ -113,7 +113,7 @@ function DayShiftList({
                   </p>
                 </div>
               </div>
-              <span className="shrink-0 border border-border bg-muted/30 px-2 py-0.5 font-mono text-[9px] text-muted-foreground rounded-[4px]">
+              <span className="shrink-0 border border-border bg-muted/30 px-2 py-0.5 font-mono text-[9px] text-muted-foreground rounded-md">
                 {formatTime(item.shift.start)} – {formatTime(item.shift.end)}
               </span>
             </li>
@@ -147,9 +147,9 @@ export function AllDayWidget({ operators, specialEvents = [] }: AllDayWidgetProp
   }, [specialEvents]);
 
   return (
-    <section className="border border-border bg-card rounded-[6px] overflow-hidden">
+    <section className="border border-border bg-card rounded-lg overflow-hidden">
       <header className="flex items-center gap-3 border-b border-border px-4 py-3 bg-muted/10">
-        <div className="flex h-8 w-8 items-center justify-center border border-border bg-muted/30 text-muted-foreground rounded-[6px]">
+        <div className="flex h-8 w-8 items-center justify-center border border-border bg-muted/30 text-muted-foreground rounded-lg">
           <CalendarDays className="h-4 w-4" />
         </div>
         <div>
@@ -160,7 +160,7 @@ export function AllDayWidget({ operators, specialEvents = [] }: AllDayWidgetProp
 
       <div className="space-y-5 p-4">
         {activeEvent && (
-          <div className="border border-border bg-emerald-500/5 dark:bg-emerald-500/10 px-3 py-2 rounded-[6px]">
+          <div className="border border-border bg-emerald-500/5 dark:bg-emerald-500/10 px-3 py-2 rounded-lg">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
               Evento activo
             </p>

@@ -46,7 +46,7 @@ export function OperatorCard({
   return (
     <article
       className={cn(
-        "flex h-full flex-col border rounded-[6px] bg-card transition-all duration-300 hover:border-foreground/15 dark:hover:border-foreground/20",
+        "flex h-full flex-col border rounded-lg bg-card transition-all duration-300 hover:border-foreground/15 dark:hover:border-foreground/20",
         isAvailable
           ? "border-emerald-500/20 dark:border-emerald-500/30 bg-emerald-500/[0.01] dark:bg-emerald-500/[0.02]"
           : "border-border"
@@ -54,13 +54,16 @@ export function OperatorCard({
     >
       <div className="flex items-start gap-3 border-b border-border px-4 py-3">
         <div className="relative shrink-0">
-          <Avatar className="h-10 w-10 rounded-[6px] border border-border relative overflow-visible">
-            <AvatarImage src={op.image} className="rounded-[6px]" />
-            <AvatarFallback className="rounded-[6px] bg-muted text-xs font-semibold">
+          <Avatar className="h-10 w-10 rounded-lg border border-border relative overflow-visible">
+            <AvatarImage src={op.image} className="rounded-lg" />
+            <AvatarFallback className="rounded-lg bg-muted text-xs font-semibold">
               {op.name.charAt(0)}
             </AvatarFallback>
             {isAvailable && (
-              <span className="absolute -inset-0.5 rounded-[6px] ring-2 ring-emerald-500/30 dark:ring-emerald-400/20 animate-pulse pointer-events-none" />
+              <>
+                <span className="absolute -inset-0.5 rounded-lg ring-2 ring-emerald-500/30 dark:ring-emerald-400/20 animate-pulse pointer-events-none" />
+                <span className="absolute -inset-1.5 rounded-xl ring-1 ring-emerald-500/10 dark:ring-emerald-400/10 animate-ping pointer-events-none" />
+              </>
             )}
           </Avatar>
           <span
@@ -96,7 +99,7 @@ export function OperatorCard({
 
       <div className="flex flex-1 flex-col gap-3.5 p-4">
         {activeEvent && returnDateStr ? (
-          <div className="border-l-4 border-l-amber-500 border border-border bg-amber-500/[0.02] dark:bg-amber-500/[0.03] rounded-[6px] px-3.5 py-3">
+          <div className="border-l-4 border-l-amber-500 border border-border bg-amber-500/[0.02] dark:bg-amber-500/[0.03] rounded-lg px-3.5 py-3">
             <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
               <CalIcon className="h-3.5 w-3.5 animate-pulse" />
               Horario especial
@@ -112,7 +115,7 @@ export function OperatorCard({
         ) : null}
 
         {!activeEvent && activeStats ? (
-          <div className="space-y-2 border border-border bg-muted/15 rounded-[6px] p-3.5">
+          <div className="space-y-2 border border-border bg-muted/15 rounded-lg p-3.5">
             <div className="flex justify-between text-[11px] text-muted-foreground font-semibold">
               <span className="flex items-center gap-1">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -137,7 +140,7 @@ export function OperatorCard({
         ) : null}
 
         {!activeEvent ? (
-          <div className="flex-1 flex flex-col gap-2.5 border border-border bg-muted/10 rounded-[6px] p-3.5">
+          <div className="flex-1 flex flex-col gap-2.5 border border-border bg-muted/10 rounded-lg p-3.5">
             <div className="flex items-center justify-between gap-2">
               <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                 Esquema semanal
@@ -145,7 +148,7 @@ export function OperatorCard({
               {op.isTempSchedule && (
                 <Badge
                   variant="outline"
-                  className="h-5 rounded-[4px] border-border bg-background px-1.5 text-[9px] font-semibold text-muted-foreground shadow-none"
+                  className="h-5 rounded-md border-border bg-background px-1.5 text-[9px] font-semibold text-muted-foreground shadow-none"
                 >
                   Modificado
                 </Badge>
@@ -167,7 +170,7 @@ export function OperatorCard({
                       <div
                         key={dayIdx}
                         className={cn(
-                          "flex-1 flex flex-col items-center justify-center py-1 rounded-[4px] border text-[9px] font-bold transition-all duration-200",
+                          "flex-1 flex flex-col items-center justify-center py-1 rounded-md border text-[9px] font-bold transition-all duration-200",
                           isTodayReal
                             ? "border-emerald-500 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 scale-105"
                             : activeShift
@@ -190,7 +193,7 @@ export function OperatorCard({
                 
                 <div className="flex flex-wrap gap-1 mt-1 justify-center">
                   {op.shifts.map((s, idx) => (
-                    <span key={idx} className="text-[9px] font-mono font-semibold bg-muted/40 border border-border px-1.5 py-0.5 rounded-[4px] text-muted-foreground">
+                    <span key={idx} className="text-[9px] font-mono font-semibold bg-muted/40 border border-border px-1.5 py-0.5 rounded-md text-muted-foreground">
                       {formatTime(s.start)} – {formatTime(s.end)}
                     </span>
                   ))}

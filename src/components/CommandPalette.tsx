@@ -234,17 +234,17 @@ export function CommandPalette({
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={isIntegrated ? { opacity: 0, y: -6 } : { opacity: 0, scale: 0.98, y: -16 }}
       transition={{ type: "spring", bounce: 0, duration: 0.28 }}
-      className={`relative flex w-full flex-col overflow-hidden border border-border bg-card shadow-xl pointer-events-auto ${
+      className={`relative flex w-full flex-col overflow-hidden border border-border bg-card shadow-2xl pointer-events-auto ${
         isIntegrated
-          ? "z-[100] max-h-[min(42vh,340px)] rounded-b-sm rounded-t-none border-t-0"
-          : "z-[20001] mt-[10vh] max-h-[min(58vh,420px)] max-w-[480px] rounded-sm md:mt-[12vh]"
+          ? "z-[100] max-h-[min(42vh,340px)] rounded-b-[2px] rounded-t-none border-t-0"
+          : "z-[20001] mt-[10vh] max-h-[min(58vh,420px)] max-w-[480px] rounded-[2px] md:mt-[12vh]"
       }`}
     >
       <div className="h-0.5 shrink-0 bg-gradient-to-r from-[#FF0C60] via-[#FF0C60]/50 to-transparent" />
 
       {!isIntegrated && (
         <div className="shrink-0 border-b border-border/60 p-2.5">
-          <div className="flex h-9 items-center gap-2 rounded-lg border border-border bg-muted/30 px-2.5 focus-within:border-[#FF0C60]/40 focus-within:ring-1 focus-within:ring-[#FF0C60]/15">
+          <div className="flex h-9 items-center gap-2 rounded-[2px] border border-border bg-muted/30 px-2.5 focus-within:border-[#FF0C60]/40 focus-within:ring-1 focus-within:ring-[#FF0C60]/15">
             <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
             <input
               autoFocus
@@ -256,7 +256,7 @@ export function CommandPalette({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="rounded-[2px] p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
               <X className="h-4 w-4" />
             </button>
@@ -274,7 +274,7 @@ export function CommandPalette({
                 router.push(action.path);
                 onClose();
               }}
-              className="flex h-6 shrink-0 items-center gap-1 rounded-md border border-border/80 bg-muted/40 px-2 text-[10px] font-medium text-muted-foreground transition-colors hover:border-[#FF0C60]/30 hover:bg-[#FF0C60]/5 hover:text-[#FF0C60]"
+              className="flex h-6 shrink-0 items-center gap-1 rounded-[2px] border border-border/80 bg-muted/40 px-2 text-[10px] font-medium text-muted-foreground transition-colors hover:border-[#FF0C60]/30 hover:bg-[#FF0C60]/5 hover:text-[#FF0C60]"
             >
               <action.icon className="h-3 w-3" />
               {action.label}
@@ -302,14 +302,14 @@ export function CommandPalette({
                         onClose();
                       }}
                       onMouseEnter={() => setSelectedIndex(globalIndex)}
-                      className={`flex w-full items-center gap-2 rounded-lg px-1.5 py-1.5 text-left transition-colors ${
+                      className={`flex w-full items-center gap-2 rounded-[2px] px-1.5 py-1.5 text-left transition-all duration-150 ${
                         isSelected
-                          ? "bg-[#FF0C60]/8 ring-1 ring-[#FF0C60]/20"
-                          : "hover:bg-muted/50"
+                          ? "bg-[#FF0C60]/10 border-l-[3px] border-l-[#FF0C60] pl-[5px]"
+                          : "border-l-[3px] border-l-transparent hover:bg-muted/40"
                       }`}
                     >
                       <div
-                        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors ${
+                        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-[2px] transition-colors ${
                           isSelected
                             ? "bg-[#FF0C60] text-white"
                             : "bg-muted text-muted-foreground"
@@ -346,16 +346,16 @@ export function CommandPalette({
       <div className="flex shrink-0 items-center justify-between border-t border-border/60 bg-muted/20 px-2.5 py-1.5">
         <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
           <span className="flex items-center gap-1">
-            <kbd className="rounded border border-border bg-background px-1 py-0.5 font-mono text-[9px]">
+            <kbd className="rounded-[2px] border border-border bg-background px-1 py-0.5 font-mono text-[9px]">
               ↑
             </kbd>
-            <kbd className="rounded border border-border bg-background px-1 py-0.5 font-mono text-[9px]">
+            <kbd className="rounded-[2px] border border-border bg-background px-1 py-0.5 font-mono text-[9px]">
               ↓
             </kbd>
             <span className="ml-0.5 hidden sm:inline">navegar</span>
           </span>
           <span className="flex items-center gap-1">
-            <kbd className="rounded border border-border bg-background px-1.5 py-0.5 font-mono text-[9px]">
+            <kbd className="rounded-[2px] border border-border bg-background px-1.5 py-0.5 font-mono text-[9px]">
               Enter
             </kbd>
             <span className="hidden sm:inline">abrir</span>

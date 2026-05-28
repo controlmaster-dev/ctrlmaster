@@ -53,9 +53,13 @@ export default {
         }
       },
       borderRadius: {
+        '3xl': 'calc(var(--radius) * 3)',
+        '2xl': 'calc(var(--radius) * 2)',
+        xl: 'calc(var(--radius) * 1.5)',
         lg: 'var(--radius)',
-        md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)'
+        md: 'calc(var(--radius) - 1px)',
+        sm: 'calc(var(--radius) - 1.5px)',
+        DEFAULT: 'calc(var(--radius) - 1px)'
       },
       fontFamily: {
         sans: ["obviously-variable", ...fontFamily.sans],
