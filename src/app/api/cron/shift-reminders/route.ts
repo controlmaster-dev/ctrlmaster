@@ -87,13 +87,16 @@ export async function GET(req: NextRequest) {
     let whatsappStatus = "Not attempted";
     if (user.phone) {
       try {
+        const firstName = info.name.split(' ')[0];
+        const waMessage = `Hola ${firstName}, ¿cómo estás? Te escribo para recordarte que tenés el turno de Pauta Bitcentral el ${formattedDate} (${tipoDeTurno.toLowerCase()}). Por fa acordate de segmentar y cuadrar los programas con tiempo. ¡Gracias!\n\nRevisá https://enlacecr.dev/ para verlo mejor.`;
+
         const waApiUrl = process.env.WHATSAPP_API_URL || 'http://localhost:3001';
         const waRes = await fetch(`${waApiUrl}/api/send-message`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-API-Key': process.env.WHATSAPP_API_KEY || '' },
           body: JSON.stringify({
             phone: user.phone,
-            message: `Hola ${info.name.split(' ')[0]}, te recordamos que tienes turno de Pauta Bitcentral:\nFecha: *${formattedDate}*\nModalidad: ${tipoDeTurno}\n\nPor favor, asegúrate de segmentar los programas con tiempo.`
+            message: waMessage
           })
         });
         whatsappStatus = waRes.ok ? "Sent" : `Error: ${waRes.status}`;

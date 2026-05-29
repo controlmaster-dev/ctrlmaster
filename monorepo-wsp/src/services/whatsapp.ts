@@ -21,6 +21,7 @@ export class WhatsAppService {
   private messagesSent = 0;
   private messagesFailed = 0;
   private isShuttingDown = false;
+  private messageStore = new Map<string, any>();
 
   async initialize(): Promise<void> {
     logger.info('Inicializando WhatsApp connection...');
@@ -38,7 +39,7 @@ export class WhatsAppService {
 
     // Clean up old socket before creating a new one
     if (this.socket) {
-      try { this.socket.ev.removeAllListeners(); } catch {}
+      try { (this.socket.ev as any).removeAllListeners(); } catch {}
       try { this.socket.end(new Error('Reconnecting')); } catch {}
       this.socket = null;
     }
@@ -50,6 +51,10 @@ export class WhatsAppService {
       browser: ['CtrlMaster', 'Chrome', '1.0.0'],
       syncFullHistory: false,
       markOnlineOnConnect: false,
+      getMessage: async (key) => {
+        const storeKey = `${key.remoteJid}_${key.id}`;
+        return this.messageStore.get(storeKey) || undefined;
+      },
     });
 
     // Save credentials on auth update
@@ -137,7 +142,19 @@ export class WhatsAppService {
     const number = this.formatNumber(phone);
 
     try {
-      await this.socket.sendMessage(number, { text: message });
+      const sentMsg = await this.socket.sendMessage(number, { text: message });
+      
+      if (sentMsg) {
+        const storeKey = `${sentMsg.key.remoteJid}_${sentMsg.key.id}`;
+        this.messageStore.set(storeKey, sentMsg.message);
+        
+        // Prevent memory growth by keeping only the last 1000 messages
+        if (this.messageStore.size > 1000) {
+          const firstKey = this.messageStore.keys().next().value;
+          if (firstKey) this.messageStore.delete(firstKey);
+        }
+      }
+
       this.messagesSent++;
       logger.info({ phone: number }, '📤 Mensaje enviado');
     } catch (error: any) {
