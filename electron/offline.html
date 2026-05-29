@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Control Master - Sin Conexión</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #07090e;
+      --card-bg: rgba(13, 18, 30, 0.45);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --accent-color: #3b82f6;
+      --accent-glow: rgba(59, 130, 246, 0.5);
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --gradient-primary: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      --gradient-radial: radial-gradient(circle at center, rgba(30, 41, 59, 0.8) 0%, rgba(7, 9, 14, 1) 100%);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--bg-dark);
+      background-image: var(--gradient-radial);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      position: relative;
+      -webkit-app-region: drag;
+    }
+
+    .card, .btn, .config-link, .back-btn {
+      -webkit-app-region: no-drag !important;
+    }
+
+    /* Fondo animado de partículas / orbes */
+    .bg-glow {
+      position: absolute;
+      width: 500px;
+      height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, rgba(59, 130, 246, 0) 70%);
+      top: -100px;
+      right: -100px;
+      z-index: 0;
+      animation: float 20s infinite alternate ease-in-out;
+    }
+
+    .bg-glow-2 {
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.06) 0%, rgba(99, 102, 241, 0) 70%);
+      bottom: -150px;
+      left: -150px;
+      z-index: 0;
+      animation: float 25s infinite alternate-reverse ease-in-out;
+    }
+
+    @keyframes float {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(50px, 30px) scale(1.1); }
+    }
+
+    /* Contenedor principal estilo Glassmorphism */
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 480px;
+      text-align: center;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), 
+                  inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      z-index: 10;
+      animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Icono animado de conectividad */
+    .icon-container {
+      position: relative;
+      width: 96px;
+      height: 96px;
+      margin: 0 auto 32px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .pulse-ring {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 2px solid var(--accent-color);
+      opacity: 0;
+      animation: pulse 2s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+    }
+
+    .pulse-ring-2 {
+      animation-delay: 0.6s;
+    }
+
+    .pulse-ring-3 {
+      animation-delay: 1.2s;
+    }
+
+    .icon-circle {
+      width: 72px;
+      height: 72px;
+      background: rgba(59, 130, 246, 0.12);
+      border: 1.5px solid rgba(59, 130, 246, 0.3);
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 2;
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.1);
+    }
+
+    .wifi-icon {
+      width: 32px;
+      height: 32px;
+      fill: none;
+      stroke: var(--accent-color);
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.8); opacity: 0.8; }
+      100% { transform: scale(1.4); opacity: 0; }
+    }
+
+    /* Títulos y textos */
+    h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 12px;
+      background: linear-gradient(120deg, #ffffff 30%, #93c5fd 90%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    p {
+      font-size: 15px;
+      line-height: 1.6;
+      color: var(--text-muted);
+      margin-bottom: 36px;
+    }
+
+    /* Botón de reintento prémium */
+    .btn {
+      width: 100%;
+      padding: 16px 28px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      color: #ffffff;
+      background: var(--gradient-primary);
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      outline: none;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 4px 15px var(--accent-glow);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px var(--accent-glow);
+      filter: brightness(1.1);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #ffffff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: none;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Enlace de configuración secundaria */
+    .config-link {
+      display: inline-block;
+      margin-top: 24px;
+      font-size: 13px;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.2s;
+      cursor: pointer;
+      border-bottom: 1px dotted var(--text-muted);
+    }
+
+    .config-link:hover {
+      color: var(--accent-color);
+      border-bottom-color: var(--accent-color);
+    }
+
+    .footer {
+      position: absolute;
+      bottom: 24px;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.2);
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg-glow"></div>
+  <div class="bg-glow-2"></div>
+
+  <div class="card">
+    <div class="icon-container">
+      <div class="pulse-ring"></div>
+      <div class="pulse-ring pulse-ring-2"></div>
+      <div class="pulse-ring pulse-ring-3"></div>
+      <div class="icon-circle">
+        <svg class="wifi-icon" viewBox="0 0 24 24">
+          <path d="M1 8a18.5 18.5 0 0 1 22 0"></path>
+          <path d="M5 12.5a12.9 12.9 0 0 1 14 0"></path>
+          <path d="M9 17a7.3 7.3 0 0 1 6 0"></path>
+          <path d="M12 21v.01"></path>
+        </svg>
+      </div>
+    </div>
+
+    <h1 id="title">Sin Conexión</h1>
+    <p id="description">No se pudo establecer conexión con los servidores de Control Master. Por favor, comprueba tu conexión a internet o reintenta.</p>
+
+    <button class="btn" id="retry-btn" onclick="handleRetry()">
+      <span class="spinner" id="spinner"></span>
+      <span id="btn-text">Reintentar Conexión</span>
+    </button>
+
+    <a class="config-link" onclick="goToConfig()">Configurar dirección del servidor</a>
+  </div>
+
+  <div class="footer">Control Master Desktop v1.0.0</div>
+
+  <script>
+    function handleRetry() {
+      const btn = document.getElementById('retry-btn');
+      const text = document.getElementById('btn-text');
+      const spinner = document.getElementById('spinner');
+      
+      // Bloquear UI y activar cargando
+      btn.disabled = true;
+      text.textContent = 'Verificando...';
+      spinner.style.display = 'inline-block';
+      
+      // Esperar un segundo de forma visual antes de mandar la orden a Electron
+      setTimeout(() => {
+        if (window.electronAPI) {
+          window.electronAPI.retryConnection();
+        } else {
+          // Fallback para navegador
+          console.log("Reintentando en navegador...");
+          btn.disabled = false;
+          text.textContent = 'Reintentar Conexión';
+          spinner.style.display = 'none';
+        }
+      }, 1200);
+    }
+
+    function goToConfig() {
+      if (window.electronAPI) {
+        // Enviar orden a Electron para forzar la carga de la pantalla de configuración
+        // Para esto simplemente llamamos a un cambio de archivo local en main.js o lo resolvemos localmente
+        window.location.href = 'setup.html';
+      } else {
+        alert("Configuración solo disponible en el contenedor de escritorio.");
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+{
+  "appId": "com.controlmaster.app",
+  "productName": "Control Master",
+  "copyright": "Copyright © 2026 Control Master",
+  "directories": {
+    "output": "dist-desktop"
+  },
+  "files": [
+    "package.json",
+    "electron/**/*"
+  ],
+  "mac": {
+    "target": [
+      "dmg"
+    ],
+    "category": "public.app-category.productivity"
+  },
+  "win": {
+    "target": [
+      "nsis"
+    ]
+  },
+  "nsis": {
+    "oneClick": true,
+    "allowToChangeInstallationDirectory": false,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true
+  }
+}
