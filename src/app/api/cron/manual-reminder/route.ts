@@ -66,7 +66,8 @@ export async function POST(req: NextRequest) {
     const results: { whatsapp?: string; email?: string } = {};
 
     if ((method === 'whatsapp' || method === 'both') && user.phone) {
-      const whatsappMessage = `*Recordatorio de Pauta Bitcentral*\n\nHola ${user.name.split(' ')[0]},\n\n${senderName} te envía este recordatorio:\n\nFecha: *${formattedDate}*\nModalidad: ${tipoDeTurno}\n\nPor favor, asegúrate de segmentar los programas con tiempo.\n\n_Control Master - Enlace_`;
+      const firstName = user.name.split(' ')[0];
+      const whatsappMessage = `Hola ${firstName}, ¿cómo estás? Te escribe ${senderName} para recordarte que tenés el turno de Pauta Bitcentral el ${formattedDate} (${tipoDeTurno.toLowerCase()}). Por fa acordate de segmentar y cuadrar los programas con tiempo. ¡Gracias!\n\nRevisá https://enlacecr.dev/ para verlo mejor.`;
       try {
         const waResult = await sendWhatsApp(user.phone, whatsappMessage);
         results.whatsapp = waResult.success ? 'sent' : 'failed';
