@@ -153,14 +153,11 @@ function createWindow() {
     // Abrir DevTools en desarrollo
     mainWindow.webContents.openDevTools();
   } else {
-    // En producción, si tenemos URL configurada, la cargamos. Si no, cargamos la pantalla de setup.
-    if (serverUrl) {
-      mainWindow.loadURL(serverUrl).catch(() => {
-        mainWindow.loadFile(path.join(__dirname, 'offline.html'));
-      });
-    } else {
-      mainWindow.loadFile(path.join(__dirname, 'setup.html'));
-    }
+    // En producción, cargar por defecto https://enlacecr.dev/ si no hay una personalizada en config.json
+    const targetUrl = serverUrl || 'https://enlacecr.dev/';
+    mainWindow.loadURL(targetUrl).catch(() => {
+      mainWindow.loadFile(path.join(__dirname, 'offline.html'));
+    });
   }
 
   // HARDENING DE SEGURIDAD (TODO: security)
