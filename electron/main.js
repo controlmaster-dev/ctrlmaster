@@ -167,7 +167,8 @@ function createWindow() {
       'localhost',
       '127.0.0.1',
       'vercel.app',
-      'enlace.org' // Añade aquí tus dominios permitidos
+      'enlace.org',
+      'enlacecr.dev' // Dominio oficial de producción
     ];
 
     try {
