@@ -53,8 +53,8 @@ export function ContextStep({ formData, toggleSystem, toggleCategory }: ContextS
                   className={cn(
                     "min-h-[3.25rem] rounded-lg border text-sm transition-colors sm:min-h-14",
                     isSelected
-                      ? "border-[#FF0C60] bg-[#FF0C60] text-white"
-                      : "border-border/60 bg-card text-muted-foreground hover:border-[#FF0C60]/40 hover:text-foreground"
+                      ? "border-brand bg-brand text-white"
+                      : "border-border/60 bg-card text-muted-foreground hover:border-brand/40 hover:text-foreground"
                   )}
                 >
                   {sys}
@@ -80,7 +80,7 @@ export function ContextStep({ formData, toggleSystem, toggleCategory }: ContextS
                     className={cn(
                       "min-h-11 rounded-md border px-3 py-2.5 text-xs transition-colors sm:text-sm",
                       active
-                        ? "border-[#FF0C60] bg-[#FF0C60] text-white"
+                        ? "border-brand bg-brand text-white"
                         : "border-border/60 bg-muted/25 text-muted-foreground hover:text-foreground"
                     )}
                   >

@@ -14,7 +14,7 @@ export function NavRouteIndicator({ pathname }: { pathname: string }) {
 
   return (
     <span
-      className="pointer-events-none absolute bottom-0 left-0 z-[110] h-[2px] bg-[#FF0C60] transition-[width,opacity] duration-300 ease-out"
+      className="pointer-events-none absolute bottom-0 left-0 z-[110] h-[2px] bg-brand transition-[width,opacity] duration-300 ease-out"
       style={{
         width: active ? "100%" : "0%",
         opacity: active ? 1 : 0,

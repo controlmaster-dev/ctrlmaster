@@ -146,12 +146,12 @@ export default function CredentialsPage() {
   if (!isReady) return <ClavesSkeleton />;
 
   return (
-    <div className="flex min-h-[calc(100dvh-3.5rem)] flex-col bg-background text-foreground selection:bg-[#FF0C60] selection:text-white md:flex-row">
+    <div className="flex min-h-[calc(100dvh-3.5rem)] flex-col bg-background text-foreground selection:bg-brand selection:text-white md:flex-row">
       {/* Panel lateral — filtros y resumen */}
       <aside className="flex w-full shrink-0 flex-col border-b border-border/60 bg-card/40 md:h-[calc(100dvh-3.5rem)] md:w-72 md:border-b-0 md:border-r lg:w-80">
         <div className="border-b border-border/50 p-5">
           <h1 className="text-xl font-semibold tracking-tight">
-            Bóveda de <span className="text-[#FF0C60]">claves</span>
+            Bóveda de <span className="text-brand">claves</span>
           </h1>
           <p className="mt-1 text-xs text-muted-foreground">
             Credenciales del equipo
@@ -160,7 +160,7 @@ export default function CredentialsPage() {
 
         <div className="grid grid-cols-3 gap-2 border-b border-border/50 p-4 md:grid-cols-1 md:gap-3">
           <div className="rounded-lg border border-border/50 bg-muted/20 px-3 py-2.5">
-            <div className="flex items-center gap-2 text-[#FF0C60]">
+            <div className="flex items-center gap-2 text-brand">
               <KeyRound className="h-3.5 w-3.5" />
               <span className="text-[10px] text-muted-foreground">Total</span>
             </div>
@@ -207,7 +207,7 @@ export default function CredentialsPage() {
                     className={cn(
                       "rounded-lg px-3 py-2 text-left text-sm transition-colors",
                       selectedCategory === cat
-                        ? "bg-[#FF0C60] text-white"
+                        ? "bg-brand text-white"
                         : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                     )}
                   >
@@ -219,7 +219,7 @@ export default function CredentialsPage() {
           )}
 
           <Button
-            className="mt-auto hidden h-10 w-full gap-2 rounded-lg bg-[#FF0C60] text-white hover:bg-[#E00A54] md:flex"
+            className="mt-auto hidden h-10 w-full gap-2 rounded-lg bg-brand text-white hover:bg-brand-hover md:flex"
             onClick={() => setIsCreateOpen(true)}
           >
             <Plus className="h-4 w-4" />
@@ -231,7 +231,7 @@ export default function CredentialsPage() {
       {/* Grid principal */}
       <main className="relative flex min-h-0 flex-1 flex-col md:h-[calc(100dvh-3.5rem)] md:overflow-hidden">
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute -right-20 top-0 h-72 w-72 rounded-full bg-[#FF0C60]/5 blur-3xl" />
+          <div className="absolute -right-20 top-0 h-72 w-72 rounded-full bg-brand/5 blur-3xl" />
         </div>
 
         <div className="relative z-10 flex items-center justify-between gap-3 border-b border-border/50 px-4 py-3">
@@ -242,7 +242,7 @@ export default function CredentialsPage() {
           </p>
           <Button
             size="sm"
-            className="h-9 gap-2 rounded-lg bg-[#FF0C60] text-white hover:bg-[#E00A54] md:hidden"
+            className="h-9 gap-2 rounded-lg bg-brand text-white hover:bg-brand-hover md:hidden"
             onClick={() => setIsCreateOpen(true)}
           >
             <Plus className="h-4 w-4" />
@@ -267,7 +267,7 @@ export default function CredentialsPage() {
               {credentials.length > 0 && (
                 <Button
                   variant="link"
-                  className="mt-2 text-[#FF0C60]"
+                  className="mt-2 text-brand"
                   onClick={() => {
                     setSearchQuery("");
                     setSelectedCategory("Todas");

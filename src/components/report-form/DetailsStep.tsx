@@ -33,7 +33,7 @@ export function DetailsStep({ formData, handleInputChange }: DetailsStepProps) {
           <Textarea
             value={formData.problemDescription}
             onChange={(e) => handleInputChange("problemDescription", e.target.value)}
-            className="min-h-[180px] flex-1 resize-none rounded-lg border-border/60 bg-card/80 p-4 text-sm focus-visible:ring-[#FF0C60]/30 md:min-h-[220px] lg:min-h-0"
+            className="min-h-[180px] flex-1 resize-none rounded-lg border-border/60 bg-card/80 p-4 text-sm focus-visible:ring-brand/30 md:min-h-[220px] lg:min-h-0"
             placeholder="Ej.: se cayó el audio en el canal principal, mensaje de error en consola…"
           />
         </section>
@@ -49,7 +49,7 @@ export function DetailsStep({ formData, handleInputChange }: DetailsStepProps) {
               className={cn(
                 "rounded-lg border px-4 py-3 text-left text-sm transition-colors",
                 !formData.isManualDate
-                  ? "border-[#FF0C60] bg-[#FF0C60] text-white"
+                  ? "border-brand bg-brand text-white"
                   : "border-border/60 bg-card text-muted-foreground hover:text-foreground"
               )}
             >
@@ -64,7 +64,7 @@ export function DetailsStep({ formData, handleInputChange }: DetailsStepProps) {
               className={cn(
                 "rounded-lg border px-4 py-3 text-left text-sm transition-colors",
                 formData.isManualDate
-                  ? "border-[#FF0C60] bg-[#FF0C60] text-white"
+                  ? "border-brand bg-brand text-white"
                   : "border-border/60 bg-card text-muted-foreground hover:text-foreground"
               )}
             >

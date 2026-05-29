@@ -32,14 +32,14 @@ export function StreamList({
             className={cn(
               "flex items-center gap-3 p-3 rounded-xl border transition-all text-left group",
               isSelected
-                ? "bg-zinc-800 border-[#FF0C60] shadow-[0_0_15px_rgba(255,12,96,0.15)]"
+                ? "bg-zinc-800 border-brand shadow-[0_0_15px_rgba(255,12,96,0.15)]"
                 : "bg-zinc-900/50 border-white/5 hover:bg-zinc-800 hover:border-white/10"
             )}
           >
             <div
               className={cn(
                 "w-1 h-8 rounded-full transition-colors",
-                isSelected ? "bg-[#FF0C60]" : "bg-zinc-700 group-hover:bg-zinc-600"
+                isSelected ? "bg-brand" : "bg-zinc-700 group-hover:bg-zinc-600"
               )}
             />
 
@@ -58,7 +58,7 @@ export function StreamList({
             </div>
 
             {isSelected && (
-              <div className="w-8 h-8 rounded-full bg-[#FF0C60]/10 flex items-center justify-center text-[#FF0C60] animate-pulse">
+              <div className="w-8 h-8 rounded-full bg-brand/10 flex items-center justify-center text-brand animate-pulse">
                 <Play className="w-3.5 h-3.5 fill-current" />
               </div>
             )}

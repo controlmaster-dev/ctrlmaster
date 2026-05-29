@@ -33,9 +33,6 @@ const nextConfig = {
   output: "standalone",
   productionBrowserSourceMaps: false,
   poweredByHeader: false,
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   experimental: {
     // Tree-shake large barrel imports so only used icons/helpers ship.
     optimizePackageImports: ['lucide-react', 'date-fns'],

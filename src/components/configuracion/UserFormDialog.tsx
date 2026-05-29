@@ -72,9 +72,9 @@ export function UserFormDialog({
         <DialogHeader className="space-y-1 border-b border-border/60 px-6 py-4 pr-12 text-left sm:px-8">
           <DialogTitle className="flex items-center gap-2 text-lg font-semibold">
             {isEditing ? (
-              <Settings className="h-5 w-5 shrink-0 text-[#FF0C60]" />
+              <Settings className="h-5 w-5 shrink-0 text-brand" />
             ) : (
-              <UserPlus className="h-5 w-5 shrink-0 text-[#FF0C60]" />
+              <UserPlus className="h-5 w-5 shrink-0 text-brand" />
             )}
             {isEditing ? "Editar operador" : "Nuevo operador"}
           </DialogTitle>
@@ -222,7 +222,7 @@ export function UserFormDialog({
           <Button
             type="submit"
             form="user-form"
-            className="bg-[#FF0C60] text-white hover:bg-[#E00A54]"
+            className="bg-brand text-white hover:bg-brand-hover"
           >
             {isEditing ? "Guardar cambios" : "Crear operador"}
           </Button>

@@ -6,8 +6,8 @@
     "dev": "next dev -H 0.0.0.0 --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "bunx tsc --noEmit && next lint",
-    "format": "bunx biome format --write",
+    "lint": "npx tsc --noEmit && npx eslint .",
+    "format": "npx biome format --write",
     "all": "next build && next start",
     "migrate": "tsx scripts/migrate.ts",
     "seed": "tsx scripts/seed.ts"
@@ -65,6 +65,7 @@
     "@babel/preset-typescript": "^7.28.5",
     "@biomejs/biome": "1.9.4",
     "@eslint/eslintrc": "^3.3.1",
+    "@next/eslint-plugin-next": "15.1.7",
     "@tailwindcss/typography": "^0.5.19",
     "@types/node": "^20.17.50",
     "@types/pdfkit": "^0.17.3",

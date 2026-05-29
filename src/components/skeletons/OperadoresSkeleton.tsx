@@ -5,7 +5,7 @@ export function OperadoresSkeleton() {
   return (
     <div className="relative min-h-screen overflow-hidden bg-background pb-20">
       <div className="sticky top-0 z-40 border-b border-border bg-background/90">
-        <div className="h-0.5 bg-[#FF0C60]" />
+        <div className="h-0.5 bg-brand" />
         <div className={`${pageHeaderBarClass} h-14`}>
           <Skeleton className="h-7 w-36 rounded-lg" />
           <div className="flex gap-2">

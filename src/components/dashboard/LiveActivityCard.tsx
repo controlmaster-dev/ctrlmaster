@@ -54,7 +54,7 @@ export function LiveActivityCard({
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 gap-1 px-2 text-xs text-[#FF0C60] hover:bg-[#FF0C60]/10 hover:text-[#FF0C60]"
+            className="h-8 gap-1 px-2 text-xs text-brand hover:bg-brand/10 hover:text-brand"
           >
             Ver todos
             <ArrowUpRight className="h-3.5 w-3.5" />

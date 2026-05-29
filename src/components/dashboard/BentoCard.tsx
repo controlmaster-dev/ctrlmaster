@@ -15,7 +15,7 @@ const variantClasses: Record<string, string> = {
   elevated:
     "border border-border bg-card/90",
   accent:
-    "border border-[#FF0C60]/20 bg-[#FF0C60]/[0.04] dark:bg-[#FF0C60]/[0.03]",
+    "border border-brand/20 bg-brand/[0.04] dark:bg-brand/[0.03]",
   muted:
     "border border-border/80 bg-muted/60",
 };

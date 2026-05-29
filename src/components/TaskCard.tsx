@@ -60,7 +60,7 @@ export function TaskCard({
                           isCompleted
                             ? "bg-emerald-500 border-emerald-500 scale-100"
                             : isToday
-                            ? "border-slate-300 dark:border-slate-600 group-hover:border-[#FF0C60] scale-90 group-hover:scale-100"
+                            ? "border-slate-300 dark:border-slate-600 group-hover:border-brand scale-90 group-hover:scale-100"
                             : "border-slate-200 dark:border-slate-800"
                         }`}
         >
@@ -125,7 +125,7 @@ export function TaskCard({
         </div>
 
         {isToday && !isCompleted && (
-          <div className="w-8 h-8 rounded-full bg-slate-50 dark:bg-white/5 flex items-center justify-center group-hover:bg-[#FF0C60] group-hover:text-white transition-colors">
+          <div className="w-8 h-8 rounded-full bg-slate-50 dark:bg-white/5 flex items-center justify-center group-hover:bg-brand group-hover:text-white transition-colors">
             <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-white" />
           </div>
         )}

@@ -11,7 +11,7 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 const inputClass =
-  "h-11 rounded-xl border-border/60 bg-muted/30 text-sm shadow-none focus-visible:ring-1 focus-visible:ring-[#FF0C60]";
+  "h-11 rounded-xl border-border/60 bg-muted/30 text-sm shadow-none focus-visible:ring-1 focus-visible:ring-brand";
 
 export default function LoginPage() {
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
@@ -127,11 +127,11 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col text-foreground selection:bg-[#FF0C60] selection:text-white lg:flex-row">
+    <div className="flex min-h-screen flex-col text-foreground selection:bg-brand selection:text-white lg:flex-row">
       {/* ── Left: marca ── */}
       <section className="relative hidden flex-col justify-center overflow-hidden border-border/50 bg-muted/20 lg:flex lg:min-h-screen lg:w-[44%] lg:border-r lg:p-14 xl:p-16">
         <div className="pointer-events-none absolute inset-0">
-          <div className="absolute -left-20 top-0 h-72 w-72 rounded-full bg-[#FF0C60]/15 blur-[90px]" />
+          <div className="absolute -left-20 top-0 h-72 w-72 rounded-full bg-brand/15 blur-[90px]" />
           <div className="absolute bottom-0 right-0 h-64 w-64 rounded-full bg-blue-500/10 blur-[80px]" />
         </div>
 
@@ -151,7 +151,7 @@ export default function LoginPage() {
           />
 
           <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            Control <span className="text-[#FF0C60]">Master</span>
+            Control <span className="text-brand">Master</span>
           </h1>
 
           <p className="mt-2 text-sm text-muted-foreground">Enlace TV · Canal 23</p>
@@ -176,7 +176,7 @@ export default function LoginPage() {
               className="h-8 w-8 object-contain"
             />
             <p className="text-lg font-semibold">
-              Control <span className="text-[#FF0C60]">Master</span>
+              Control <span className="text-brand">Master</span>
             </p>
           </div>
 
@@ -274,7 +274,7 @@ export default function LoginPage() {
                   <Button
                     type="submit"
                     disabled={loading}
-                    className="mt-2 h-11 w-full rounded-xl bg-[#FF0C60] text-sm font-semibold text-white hover:bg-[#e60b57]"
+                    className="mt-2 h-11 w-full rounded-xl bg-brand text-sm font-semibold text-white hover:bg-[#e60b57]"
                   >
                     {loading ? (
                       <Loader2 className="h-5 w-5 animate-spin" />
@@ -304,7 +304,7 @@ export default function LoginPage() {
                   <div className="space-y-2">
                     <Label
                       htmlFor="reg-code"
-                      className="flex items-center gap-1.5 text-sm font-medium text-[#FF0C60]"
+                      className="flex items-center gap-1.5 text-sm font-medium text-brand"
                     >
                       <ShieldCheck className="h-4 w-4" />
                       Código de seguridad
@@ -317,7 +317,7 @@ export default function LoginPage() {
                       maxLength={8}
                       className={cn(
                         inputClass,
-                        "border-[#FF0C60]/25 bg-[#FF0C60]/5 text-center font-mono tracking-widest"
+                        "border-brand/25 bg-brand/5 text-center font-mono tracking-widest"
                       )}
                       placeholder="XXXXXXXX"
                     />
@@ -401,7 +401,7 @@ export default function LoginPage() {
                   <Button
                     type="submit"
                     disabled={regLoading}
-                    className="h-11 w-full rounded-xl bg-[#FF0C60] text-sm font-semibold text-white hover:bg-[#e60b57]"
+                    className="h-11 w-full rounded-xl bg-brand text-sm font-semibold text-white hover:bg-[#e60b57]"
                   >
                     {regLoading ? (
                       <Loader2 className="h-5 w-5 animate-spin" />

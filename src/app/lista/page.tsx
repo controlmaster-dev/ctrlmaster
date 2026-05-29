@@ -110,10 +110,10 @@ export default function ProgramValidatorPage() {
   };
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-[2200px] flex-col gap-6 bg-background px-3 pb-6 pt-20 font-sans text-foreground selection:bg-[#FF0C60] selection:text-white md:px-4 md:pt-6">
+    <div className="mx-auto flex min-h-screen w-full max-w-[2200px] flex-col gap-6 bg-background px-3 pb-6 pt-20 font-sans text-foreground selection:bg-brand selection:text-white md:px-4 md:pt-6">
       <header className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shrink-0">
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 bg-[#FF0C60] rounded-md shadow-lg shadow-[#FF0C60]/20 flex items-center justify-center text-white">
+          <div className="w-10 h-10 bg-brand rounded-md shadow-lg shadow-brand/20 flex items-center justify-center text-white">
             <Activity className="w-6 h-6" />
           </div>
           <div>
@@ -187,7 +187,7 @@ export default function ProgramValidatorPage() {
             <div className="absolute bottom-6 right-6 z-10">
               <button
                 onClick={handleProcess}
-                className="bg-[#FF0C60] hover:bg-[#D40050] text-white pl-4 pr-6 py-3 rounded-full shadow-lg hover:shadow-xl hover:shadow-[#FF0C60]/30 transition-all flex items-center gap-3 font-bold tracking-wide group active:scale-95"
+                className="bg-brand hover:bg-brand-hover text-white pl-4 pr-6 py-3 rounded-full shadow-lg hover:shadow-xl hover:shadow-brand/30 transition-all flex items-center gap-3 font-bold tracking-wide group active:scale-95"
               >
                 <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center group-hover:rotate-90 transition-transform duration-500">
                   <Play className="w-4 h-4 fill-current" />
@@ -300,7 +300,7 @@ export default function ProgramValidatorPage() {
                 </button>
                 <button
                   onClick={saveKbToApi}
-                  className="bg-[#FF0C60] hover:bg-[#D40050] text-white px-6 py-2 text-xs font-bold uppercase tracking-wider rounded-md transition-all shadow-md"
+                  className="bg-brand hover:bg-brand-hover text-white px-6 py-2 text-xs font-bold uppercase tracking-wider rounded-md transition-all shadow-md"
                 >
                   Guardar Cambios
                 </button>

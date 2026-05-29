@@ -259,7 +259,7 @@ export default function OperatorsPage() {
   // ─── render ───────────────────────────────────────────────────────────────
 
   return (
-    <div className="operadores-ui relative min-h-screen overflow-hidden pb-20 text-foreground selection:bg-[#FF0C60] selection:text-white">
+    <div className="operadores-ui relative min-h-screen overflow-hidden pb-20 text-foreground selection:bg-brand selection:text-white">
       <Navbar />
  
       <main className={pageMainClass}>

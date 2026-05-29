@@ -105,10 +105,10 @@ export function YoutubeDownloader() {
       <div className="space-y-4">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-2xl bg-rose-500/10 flex items-center justify-center border border-rose-500/20 shadow-sm">
-            <Youtube className="w-6 h-6 text-[#FF0C60]" />
+            <Youtube className="w-6 h-6 text-brand" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">YouTube <span className="text-[#FF0C60]">Downloader</span></h1>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">YouTube <span className="text-brand">Downloader</span></h1>
             <p className="text-muted-foreground text-sm">Descarga audio y video de YouTube de forma rápida y sencilla.</p>
           </div>
         </div>
@@ -119,12 +119,12 @@ export function YoutubeDownloader() {
         <CardContent className="p-6 md:p-8 space-y-6">
           <div className="relative group">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <Search className={cn("w-5 h-5 transition-colors", url ? "text-[#FF0C60]" : "text-muted-foreground")} />
+              <Search className={cn("w-5 h-5 transition-colors", url ? "text-brand" : "text-muted-foreground")} />
             </div>
             <Input
               type="text"
               placeholder="Pega aquí el link de YouTube (ej. https://youtube.com/watch?v=...)"
-              className="pl-12 h-14 text-base bg-muted/30 border-border focus:border-[#FF0C60] focus:ring-[#FF0C60]/20 rounded-xl transition-all"
+              className="pl-12 h-14 text-base bg-muted/30 border-border focus:border-brand focus:ring-brand/20 rounded-xl transition-all"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && fetchInfo()}
@@ -132,7 +132,7 @@ export function YoutubeDownloader() {
             <Button 
               onClick={fetchInfo}
               disabled={loading || !url}
-              className="absolute right-2 top-2 bottom-2 bg-[#FF0C60] hover:bg-rose-600 text-white rounded-lg px-6 font-medium transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+              className="absolute right-2 top-2 bottom-2 bg-brand hover:bg-rose-600 text-white rounded-lg px-6 font-medium transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Analizar"}
             </Button>
@@ -224,8 +224,8 @@ export function YoutubeDownloader() {
             ) : loading ? (
               <div className="pt-6 border-t border-border/50 flex flex-col items-center justify-center py-12 space-y-4">
                 <div className="relative">
-                  <Loader2 className="w-12 h-12 text-[#FF0C60] animate-spin opacity-20" />
-                  <Music className="w-6 h-6 text-[#FF0C60] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-bounce" />
+                  <Loader2 className="w-12 h-12 text-brand animate-spin opacity-20" />
+                  <Music className="w-6 h-6 text-brand absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-bounce" />
                 </div>
                 <p className="text-muted-foreground text-sm font-medium animate-pulse">Analizando video...</p>
               </div>

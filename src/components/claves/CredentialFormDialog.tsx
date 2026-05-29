@@ -58,7 +58,7 @@ export function CredentialFormDialog({
     <DialogContent className="max-w-md rounded-xl border border-border/60 bg-card p-6">
       <DialogHeader className="mb-4 space-y-1">
         <DialogTitle className="flex items-center gap-2 text-lg font-semibold">
-          <Shield className="h-5 w-5 text-[#FF0C60]" />
+          <Shield className="h-5 w-5 text-brand" />
           {title}
         </DialogTitle>
       </DialogHeader>
@@ -101,7 +101,7 @@ export function CredentialFormDialog({
             <button
               type="button"
               onClick={generatePassword}
-              className="text-xs text-[#FF0C60] hover:text-[#E00A54]"
+              className="text-xs text-brand hover:text-brand-hover"
             >
               Generar segura
             </button>
@@ -126,7 +126,7 @@ export function CredentialFormDialog({
             id="credential-notes"
             rows={3}
             placeholder="Detalles adicionales…"
-            className="w-full resize-y rounded-lg border border-border/60 bg-muted/20 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF0C60]/30"
+            className="w-full resize-y rounded-lg border border-border/60 bg-muted/20 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
             value={data.notes ?? ""}
             onChange={(e) => update({ notes: e.target.value })}
           />
@@ -139,7 +139,7 @@ export function CredentialFormDialog({
           <Button
             type="button"
             onClick={onSubmit}
-            className="flex-1 bg-[#FF0C60] text-white hover:bg-[#E00A54]"
+            className="flex-1 bg-brand text-white hover:bg-brand-hover"
           >
             {confirmText}
           </Button>

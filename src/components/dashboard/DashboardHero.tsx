@@ -72,7 +72,7 @@ export function DashboardHero({
               ) : (
                 <>
                   Control{" "}
-                  <span className="text-[#FF0C60]">Master</span>
+                  <span className="text-brand">Master</span>
                 </>
               )}
             </h1>
@@ -157,7 +157,7 @@ export function DashboardHero({
         {/* Right side: CTA */}
         <div className="hidden shrink-0 md:block">
           <Button
-            className="h-10 gap-2 rounded-xl bg-[#FF0C60] px-5 text-sm font-semibold text-white shadow-none hover:bg-[#E00A54]"
+            className="h-10 gap-2 rounded-xl bg-brand px-5 text-sm font-semibold text-white shadow-none hover:bg-brand-hover"
             asChild
           >
             <Link href="/crear-reporte">

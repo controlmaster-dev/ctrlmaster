@@ -7,6 +7,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { User, AuthState, UserRole } from '@/types/auth';
 import { STORAGE_KEYS } from '@/config/constants';
+import { ApiClientError, apiGet, apiPost } from '@/lib/api/client';
 
 // Create context with proper typing
 const AuthContext = createContext<AuthState | undefined>(undefined);
@@ -39,16 +40,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(parsed);
 
           // Verify session is still valid in background
-          fetch('/api/auth/verify', {
-            credentials: 'include',
-          }).then(res => {
-            if (!res.ok) {
-              // Session expired
+          apiGet<{ authenticated: boolean }>('/api/auth/verify').then((session) => {
+            if (!session.authenticated) {
               setUser(null);
               localStorage.removeItem(STORAGE_KEYS.USER);
             }
-          }).catch(() => {
-            // Network error, keep user logged in
+          }).catch((error) => {
+            if (error instanceof ApiClientError && error.status === 401) {
+              setUser(null);
+              localStorage.removeItem(STORAGE_KEYS.USER);
+            }
+            // Network error: keep the optimistic local session.
           });
         } catch (error) {
           console.error('Error parsing saved user:', error);
@@ -56,19 +58,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } else {
         // No saved user, check if session exists server-side
-        const response = await fetch('/api/auth/verify', {
-          credentials: 'include',
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data.authenticated && savedUser) {
-            const parsed = JSON.parse(savedUser) as User;
-            if (parsed.image && !parsed.avatar) {
-              parsed.avatar = parsed.image;
-            }
-            setUser(parsed);
+        const data = await apiGet<{ authenticated: boolean; user?: User }>('/api/auth/verify');
+        if (data.authenticated && data.user) {
+          const verifiedUser = data.user;
+          if (verifiedUser.image && !verifiedUser.avatar) {
+            verifiedUser.avatar = verifiedUser.image;
           }
+          setUser(verifiedUser);
+          localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(verifiedUser));
         }
       }
     } catch (error) {
@@ -97,10 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     try {
       // Revoke server-side session
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include',
-      });
+      await apiPost('/api/auth/logout');
     } catch (error) {
       console.error('Error during logout:', error);
     } finally {

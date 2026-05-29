@@ -30,6 +30,10 @@
     --primary: 222.2 47.4% 11.2%;
     --primary-foreground: 210 40% 98%;
 
+    --brand: 339 100% 52%;
+    --brand-hover: 339 91% 46%;
+    --brand-foreground: 0 0% 100%;
+
     --secondary: 240 4.8% 95.9%;
     --secondary-foreground: 222.2 47.4% 11.2%;
 
@@ -67,6 +71,10 @@
     --primary: 0 0% 98%;
     --primary-foreground: 240 5.9% 10%;
 
+    --brand: 339 100% 52%;
+    --brand-hover: 339 91% 46%;
+    --brand-foreground: 0 0% 100%;
+
     --secondary: 240 3.7% 12%;
     --secondary-foreground: 0 0% 98%;
 
@@ -94,6 +102,15 @@
 @layer base {
   * {
     @apply border-border;
+  }
+
+  button,
+  a,
+  input,
+  textarea,
+  select,
+  [role="button"],
+  [data-state] {
     transition-property: background-color, border-color, color, fill, stroke, box-shadow, opacity;
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     transition-duration: 300ms;

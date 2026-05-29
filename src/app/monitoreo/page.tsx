@@ -92,7 +92,7 @@ export default function MonitoringPage() {
       <aside className="w-80 bg-[#0A0A0B] border-r border-white/10 flex flex-col z-20">
         <div className="p-4 border-b border-white/10">
           <h2 className="font-bold text-white flex items-center gap-2">
-            <AlertTriangle className="text-[#FF0C60]" />
+            <AlertTriangle className="text-brand" />
             Centro de Monitoreo
           </h2>
           <p className="text-xs text-slate-400 mt-1">Reporte rápido de incidencias en vivo.</p>

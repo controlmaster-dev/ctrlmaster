@@ -64,7 +64,7 @@ export function BirthdayWidget({ users, className }: { users: User[]; className?
                   <div
                     className={`flex flex-col items-center rounded-lg border px-2 py-2.5 text-center transition-colors ${
                       isToday
-                        ? "border-[#FF0C60]/25 bg-muted/40"
+                        ? "border-brand/25 bg-muted/40"
                         : "border-border/40 bg-muted/20 hover:bg-muted/40"
                     }`}
                   >

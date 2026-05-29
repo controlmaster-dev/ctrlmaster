@@ -1,69 +1,52 @@
 /**
- * Session verification endpoint
- * Used by middleware to validate auth tokens
+ * Session verification endpoint.
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { validateToken } from '@/lib/auth';
+import { NextResponse } from 'next/server';
+import { z } from 'zod';
+import { apiHandler } from '@/lib/api/handler';
+import { getUserFromToken, validateToken } from '@/lib/auth';
+
+const verifyBodySchema = z.object({
+  userId: z.string().min(1),
+});
 
 /**
  * POST /api/auth/verify
- * Verify if the session token is valid
+ * Verify if a known user/session pair is valid.
  */
-export async function POST(req: NextRequest) {
-  try {
-    const token = req.cookies.get('auth-token')?.value;
-    const body = await req.json();
-    const { userId } = body;
+export const POST = apiHandler({ bodySchema: verifyBodySchema }, async ({ req, body }) => {
+  const token = req.cookies.get('auth-token')?.value;
 
-    if (!token || !userId) {
-      return NextResponse.json(
-        { error: 'Token inválido' },
-        { status: 401 }
-      );
-    }
-
-    const isValid = await validateToken(userId, token);
-
-    if (!isValid) {
-      return NextResponse.json(
-        { error: 'Token expirado o inválido' },
-        { status: 401 }
-      );
-    }
-
-    return NextResponse.json({ valid: true });
-  } catch {
-    return NextResponse.json(
-      { error: 'Error de verificación' },
-      { status: 500 }
-    );
+  if (!token) {
+    return NextResponse.json({ error: 'Token invalido' }, { status: 401 });
   }
-}
+
+  const isValid = await validateToken(body.userId, token);
+  if (!isValid) {
+    return NextResponse.json({ error: 'Token expirado o invalido' }, { status: 401 });
+  }
+
+  return { valid: true };
+});
 
 /**
  * GET /api/auth/verify
- * Check current session status
+ * Check current session status and return the safe user payload.
  */
-export async function GET(req: NextRequest) {
-  try {
-    const token = req.cookies.get('auth-token')?.value;
-    const userId = req.cookies.get('user-id')?.value;
+export const GET = apiHandler({}, async ({ req }) => {
+  const token = req.cookies.get('auth-token')?.value;
+  const userId = req.cookies.get('user-id')?.value;
 
-    if (!token || !userId) {
-      return NextResponse.json(
-        { authenticated: false },
-        { status: 401 }
-      );
-    }
-
-    const isValid = await validateToken(userId, token);
-
-    return NextResponse.json({ authenticated: isValid });
-  } catch {
-    return NextResponse.json(
-      { authenticated: false },
-      { status: 500 }
-    );
+  if (!token || !userId) {
+    return NextResponse.json({ authenticated: false }, { status: 401 });
   }
-}
+
+  const isValid = await validateToken(userId, token);
+  if (!isValid) {
+    return NextResponse.json({ authenticated: false }, { status: 401 });
+  }
+
+  const user = await getUserFromToken(token);
+  return { authenticated: true, user };
+});

@@ -1,49 +1,39 @@
 /**
- * Logout API route
- * Revokes session token and clears cookies
+ * Logout API route.
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { apiHandler } from '@/lib/api/handler';
 import { revokeToken } from '@/lib/auth';
 
 /**
  * POST /api/auth/logout
- * Revoke session and clear cookies
+ * Revoke session and clear cookies.
  */
-export async function POST(req: NextRequest) {
-  try {
-    const token = req.cookies.get('auth-token')?.value;
+export const POST = apiHandler({}, async ({ req }) => {
+  const token = req.cookies.get('auth-token')?.value;
 
-    // Revoke token if it exists
-    if (token) {
-      await revokeToken(token);
-    }
-
-    // Create response
-    const response = NextResponse.json({ success: true });
-
-    // Clear cookies
-    response.cookies.set('auth-token', '', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 0,
-      path: '/',
-    });
-
-    response.cookies.set('user-id', '', {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 0,
-      path: '/',
-    });
-
-    return response;
-  } catch {
-    return NextResponse.json(
-      { error: 'Error al cerrar sesión' },
-      { status: 500 }
-    );
+  if (token) {
+    await revokeToken(token);
   }
-}
+
+  const response = NextResponse.json({ success: true });
+
+  response.cookies.set('auth-token', '', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 0,
+    path: '/',
+  });
+
+  response.cookies.set('user-id', '', {
+    httpOnly: false,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 0,
+    path: '/',
+  });
+
+  return response;
+});

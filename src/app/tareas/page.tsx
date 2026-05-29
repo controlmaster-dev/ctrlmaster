@@ -74,7 +74,7 @@ export default function TasksPage() {
             style={{ animationDuration: "4000ms" }}
           />
           <div
-            className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-[#FF0C60]/10 rounded-full blur-[120px] mix-blend-screen animate-pulse"
+            className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-brand/10 rounded-full blur-[120px] mix-blend-screen animate-pulse"
             style={{ animationDuration: "7000ms" }}
           />
         </div>
@@ -90,7 +90,7 @@ export default function TasksPage() {
                   onClick={() => setActiveTab("manage")}
                   className={`px-4 py-2 text-sm font-bold rounded-xl transition-all ${
                     activeTab === "manage"
-                      ? "bg-white/10 text-[#FF0C60] shadow-lg backdrop-blur-md"
+                      ? "bg-white/10 text-brand shadow-lg backdrop-blur-md"
                       : "text-slate-500 hover:text-white hover:bg-white/5"
                   }`}
                 >
@@ -100,7 +100,7 @@ export default function TasksPage() {
                   onClick={() => setActiveTab("my-agenda")}
                   className={`px-4 py-2 text-sm font-bold rounded-xl transition-all ${
                     activeTab === "my-agenda"
-                      ? "bg-white/10 text-[#FF0C60] shadow-lg backdrop-blur-md"
+                      ? "bg-white/10 text-brand shadow-lg backdrop-blur-md"
                       : "text-slate-500 hover:text-white hover:bg-white/5"
                   }`}
                 >
@@ -147,7 +147,7 @@ export default function TasksPage() {
           style={{ animationDuration: "4000ms" }}
         />
         <div
-          className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-[#FF0C60]/10 rounded-full blur-[120px] mix-blend-screen animate-pulse"
+          className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-brand/10 rounded-full blur-[120px] mix-blend-screen animate-pulse"
           style={{ animationDuration: "7000ms" }}
         />
       </div>
@@ -277,7 +277,7 @@ function OperatorView({ user }: { user: any }) {
                 onClick={() => setSelectedDate(d)}
                 className={`flex flex-col items-center justify-center w-full h-24 rounded-2xl transition-all relative ${
                   isSelected
-                    ? "bg-[#FF0C60] text-white shadow-lg shadow-[#FF0C60]/30 scale-105 z-10"
+                    ? "bg-brand text-white shadow-lg shadow-brand/30 scale-105 z-10"
                     : "text-slate-500 hover:bg-white/10 hover:text-slate-200"
                 }`}
               >
@@ -288,7 +288,7 @@ function OperatorView({ user }: { user: any }) {
                 {today && (
                   <div
                     className={`absolute bottom-2 w-1.5 h-1.5 rounded-full ${
-                      isSelected ? "bg-white" : "bg-[#FF0C60]"
+                      isSelected ? "bg-white" : "bg-brand"
                     }`}
                   />
                 )}
@@ -307,7 +307,7 @@ function OperatorView({ user }: { user: any }) {
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${progress}%` }}
-                className="h-full bg-gradient-to-r from-[#FF0C60] to-[#FF0080]"
+                className="h-full bg-gradient-to-r from-brand to-brand"
               />
             </div>
           </div>
@@ -318,7 +318,7 @@ function OperatorView({ user }: { user: any }) {
         <TabsList className="grid w-full grid-cols-3 mb-4 bg-black/40 p-1 rounded-2xl border border-white/5 backdrop-blur-xl">
           <TabsTrigger
             value="pending"
-            className="rounded-xl data-[state=active]:bg-white/10 data-[state=active]:text-[#FF0C60] data-[state=active]:shadow-lg data-[state=active]:backdrop-blur-md text-slate-500 hover:text-white hover:bg-white/5 transition-all duration-300"
+            className="rounded-xl data-[state=active]:bg-white/10 data-[state=active]:text-brand data-[state=active]:shadow-lg data-[state=active]:backdrop-blur-md text-slate-500 hover:text-white hover:bg-white/5 transition-all duration-300"
           >
             Pendientes ({tasks.filter((t) => t.status === "PENDING").length})
           </TabsTrigger>
@@ -710,7 +710,7 @@ function AdminView({ user: _user }: { user: any }) {
                   onClick={() => setSelectedUserId(u.id)}
                   className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all ${
                     selectedUserId === u.id
-                      ? "bg-[#FF0C60] text-white shadow-lg shadow-[#FF0C60]/30"
+                      ? "bg-brand text-white shadow-lg shadow-brand/30"
                       : "hover:bg-white/5 text-slate-400 hover:text-white"
                   }`}
                 >
@@ -742,7 +742,7 @@ function AdminView({ user: _user }: { user: any }) {
 
             <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-[#FF0C60] hover:bg-[#D90A50] text-white shadow-lg shadow-[#FF0C60]/20 rounded-xl px-6 h-12">
+                <Button className="bg-brand hover:bg-brand-hover text-white shadow-lg shadow-brand/20 rounded-xl px-6 h-12">
                   <Plus className="w-5 h-5 mr-2" /> Planificar
                 </Button>
               </DialogTrigger>
@@ -849,7 +849,7 @@ function AdminView({ user: _user }: { user: any }) {
                                     onClick={() => toggleDay(d)}
                                     className={`flex flex-col items-center justify-center p-2 rounded-lg transition-all border ${
                                       isSel
-                                        ? "bg-[#FF0C60] text-white border-[#FF0C60] shadow-md shadow-[#FF0C60]/20"
+                                        ? "bg-brand text-white border-brand shadow-md shadow-brand/20"
                                         : "bg-white dark:bg-white/5 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-white/10 hover:border-slate-300"
                                     }`}
                                   >
@@ -986,7 +986,7 @@ function AdminView({ user: _user }: { user: any }) {
               <Button
                 onClick={handleSendReport}
                 disabled={sendingReport}
-                className="bg-[#FF0C60] hover:bg-[#D90A50] text-white"
+                className="bg-brand hover:bg-brand-hover text-white"
               >
                 {sendingReport ? "Enviando..." : "Enviar Reporte"}
               </Button>

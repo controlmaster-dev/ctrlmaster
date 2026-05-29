@@ -64,7 +64,7 @@ export function EmailSendModal({
       <DialogContent className="sm:max-w-[500px] bg-background border-border text-foreground">
         <DialogHeader>
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-full bg-[#FF0C60]/10 text-[#FF0C60] flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-brand/10 text-brand flex items-center justify-center">
               <Mail className="w-5 h-5" />
             </div>
             <DialogTitle className="text-xl font-bold text-foreground">
@@ -86,7 +86,7 @@ export function EmailSendModal({
               id="defaults"
               checked={useDefaults}
               onCheckedChange={(c) => setUseDefaults(c as boolean)}
-              className="mt-1 data-[state=checked]:bg-[#FF0C60] border-muted-foreground"
+              className="mt-1 data-[state=checked]:bg-brand border-muted-foreground"
             />
             <div className="grid gap-1.5 leading-none">
               <Label
@@ -110,7 +110,7 @@ export function EmailSendModal({
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 placeholder="ejemplo@enlace.org"
-                className="bg-background border-border text-foreground focus-visible:ring-[#FF0C60]"
+                className="bg-background border-border text-foreground focus-visible:ring-brand"
                 onKeyDown={(e) => e.key === "Enter" && handleAddEmail()}
               />
               <Button
@@ -134,7 +134,7 @@ export function EmailSendModal({
                     <span>{email}</span>
                     <button
                       onClick={() => handleRemoveEmail(email)}
-                      className="p-1 hover:text-[#FF0C60] rounded-full transition-colors"
+                      className="p-1 hover:text-brand rounded-full transition-colors"
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -155,7 +155,7 @@ export function EmailSendModal({
           </Button>
           <Button
             onClick={handleConfirm}
-            className="bg-[#FF0C60] hover:bg-[#D90A50] text-white font-bold min-w-[100px]"
+            className="bg-brand hover:bg-brand-hover text-white font-bold min-w-[100px]"
             disabled={!useDefaults && customEmails.length === 0}
           >
             Enviar

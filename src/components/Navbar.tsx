@@ -80,7 +80,7 @@ export function Navbar() {
   const mainNav = [
     { href: "/", icon: Home, label: "Inicio", exact: true },
     { href: "/reportes", icon: Layout, label: "Reportes" },
-    { href: "/claves", icon: Key, label: "Claves" },
+    { href: "/claves", icon: Key, label: "Contraseñas" },
   ];
 
   const secondaryLinks = [
@@ -214,7 +214,7 @@ export function Navbar() {
             <Link href="/crear-reporte" className="ml-1.5 hidden shrink-0 sm:block">
               <Button
                 size="sm"
-                className="h-9 gap-1.5 rounded-md bg-[#FF0C60] px-4 text-[13px] font-semibold text-white shadow-none hover:bg-[#E00A54] transition-all duration-200"
+                className="h-9 gap-1.5 rounded-md bg-brand px-4 text-[13px] font-semibold text-white shadow-none hover:bg-brand-hover transition-all duration-200"
               >
                 <Plus className="h-4 w-4" />
                 Nuevo reporte
@@ -235,7 +235,7 @@ export function Navbar() {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 z-[10050] border-border bg-popover/95 backdrop-blur-md text-popover-foreground shadow-2xl p-1 rounded-[2px] overflow-hidden">
-                <div className="h-0.5 w-full bg-gradient-to-r from-[#FF0C60] via-[#FF0C60]/50 to-transparent -mt-1 mb-1 shrink-0" />
+                <div className="h-0.5 w-full bg-gradient-to-r from-brand via-brand/50 to-transparent -mt-1 mb-1 shrink-0" />
                 {secondaryLinks
                   .filter((l) => l.show)
                   .map(({ href, icon: Icon, label }) => {
@@ -246,8 +246,8 @@ export function Navbar() {
                       : "Ajustes y preferencias";
                     return (
                       <Link key={href} href={href}>
-                        <DropdownMenuItem className="cursor-pointer flex items-center gap-3 px-3 py-2 text-left rounded-[2px] border-l-[3px] border-l-transparent hover:border-l-[#FF0C60] hover:bg-[#FF0C60]/8 focus:bg-[#FF0C60]/10 focus:text-foreground focus:border-l-[#FF0C60] pl-2.5 transition-all duration-150 group">
-                          <Icon className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-[#FF0C60] group-focus:text-[#FF0C60] transition-colors" />
+                        <DropdownMenuItem className="cursor-pointer flex items-center gap-3 px-3 py-2 text-left rounded-[2px] border-l-[3px] border-l-transparent hover:border-l-brand hover:bg-brand/8 focus:bg-brand/10 focus:text-foreground focus:border-l-brand pl-2.5 transition-all duration-150 group">
+                          <Icon className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-brand group-focus:text-brand transition-colors" />
                           <div className="flex flex-col min-w-0">
                             <span className="text-xs font-semibold text-foreground/90">{label}</span>
                             <span className="text-[10px] text-muted-foreground group-hover:text-muted-foreground/80 mt-0.5 leading-none">{desc}</span>
@@ -287,7 +287,7 @@ export function Navbar() {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-60 z-[10050] border-border bg-popover/95 backdrop-blur-md text-popover-foreground shadow-2xl p-1 rounded-[2px] overflow-hidden">
-                <div className="h-0.5 w-full bg-gradient-to-r from-[#FF0C60] via-[#FF0C60]/50 to-transparent -mt-1 mb-1 shrink-0" />
+                <div className="h-0.5 w-full bg-gradient-to-r from-brand via-brand/50 to-transparent -mt-1 mb-1 shrink-0" />
                 
                 {/* Rich Header Card */}
                 <div className="flex items-center gap-3 px-3 py-2.5 border-b border-border/40 bg-muted/10">
@@ -301,7 +301,7 @@ export function Navbar() {
                     <p className="text-xs font-bold text-foreground leading-tight truncate">{user?.name || "Usuario"}</p>
                     <p className="truncate text-[10px] text-muted-foreground mt-0.5 leading-none">{user?.email}</p>
                     {user?.role && (
-                      <span className="inline-flex mt-1.5 px-1.5 py-0.5 rounded-[2px] border border-[#FF0C60]/20 bg-[#FF0C60]/5 text-[8px] font-bold text-[#FF0C60] uppercase tracking-wider">
+                      <span className="inline-flex mt-1.5 px-1.5 py-0.5 rounded-[2px] border border-brand/20 bg-brand/5 text-[8px] font-bold text-brand uppercase tracking-wider">
                         {user.role === "ENGINEER"
                           ? "Ingeniero"
                           : user.role === "ADMIN"
@@ -319,8 +319,8 @@ export function Navbar() {
                 <div className="p-0.5 space-y-0.5">
                   {user?.role !== "ENGINEER" && user?.role !== "OPERATOR" && (
                     <Link href="/configuracion">
-                      <DropdownMenuItem className="cursor-pointer flex items-center gap-3 px-2.5 py-2 text-left rounded-[2px] border-l-[3px] border-l-transparent hover:border-l-[#FF0C60] hover:bg-[#FF0C60]/8 focus:bg-[#FF0C60]/10 focus:text-foreground focus:border-l-[#FF0C60] transition-all duration-150 group">
-                        <Settings className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-[#FF0C60] group-focus:text-[#FF0C60] transition-colors" />
+                      <DropdownMenuItem className="cursor-pointer flex items-center gap-3 px-2.5 py-2 text-left rounded-[2px] border-l-[3px] border-l-transparent hover:border-l-brand hover:bg-brand/8 focus:bg-brand/10 focus:text-foreground focus:border-l-brand transition-all duration-150 group">
+                        <Settings className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-brand group-focus:text-brand transition-colors" />
                         <div className="flex flex-col min-w-0">
                           <span className="text-xs font-semibold text-foreground/90">Configuración</span>
                           <span className="text-[10px] text-muted-foreground group-hover:text-muted-foreground/80 mt-0.5 leading-none">Ajustes y preferencias</span>
@@ -399,7 +399,7 @@ export function Navbar() {
                         </button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-56 z-[10050] border-border bg-popover/95 backdrop-blur-md text-popover-foreground shadow-2xl p-1 rounded-[2px] overflow-hidden">
-                        <div className="h-0.5 w-full bg-gradient-to-r from-[#FF0C60] via-[#FF0C60]/50 to-transparent -mt-1 mb-1 shrink-0" />
+                        <div className="h-0.5 w-full bg-gradient-to-r from-brand via-brand/50 to-transparent -mt-1 mb-1 shrink-0" />
                         <DropdownMenuLabel className="font-normal px-3 py-2">
                           <p className="text-xs font-bold text-foreground truncate">{user?.name}</p>
                           <p className="truncate text-[10px] text-muted-foreground mt-0.5 leading-none">{user?.email}</p>
@@ -411,8 +411,8 @@ export function Navbar() {
                             : "Señales en vivo";
                           return (
                             <Link key={href} href={href}>
-                              <DropdownMenuItem className="cursor-pointer flex items-center gap-3 px-3 py-2 text-left rounded-[2px] border-l-[3px] border-l-transparent hover:border-l-[#FF0C60] hover:bg-[#FF0C60]/8 focus:bg-[#FF0C60]/10 focus:text-foreground focus:border-l-[#FF0C60] pl-2.5 transition-all duration-150 group">
-                                <Icon className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-[#FF0C60] transition-colors" />
+                              <DropdownMenuItem className="cursor-pointer flex items-center gap-3 px-3 py-2 text-left rounded-[2px] border-l-[3px] border-l-transparent hover:border-l-brand hover:bg-brand/8 focus:bg-brand/10 focus:text-foreground focus:border-l-brand pl-2.5 transition-all duration-150 group">
+                                <Icon className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-brand transition-colors" />
                                 <div className="flex flex-col min-w-0">
                                   <span className="text-xs font-semibold text-foreground/90">{label}</span>
                                   <span className="text-[9px] text-muted-foreground group-hover:text-muted-foreground/80 mt-0.5 leading-none">{desc}</span>
@@ -423,8 +423,8 @@ export function Navbar() {
                         })}
                         {user?.role !== "ENGINEER" && user?.role !== "OPERATOR" && (
                           <Link href="/configuracion">
-                            <DropdownMenuItem className="cursor-pointer flex items-center gap-3 px-3 py-2 text-left rounded-[2px] border-l-[3px] border-l-transparent hover:border-l-[#FF0C60] hover:bg-[#FF0C60]/8 focus:bg-[#FF0C60]/10 focus:text-foreground focus:border-l-[#FF0C60] pl-2.5 transition-all duration-150 group">
-                              <Settings className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-[#FF0C60] transition-colors" />
+                            <DropdownMenuItem className="cursor-pointer flex items-center gap-3 px-3 py-2 text-left rounded-[2px] border-l-[3px] border-l-transparent hover:border-l-brand hover:bg-brand/8 focus:bg-brand/10 focus:text-foreground focus:border-l-brand pl-2.5 transition-all duration-150 group">
+                              <Settings className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-brand transition-colors" />
                               <div className="flex flex-col min-w-0">
                                 <span className="text-xs font-semibold text-foreground/90">Configuración</span>
                                 <span className="text-[9px] text-muted-foreground group-hover:text-muted-foreground/80 mt-0.5 leading-none">Ajustes y preferencias</span>
@@ -501,7 +501,7 @@ export function Navbar() {
                   <div className="relative flex w-14 shrink-0 items-center justify-center">
                     <Link
                       href="/crear-reporte"
-                      className="absolute -top-4 flex h-11 w-11 items-center justify-center rounded-full border border-border bg-[#FF0C60] text-white shadow-lg shadow-[#FF0C60]/20 transition-transform active:scale-95"
+                      className="absolute -top-4 flex h-11 w-11 items-center justify-center rounded-full border border-border bg-brand text-white shadow-lg shadow-brand/20 transition-transform active:scale-95"
                       aria-label="Nuevo reporte"
                     >
                       <Plus className="h-5 w-5 stroke-[2.5]" />

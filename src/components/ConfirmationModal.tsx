@@ -66,7 +66,7 @@ export function ConfirmationModal({
               onClose();
             }}
             className={`${
-              isDangerous ? "bg-red-500 hover:bg-red-600" : "bg-[#FF0C60] hover:bg-[#D90A50]"
+              isDangerous ? "bg-red-500 hover:bg-red-600" : "bg-brand hover:bg-brand-hover"
             } text-white font-bold`}
           >
             {confirmText}

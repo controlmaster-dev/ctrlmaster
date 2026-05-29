@@ -120,7 +120,7 @@ function priorityBadgeClass(priority: string) {
     return "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400";
   }
   if (priority === "EJTV") {
-    return "bg-[#FF0C60]/10 text-[#FF0C60]";
+    return "bg-brand/10 text-brand";
   }
   return "bg-muted text-muted-foreground";
 }
@@ -298,7 +298,7 @@ export function DashboardClient() {
   // ─────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="dashboard-ui relative min-h-screen overflow-hidden pb-20 text-foreground selection:bg-[#FF0C60] selection:text-white">
+    <div className="dashboard-ui relative min-h-screen overflow-hidden pb-20 text-foreground selection:bg-brand selection:text-white">
       {/* Ambient background */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -right-32 top-0 h-[28rem] w-[28rem] rounded-full bg-foreground/[0.02] blur-3xl" />
@@ -580,7 +580,7 @@ function EmptyReportsState() {
       </p>
       <Button
         asChild
-        className="mt-6 rounded-xl bg-[#FF0C60] font-semibold text-white shadow-none hover:bg-[#E00A54]"
+        className="mt-6 rounded-xl bg-brand font-semibold text-white shadow-none hover:bg-brand-hover"
       >
         <Link href="/crear-reporte">Crear reporte</Link>
       </Button>

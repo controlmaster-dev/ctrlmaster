@@ -382,7 +382,7 @@ export default function ConfigurationPage() {
               ? { text: "Coordinador", bg: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20" }
               : u.role === "ENGINEER"
               ? { text: "Ingeniero", bg: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20" }
-              : { text: "Operador", bg: "bg-[#FF0C60]/10 text-[#FF0C60] border-[#FF0C60]/20" };
+              : { text: "Operador", bg: "bg-brand/10 text-brand border-brand/20" };
             return (
               <div
                 key={u.id}
@@ -404,7 +404,7 @@ export default function ConfigurationPage() {
                         />
                       </div>
                       <div className="min-w-0">
-                        <h4 className="text-xs font-semibold text-foreground leading-snug truncate group-hover:text-[#FF0C60] transition-colors">
+                        <h4 className="text-xs font-semibold text-foreground leading-snug truncate group-hover:text-brand transition-colors">
                           {u.name}
                         </h4>
                         <span className="text-[9px] text-muted-foreground font-mono font-medium opacity-50 block mt-0.5">
@@ -518,7 +518,7 @@ export default function ConfigurationPage() {
                       variant="ghost"
                       size="icon"
                       onClick={() => handleEditUser(u)}
-                      className="h-7 w-7 rounded-md text-muted-foreground hover:text-[#FF0C60] hover:bg-[#FF0C60]/10 transition-colors"
+                      className="h-7 w-7 rounded-md text-muted-foreground hover:text-brand hover:bg-brand/10 transition-colors"
                     >
                       <Settings className="w-3.5 h-3.5" />
                     </Button>
@@ -543,7 +543,7 @@ export default function ConfigurationPage() {
   };
 
   return (
-    <div className="configuracion-ui relative min-h-screen overflow-hidden bg-background pb-20 text-foreground selection:bg-[#FF0C60] selection:text-white">
+    <div className="configuracion-ui relative min-h-screen overflow-hidden bg-background pb-20 text-foreground selection:bg-brand selection:text-white">
       <div className="relative z-10">
         <ConfirmModal
           isOpen={modal.isOpen}
@@ -571,7 +571,7 @@ export default function ConfigurationPage() {
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="space-y-1.5">
                 <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded-sm border border-[#FF0C60]/20 bg-[#FF0C60]/5 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#FF0C60]">
+                  <span className="inline-flex items-center gap-1.5 rounded-sm border border-brand/20 bg-brand/5 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-brand">
                     <Settings className="h-3 w-3" />
                     Panel de Administración
                   </span>
@@ -590,7 +590,7 @@ export default function ConfigurationPage() {
                   cancelEdit();
                   setIsUserModalOpen(true);
                 }}
-                className="h-10 shrink-0 gap-2 rounded-lg bg-[#FF0C60] px-4 font-medium text-white shadow-none hover:bg-[#E00A54] transition-all duration-200"
+                className="h-10 shrink-0 gap-2 rounded-lg bg-brand px-4 font-medium text-white shadow-none hover:bg-brand-hover transition-all duration-200"
               >
                 <UserPlus className="h-4 w-4" />
                 Registrar Operador
@@ -617,7 +617,7 @@ export default function ConfigurationPage() {
                   className={cn(
                     "flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-medium uppercase tracking-wider transition-all duration-200 whitespace-nowrap shrink-0 border-b-2",
                     active
-                      ? "bg-[#FF0C60]/10 border-b-[#FF0C60] text-[#FF0C60] shadow-none"
+                      ? "bg-brand/10 border-b-brand text-brand shadow-none"
                       : "border-b-transparent text-muted-foreground hover:bg-muted/40 hover:text-foreground"
                   )}
                 >
@@ -645,8 +645,8 @@ export default function ConfigurationPage() {
                       label: "Equipo Total",
                       value: usersList.length,
                       icon: Users,
-                      color: "text-[#FF0C60]",
-                      bg: "bg-[#FF0C60]/5 border-[#FF0C60]/10",
+                      color: "text-brand",
+                      bg: "bg-brand/5 border-brand/10",
                     },
                     {
                       label: "Coordinadores",
@@ -802,7 +802,7 @@ export default function ConfigurationPage() {
                   </div>
                   <div className="relative">
                     {scheduleMode === "default" && (
-                      <div className="absolute top-0 left-0 w-full h-0.5 bg-[#FF0C60] z-20 animate-pulse" />
+                      <div className="absolute top-0 left-0 w-full h-0.5 bg-brand z-20 animate-pulse" />
                     )}
                     <WeeklyCalendar
                       operators={usersList.map((u) => ({
@@ -852,7 +852,7 @@ export default function ConfigurationPage() {
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                       <div className="space-y-1">
                         <CardTitle className="text-lg font-semibold text-foreground tracking-tight flex items-center gap-2">
-                          <KeyRound className="w-5 h-5 text-[#FF0C60]" /> Autorizaciones de Registro
+                          <KeyRound className="w-5 h-5 text-brand" /> Autorizaciones de Registro
                         </CardTitle>
                         <CardDescription className="text-muted-foreground text-xs opacity-80 mt-1">
                           Genere códigos de seguridad únicos para registrar nuevos operadores. Expiran en 24 horas y son monouso.
@@ -861,7 +861,7 @@ export default function ConfigurationPage() {
                       <Button
                         onClick={generateCode}
                         disabled={codesLoading}
-                        className="bg-[#FF0C60] hover:bg-[#E00A54] text-white font-medium text-xs uppercase tracking-wider shadow-none h-10 rounded-lg px-4"
+                        className="bg-brand hover:bg-brand-hover text-white font-medium text-xs uppercase tracking-wider shadow-none h-10 rounded-lg px-4"
                       >
                         {codesLoading ? (
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -1004,7 +1004,7 @@ export default function ConfigurationPage() {
                           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                           <Input
                             placeholder="Buscar por ID o descripción..."
-                            className="pl-9 bg-background border border-input w-full text-xs font-medium tracking-tight h-10 text-foreground focus-visible:ring-1 focus-visible:ring-[#FF0C60]/30 rounded-lg"
+                            className="pl-9 bg-background border border-input w-full text-xs font-medium tracking-tight h-10 text-foreground focus-visible:ring-1 focus-visible:ring-brand/30 rounded-lg"
                           />
                         </div>
                       </div>

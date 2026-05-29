@@ -70,7 +70,7 @@ export function EvidenceStep({
               </div>
             ))}
 
-            <label className="flex min-h-[140px] flex-1 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-border/60 bg-card/50 transition-colors hover:border-[#FF0C60]/50 hover:bg-[#FF0C60]/5 lg:min-h-[200px]">
+            <label className="flex min-h-[140px] flex-1 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-border/60 bg-card/50 transition-colors hover:border-brand/50 hover:bg-brand/5 lg:min-h-[200px]">
               <Upload className="mb-2 h-5 w-5 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">
                 {uploading ? "Subiendo…" : "Seleccionar archivos"}
@@ -84,8 +84,8 @@ export function EvidenceStep({
         <div className="flex flex-col gap-6">
         <section className="space-y-3 rounded-xl border border-border/60 bg-card/80 p-4 md:p-5">
           <div className="flex items-start gap-3 opacity-60">
-            <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border border-[#FF0C60] bg-[#FF0C60]/20">
-              <Check className="h-3 w-3 text-[#FF0C60]" />
+            <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border border-brand bg-brand/20">
+              <Check className="h-3 w-3 text-brand" />
             </div>
             <div>
               <p className="text-sm text-foreground">Marcar como resuelto</p>

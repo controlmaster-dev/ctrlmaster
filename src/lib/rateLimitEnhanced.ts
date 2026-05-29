@@ -3,6 +3,7 @@
  */
 
 import { RATE_LIMIT_CONFIG } from '@/config/constants';
+import sql from '@/lib/db';
 
 interface RateLimitEntry {
   count: number;
@@ -37,7 +38,7 @@ function cleanupExpiredEntries(): void {
  * @param windowMs - Time window in milliseconds
  * @returns Rate limit info
  */
-export function checkRateLimit(
+function checkRateLimitInMemory(
   identifier: string,
   maxRequests: number = RATE_LIMIT_CONFIG.MAX_REQUESTS.GENERAL,
   windowMs: number = RATE_LIMIT_CONFIG.WINDOW_MS
@@ -84,6 +85,54 @@ export function checkRateLimit(
     remaining: maxRequests - entry.count,
     reset: new Date(entry.resetTime),
   };
+}
+
+/**
+ * Check rate limits in Neon so counters survive serverless instances.
+ * Falls back to the in-memory limiter if the migration has not been applied.
+ */
+export async function checkRateLimit(
+  identifier: string,
+  maxRequests: number = RATE_LIMIT_CONFIG.MAX_REQUESTS.GENERAL,
+  windowMs: number = RATE_LIMIT_CONFIG.WINDOW_MS
+): Promise<{ success: boolean; limit: number; remaining: number; reset: Date }> {
+  const resetAt = new Date(Date.now() + windowMs);
+
+  try {
+    if (Math.random() < 0.01) {
+      await sql`DELETE FROM "RateLimit" WHERE "resetAt" < NOW()`;
+    }
+
+    const [entry] = await sql`
+      INSERT INTO "RateLimit" ("key", "count", "resetAt", "updatedAt")
+      VALUES (${identifier}, 1, ${resetAt.toISOString()}, NOW())
+      ON CONFLICT ("key") DO UPDATE
+      SET
+        "count" = CASE
+          WHEN "RateLimit"."resetAt" < NOW() THEN 1
+          ELSE "RateLimit"."count" + 1
+        END,
+        "resetAt" = CASE
+          WHEN "RateLimit"."resetAt" < NOW() THEN ${resetAt.toISOString()}
+          ELSE "RateLimit"."resetAt"
+        END,
+        "updatedAt" = NOW()
+      RETURNING "count", "resetAt"
+    `;
+
+    const count = Number(entry.count);
+    const reset = new Date(entry.resetAt);
+
+    return {
+      success: count <= maxRequests,
+      limit: maxRequests,
+      remaining: Math.max(maxRequests - count, 0),
+      reset,
+    };
+  } catch (error) {
+    console.warn('[rate-limit] Falling back to in-memory store:', error);
+    return checkRateLimitInMemory(identifier, maxRequests, windowMs);
+  }
 }
 
 /**
@@ -138,7 +187,7 @@ export function withRateLimit(type: keyof typeof RATE_LIMIT_CONFIG.MAX_REQUESTS 
   
   return async (request: Request) => {
     const ip = getClientIp(request);
-    const result = limiter(ip);
+    const result = await limiter(`${type}:${ip}`);
     
     if (!result.success) {
       return {

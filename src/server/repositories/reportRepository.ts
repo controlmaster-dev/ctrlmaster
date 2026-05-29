@@ -1,0 +1,167 @@
+import sql from '@/lib/db';
+import type { CreateReportInput, UpdateReportInput } from '@/lib/validation';
+
+export type ReportFilters = {
+  page: number;
+  limit: number;
+  status?: string;
+  priority?: string;
+  operator?: string;
+  category?: string;
+  search?: string;
+  dateFrom?: string;
+  dateTo?: string;
+};
+
+export type ReportListRow = {
+  id: string;
+  operatorName: string;
+  operatorEmail: string;
+  problemDescription: string;
+  category: string;
+  priority: string;
+  status: string;
+  createdAt: Date;
+  dateStarted: Date;
+  dateResolved: Date | null;
+  emailStatus: string;
+  emailRecipients: string | null;
+  commentCount: number;
+  reactionCount: number;
+};
+
+export async function listReports(filters: ReportFilters) {
+  const skip = (filters.page - 1) * filters.limit;
+
+  const [reports, totalResult] = await Promise.all([
+    sql<ReportListRow[]>`
+      SELECT
+        r."id",
+        r."operatorName",
+        r."operatorEmail",
+        r."problemDescription",
+        r."category",
+        r."priority",
+        r."status",
+        r."createdAt",
+        r."dateStarted",
+        r."dateResolved",
+        r."emailStatus",
+        r."emailRecipients",
+        COALESCE(cc."commentCount", 0)::int AS "commentCount",
+        COALESCE(rc."reactionCount", 0)::int AS "reactionCount"
+      FROM "Report" r
+      LEFT JOIN (
+        SELECT "reportId", COUNT(*) AS "commentCount" FROM "Comment" GROUP BY "reportId"
+      ) cc ON cc."reportId" = r."id"
+      LEFT JOIN (
+        SELECT "reportId", COUNT(*) AS "reactionCount" FROM "Reaction" GROUP BY "reportId"
+      ) rc ON rc."reportId" = r."id"
+      WHERE 1=1
+      ${filters.status && filters.status !== 'all' ? sql`AND r."status" = ${filters.status}` : sql``}
+      ${filters.priority && filters.priority !== 'all' ? sql`AND r."priority" = ${filters.priority}` : sql``}
+      ${filters.category && filters.category !== 'all' ? sql`AND r."category" = ${filters.category}` : sql``}
+      ${filters.operator ? sql`AND (r."operatorName" ILIKE ${'%' + filters.operator + '%'} OR r."operatorEmail" ILIKE ${'%' + filters.operator + '%'})` : sql``}
+      ${filters.search ? sql`AND (r."problemDescription" ILIKE ${'%' + filters.search + '%'} OR r."operatorName" ILIKE ${'%' + filters.search + '%'} OR r."id"::text ILIKE ${'%' + filters.search + '%'})` : sql``}
+      ${filters.dateFrom ? sql`AND r."createdAt" >= ${new Date(filters.dateFrom).toISOString()}` : sql``}
+      ${filters.dateTo ? sql`AND r."createdAt" <= ${new Date(filters.dateTo).toISOString()}` : sql``}
+      ORDER BY r."createdAt" DESC
+      LIMIT ${filters.limit} OFFSET ${skip}
+    `,
+    sql<Array<{ count: number }>>`
+      SELECT COUNT(*)::int AS count FROM "Report" r
+      WHERE 1=1
+      ${filters.status && filters.status !== 'all' ? sql`AND r."status" = ${filters.status}` : sql``}
+      ${filters.priority && filters.priority !== 'all' ? sql`AND r."priority" = ${filters.priority}` : sql``}
+      ${filters.category && filters.category !== 'all' ? sql`AND r."category" = ${filters.category}` : sql``}
+      ${filters.operator ? sql`AND (r."operatorName" ILIKE ${'%' + filters.operator + '%'} OR r."operatorEmail" ILIKE ${'%' + filters.operator + '%'})` : sql``}
+      ${filters.search ? sql`AND (r."problemDescription" ILIKE ${'%' + filters.search + '%'} OR r."operatorName" ILIKE ${'%' + filters.search + '%'} OR r."id"::text ILIKE ${'%' + filters.search + '%'})` : sql``}
+      ${filters.dateFrom ? sql`AND r."createdAt" >= ${new Date(filters.dateFrom).toISOString()}` : sql``}
+      ${filters.dateTo ? sql`AND r."createdAt" <= ${new Date(filters.dateTo).toISOString()}` : sql``}
+    `,
+  ]);
+
+  return {
+    reports,
+    total: totalResult[0]?.count ?? 0,
+  };
+}
+
+export async function createReport(data: CreateReportInput) {
+  return sql.begin(async (tx) => {
+    const [newReport] = await tx`
+      INSERT INTO "Report" (
+        "operatorId", "operatorName", "operatorEmail",
+        "problemDescription", "category", "priority",
+        "status", "emailStatus", "emailRecipients",
+        "dateStarted", "dateResolved"
+      )
+      VALUES (
+        ${data.operatorId}, ${data.operatorName}, ${data.operatorEmail || ''},
+        ${data.problemDescription}, ${data.category}, ${data.priority},
+        ${data.status}, ${data.emailStatus || 'none'}, ${data.emailRecipients || null},
+        ${new Date(data.dateStarted).toISOString()},
+        ${data.dateResolved ? new Date(data.dateResolved).toISOString() : null}
+      )
+      RETURNING *
+    `;
+
+    const attachments = data.attachments?.length
+      ? await tx`
+          INSERT INTO "Attachment" ${tx(
+            data.attachments.map((attachment) => ({
+              url: attachment.url,
+              type: attachment.type,
+              data: attachment.data || null,
+              reportId: newReport.id,
+            })),
+            'url',
+            'type',
+            'data',
+            'reportId'
+          )}
+          RETURNING *
+        `
+      : [];
+
+    return { ...newReport, attachments };
+  });
+}
+
+export async function findReportId(id: string) {
+  const [report] = await sql<Array<{ id: string }>>`
+    SELECT "id" FROM "Report" WHERE "id" = ${id} LIMIT 1
+  `;
+  return report ?? null;
+}
+
+export async function deleteReport(id: string) {
+  await sql`DELETE FROM "Report" WHERE "id" = ${id}`;
+}
+
+export async function updateReport(data: UpdateReportInput) {
+  const updateData: Record<string, string | Date | null> = {};
+
+  if (data.status) {
+    updateData.status = data.status;
+    if (data.status === 'resolved' && !data.dateResolved) {
+      updateData.dateResolved = new Date().toISOString();
+    }
+  }
+
+  if (data.dateResolved !== undefined) {
+    updateData.dateResolved = data.dateResolved;
+  }
+
+  const fields = Object.keys(updateData);
+  if (fields.length === 0) return null;
+
+  const [updatedReport] = await sql`
+    UPDATE "Report"
+    SET ${sql(updateData)}
+    WHERE "id" = ${data.id}
+    RETURNING *
+  `;
+
+  return updatedReport ?? null;
+}

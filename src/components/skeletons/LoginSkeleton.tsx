@@ -2,9 +2,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function LoginSkeleton() {
   return (
-    <div className="flex min-h-screen flex-col text-foreground selection:bg-[#FF0C60] selection:text-white lg:flex-row">
+    <div className="flex min-h-screen flex-col text-foreground selection:bg-brand selection:text-white lg:flex-row">
       <section className="relative hidden min-h-screen flex-col justify-center overflow-hidden bg-muted/20 p-14 lg:flex lg:w-[44%]">
-        <div className="absolute -left-20 top-0 h-72 w-72 rounded-full bg-[#FF0C60]/15 blur-[90px]" />
+        <div className="absolute -left-20 top-0 h-72 w-72 rounded-full bg-brand/15 blur-[90px]" />
         <div className="absolute bottom-0 right-0 h-64 w-64 rounded-full bg-blue-500/10 blur-[80px]" />
         <div className="relative z-10">
           <Skeleton className="mb-6 h-12 w-12 rounded-xl" />

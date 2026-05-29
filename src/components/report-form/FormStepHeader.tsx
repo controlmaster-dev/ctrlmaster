@@ -12,7 +12,7 @@ export function FormStepHeader({ title, accent, description }: FormStepHeaderPro
         {accent ? (
           <>
             {" "}
-            <span className="text-[#FF0C60]">{accent}</span>
+            <span className="text-brand">{accent}</span>
           </>
         ) : null}
       </h2>

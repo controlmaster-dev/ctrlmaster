@@ -240,11 +240,11 @@ export function CommandPalette({
           : "z-[20001] mt-[10vh] max-h-[min(58vh,420px)] max-w-[480px] rounded-[2px] md:mt-[12vh]"
       }`}
     >
-      <div className="h-0.5 shrink-0 bg-gradient-to-r from-[#FF0C60] via-[#FF0C60]/50 to-transparent" />
+      <div className="h-0.5 shrink-0 bg-gradient-to-r from-brand via-brand/50 to-transparent" />
 
       {!isIntegrated && (
         <div className="shrink-0 border-b border-border/60 p-2.5">
-          <div className="flex h-9 items-center gap-2 rounded-[2px] border border-border bg-muted/30 px-2.5 focus-within:border-[#FF0C60]/40 focus-within:ring-1 focus-within:ring-[#FF0C60]/15">
+          <div className="flex h-9 items-center gap-2 rounded-[2px] border border-border bg-muted/30 px-2.5 focus-within:border-brand/40 focus-within:ring-1 focus-within:ring-brand/15">
             <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
             <input
               autoFocus
@@ -274,7 +274,7 @@ export function CommandPalette({
                 router.push(action.path);
                 onClose();
               }}
-              className="flex h-6 shrink-0 items-center gap-1 rounded-[2px] border border-border/80 bg-muted/40 px-2 text-[10px] font-medium text-muted-foreground transition-colors hover:border-[#FF0C60]/30 hover:bg-[#FF0C60]/5 hover:text-[#FF0C60]"
+              className="flex h-6 shrink-0 items-center gap-1 rounded-[2px] border border-border/80 bg-muted/40 px-2 text-[10px] font-medium text-muted-foreground transition-colors hover:border-brand/30 hover:bg-brand/5 hover:text-brand"
             >
               <action.icon className="h-3 w-3" />
               {action.label}
@@ -304,14 +304,14 @@ export function CommandPalette({
                       onMouseEnter={() => setSelectedIndex(globalIndex)}
                       className={`flex w-full items-center gap-2 rounded-[2px] px-1.5 py-1.5 text-left transition-all duration-150 ${
                         isSelected
-                          ? "bg-[#FF0C60]/10 border-l-[3px] border-l-[#FF0C60] pl-[5px]"
+                          ? "bg-brand/10 border-l-[3px] border-l-brand pl-[5px]"
                           : "border-l-[3px] border-l-transparent hover:bg-muted/40"
                       }`}
                     >
                       <div
                         className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-[2px] transition-colors ${
                           isSelected
-                            ? "bg-[#FF0C60] text-white"
+                            ? "bg-brand text-white"
                             : "bg-muted text-muted-foreground"
                         }`}
                       >
@@ -332,7 +332,7 @@ export function CommandPalette({
                         )}
                       </div>
                       {isSelected && (
-                        <ArrowRight className="h-3.5 w-3.5 shrink-0 text-[#FF0C60]" />
+                        <ArrowRight className="h-3.5 w-3.5 shrink-0 text-brand" />
                       )}
                     </button>
                   </li>
@@ -367,7 +367,7 @@ export function CommandPalette({
             router.push("/reportes");
             onClose();
           }}
-          className="flex items-center gap-1 text-[10px] font-medium text-[#FF0C60] hover:underline"
+          className="flex items-center gap-1 text-[10px] font-medium text-brand hover:underline"
         >
           {isIntegrated ? "Todos los reportes" : "Ver todos los reportes"}
           <ArrowRight className="h-3 w-3" />

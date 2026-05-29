@@ -265,7 +265,7 @@ export function SpecialEventsManager() {
             </Button>
             <div>
               <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                <CalendarDays className="w-6 h-6 text-[#FF0C60]" />
+                <CalendarDays className="w-6 h-6 text-brand" />
                 {viewingEvent.name}
               </h2>
               <p className="text-slate-400 text-sm">
@@ -297,7 +297,7 @@ export function SpecialEventsManager() {
         </div>
         <Button
           onClick={() => setIsCreating(true)}
-          className="bg-[#FF0C60] hover:bg-[#d90a50] text-white"
+          className="bg-brand hover:bg-brand-hover text-white"
         >
           <Plus className="w-4 h-4 mr-2" /> Nuevo Evento
         </Button>
@@ -365,11 +365,11 @@ export function SpecialEventsManager() {
         {events.map((event) => (
           <Card
             key={event.id}
-            className="bg-white border border-slate-200 hover:border-[#FF0C60]/30 transition-all group relative overflow-hidden shadow-none rounded-md"
+            className="bg-white border border-slate-200 hover:border-brand/30 transition-all group relative overflow-hidden shadow-none rounded-md"
           >
             <div
               className={`absolute top-0 left-0 w-1 h-full ${
-                event.isActive ? "bg-[#FF0C60]" : "bg-slate-700"
+                event.isActive ? "bg-brand" : "bg-slate-700"
               }`}
             />
             <CardHeader className="pb-2">
@@ -378,7 +378,7 @@ export function SpecialEventsManager() {
                   variant="outline"
                   className={`${
                     event.isActive
-                      ? "text-[#FF0C60] border-[#FF0C60]/30 bg-[#FF0C60]/5"
+                      ? "text-brand border-brand/30 bg-brand/5"
                       : "text-slate-400 border-slate-200"
                   }`}
                 >
@@ -419,7 +419,7 @@ export function SpecialEventsManager() {
                 </div>
                 <Button
                   onClick={() => openEventSchedule(event)}
-                  className="bg-slate-50 hover:bg-[#FF0C60] text-slate-600 hover:text-white border border-slate-200 hover:border-[#FF0C60] rounded-md"
+                  className="bg-slate-50 hover:bg-brand text-slate-600 hover:text-white border border-slate-200 hover:border-brand rounded-md"
                 >
                   Gestionar Horarios
                 </Button>

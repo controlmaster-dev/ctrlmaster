@@ -37,9 +37,9 @@ export function CrearReporteClient() {
   } = useReportForm();
 
   return (
-    <div className="crear-reporte-ui relative flex min-h-screen flex-col bg-background text-foreground selection:bg-[#FF0C60] selection:text-white md:flex-row">
+    <div className="crear-reporte-ui relative flex min-h-screen flex-col bg-background text-foreground selection:bg-brand selection:text-white md:flex-row">
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute -right-20 top-0 h-72 w-72 rounded-full bg-[#FF0C60]/6 blur-3xl" />
+        <div className="absolute -right-20 top-0 h-72 w-72 rounded-full bg-brand/6 blur-3xl" />
         <div className="absolute -left-24 bottom-0 h-64 w-64 rounded-full bg-violet-600/5 blur-3xl" />
       </div>
 
@@ -47,7 +47,7 @@ export function CrearReporteClient() {
         <button
           type="button"
           onClick={() => router.back()}
-          className="group mb-6 flex w-fit items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-[#FF0C60]"
+          className="group mb-6 flex w-fit items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-brand"
         >
           <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
           Volver
@@ -56,7 +56,7 @@ export function CrearReporteClient() {
         <div className="mb-8">
           <p className="text-xs text-muted-foreground">Nuevo reporte</p>
           <h1 className="mt-1 text-xl font-semibold tracking-tight text-foreground lg:text-2xl">
-            Reportar <span className="text-[#FF0C60]">incidencia</span>
+            Reportar <span className="text-brand">incidencia</span>
           </h1>
         </div>
 
@@ -67,7 +67,7 @@ export function CrearReporteClient() {
           <Link
             href="https://wa.me/50683472053"
             target="_blank"
-            className="mt-1 flex items-center gap-1 text-sm text-foreground transition-colors hover:text-[#FF0C60]"
+            className="mt-1 flex items-center gap-1 text-sm text-foreground transition-colors hover:text-brand"
           >
             Ricardo Jarquín
             <ChevronRight className="h-3.5 w-3.5" />
@@ -121,7 +121,7 @@ export function CrearReporteClient() {
                 type="button"
                 size="sm"
                 onClick={nextStep}
-                className="bg-[#FF0C60] text-white hover:bg-[#E00A54]"
+                className="bg-brand text-white hover:bg-brand-hover"
               >
                 Siguiente
                 <ChevronRight className="ml-1 h-4 w-4" />
@@ -132,7 +132,7 @@ export function CrearReporteClient() {
                 size="sm"
                 onClick={submitReport}
                 disabled={loading}
-                className="bg-[#FF0C60] text-white hover:bg-[#E00A54]"
+                className="bg-brand text-white hover:bg-brand-hover"
               >
                 {loading ? "Enviando…" : "Registrar reporte"}
               </Button>

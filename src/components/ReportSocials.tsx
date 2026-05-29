@@ -189,7 +189,7 @@ export function ReportSocials({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-6 px-2 text-[10px] text-slate-500 hover:text-[#FF0C60]"
+                className="h-6 px-2 text-[10px] text-slate-500 hover:text-brand"
                 onClick={() => {
                   setReplyingTo(c.id);
                   setComment(`@${c.author.name} `);
@@ -318,7 +318,7 @@ export function ReportSocials({
             type="submit"
             size="icon"
             disabled={submitting || !comment.trim()}
-            className="shrink-0 bg-[#FF0C60] hover:bg-[#d90a50] text-white"
+            className="shrink-0 bg-brand hover:bg-brand-hover text-white"
           >
             <Send className="w-4 h-4 ml-0.5" />
           </Button>

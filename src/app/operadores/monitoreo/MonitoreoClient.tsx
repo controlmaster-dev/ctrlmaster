@@ -195,7 +195,7 @@ export function MonitoreoClient() {
   return (
     <div className="relative flex min-h-screen flex-col overflow-y-auto bg-background pt-14 text-foreground md:pt-0">
       <header className="sticky top-0 z-40 shrink-0 border-b border-border bg-card">
-        <div className="h-0.5 bg-[#FF0C60]" aria-hidden />
+        <div className="h-0.5 bg-brand" aria-hidden />
 
         <div className="flex h-14 items-stretch">
           <div className="flex shrink-0 items-center gap-2 border-r border-border px-3 md:px-4">

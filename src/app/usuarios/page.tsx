@@ -49,14 +49,14 @@ export default function UsersPage() {
   );
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-[#050505] text-slate-100 selection:bg-[#FF0C60] selection:text-white pb-20">
+    <div className="min-h-screen relative overflow-hidden bg-[#050505] text-slate-100 selection:bg-brand selection:text-white pb-20">
       <div className="fixed inset-0 pointer-events-none">
         <div
           className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-blue-600/10 rounded-full blur-[120px] mix-blend-screen animate-pulse"
           style={{ animationDuration: "4000ms" }}
         />
         <div
-          className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-[#FF0C60]/10 rounded-full blur-[120px] mix-blend-screen animate-pulse"
+          className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-brand/10 rounded-full blur-[120px] mix-blend-screen animate-pulse"
           style={{ animationDuration: "7000ms" }}
         />
       </div>
@@ -70,7 +70,7 @@ export default function UsersPage() {
           <div>
             <h1 className="text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
               Usuarios
-              <Badge className="bg-[#FF0C60]/10 text-[#FF0C60] hover:bg-[#FF0C60]/20 border-0">
+              <Badge className="bg-brand/10 text-brand hover:bg-brand/20 border-0">
                 {users.length}
               </Badge>
             </h1>
@@ -100,7 +100,7 @@ export default function UsersPage() {
                   placeholder="Buscar por nombre o correo..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 bg-white dark:bg-[#18181B] border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:border-[#FF0C60]/50"
+                  className="pl-9 bg-white dark:bg-[#18181B] border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:border-brand/50"
                 />
               </div>
             </CardContent>
@@ -182,7 +182,7 @@ export default function UsersPage() {
                             variant="outline"
                             className={`font-normal ${
                               user.role === "BOSS"
-                                ? "bg-[#FF0C60]/10 text-[#FF0C60] border-[#FF0C60]/20"
+                                ? "bg-brand/10 text-brand border-brand/20"
                                 : "bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-white/10"
                             }`}
                           >

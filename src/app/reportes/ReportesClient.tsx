@@ -46,6 +46,7 @@ import {
 import { ProcessingModal } from "@/components/ProcessingModal";
 import { EmailSendModal } from "@/components/EmailSendModal";
 import { SuccessModal } from "@/components/SuccessModal";
+import { EmailHistoryCard } from "@/components/reportes/EmailHistoryCard";
 
 import Link from "next/link";
 import { StatsCard } from "@/components/dashboard/StatsCard";
@@ -432,7 +433,7 @@ export function ReportesClient() {
   if (initialLoad && loading && !hasListCache) return <ReportesSkeleton />;
 
   return (
-    <div className="reportes-ui relative min-h-screen overflow-hidden pb-20 text-foreground selection:bg-[#FF0C60] selection:text-white">
+    <div className="reportes-ui relative min-h-screen overflow-hidden pb-20 text-foreground selection:bg-brand selection:text-white">
       <ReportDetailModal
         isOpen={detailModalOpen}
         onClose={() => {
@@ -944,96 +945,3 @@ export function ReportesClient() {
   );
 }
 
-function EmailHistoryCard() {
-  const [emails, setEmails] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/resend/history")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && Array.isArray(data.data)) setEmails(data.data.slice(0, 5));
-      })
-      .catch((err) => console.error(err))
-      .finally(() => setLoading(false));
-  }, []);
-
-  if (loading)
-    return <p className="text-sm text-muted-foreground">Cargando historial…</p>;
-
-  if (emails.length === 0)
-    return (
-      <p className="py-6 text-center text-sm text-muted-foreground">
-        No hay correos enviados recientemente.
-      </p>
-    );
-
-  return (
-    <div className="overflow-x-auto border border-border rounded-md overflow-hidden">
-      <Table>
-        <TableHeader className="border-b border-border bg-muted/20">
-          <TableRow className="hover:bg-transparent">
-            <TableHead className="h-10 pl-4 text-xs font-medium text-muted-foreground">
-              Asunto
-            </TableHead>
-            <TableHead className="h-10 text-xs font-medium text-muted-foreground">
-              Destinatario
-            </TableHead>
-            <TableHead className="h-10 text-xs font-medium text-muted-foreground">
-              Fecha
-            </TableHead>
-            <TableHead className="h-10 pr-4 text-right text-xs font-medium text-muted-foreground">
-              Estado
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {emails.map((email) => (
-            <TableRow
-              key={email.id}
-              className="border-b border-border hover:bg-muted/20"
-            >
-              <TableCell className="py-3 pl-4 text-sm font-medium">
-                {email.subject}
-              </TableCell>
-              <TableCell className="py-3 text-sm text-muted-foreground">
-                {Array.isArray(email.to) ? email.to.join(", ") : email.to}
-              </TableCell>
-              <TableCell className="py-3 text-xs text-muted-foreground">
-                {new Date(email.created_at).toLocaleString()}
-              </TableCell>
-              <TableCell className="py-3 pr-4 text-right">
-                  <Badge
-                    variant="outline"
-                    className={`
-                      ${
-                        email.last_event === "delivered"
-                          ? "text-emerald-500 border-emerald-500/20 bg-emerald-500/10"
-                          : ""
-                      }
-                      ${
-                        email.last_event === "sent"
-                          ? "text-blue-500 border-blue-500/20 bg-blue-500/10"
-                          : ""
-                      }
-                      ${
-                        !["delivered", "sent"].includes(email.last_event)
-                          ? "text-muted-foreground border-border"
-                          : ""
-                      }
-                    `}
-                  >
-                    {email.last_event === "delivered"
-                      ? "Entregado"
-                      : email.last_event === "sent"
-                      ? "Enviado"
-                      : email.last_event}
-                  </Badge>
-                </TableCell>
-              </TableRow>
-            ))}
-        </TableBody>
-      </Table>
-    </div>
-  );
-}

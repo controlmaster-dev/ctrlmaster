@@ -29,13 +29,13 @@ export function PautaReminderNotice({ data, onDismiss }: PautaReminderNoticeProp
       className="fixed bottom-0 left-0 right-0 z-[60] border-t border-border/60 bg-card/95 px-4 py-3 backdrop-blur-md md:bottom-5 md:left-auto md:right-5 md:w-[17.5rem] md:rounded-lg md:border md:shadow-lg"
     >
       <div className="mx-auto flex max-w-lg items-center gap-3 md:max-w-none">
-        <Bell className="h-4 w-4 shrink-0 text-[#FF0C60]" aria-hidden />
+        <Bell className="h-4 w-4 shrink-0 text-brand" aria-hidden />
 
         <p className="min-w-0 flex-1 text-sm leading-snug text-foreground">
           <span className="text-muted-foreground">Pauta · </span>
           <span>{data.operatorName}</span>
           <span className="text-muted-foreground"> · </span>
-          <span className="text-[#FF0C60]">{data.dateLabel}</span>
+          <span className="text-brand">{data.dateLabel}</span>
         </p>
 
         <button

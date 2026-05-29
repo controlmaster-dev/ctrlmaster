@@ -95,7 +95,7 @@ export function ReminderModal({ isOpen, onClose, operators }: ReminderModalProps
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <MessageCircle className="w-5 h-5 text-[#FF0C60]" />
+            <MessageCircle className="w-5 h-5 text-brand" />
             Enviar Recordatorio
           </DialogTitle>
           <DialogDescription>
@@ -178,7 +178,7 @@ export function ReminderModal({ isOpen, onClose, operators }: ReminderModalProps
                 variant={method === "both" ? "default" : "outline"}
                 onClick={() => setMethod("both")}
                 className={`h-20 flex flex-col gap-1 ${
-                  method === "both" ? "bg-[#FF0C60] hover:bg-[#FF0080]" : ""
+                  method === "both" ? "bg-brand hover:bg-brand-hover" : ""
                 }`}
                 disabled={!selectedOp?.phone}
               >
@@ -229,7 +229,7 @@ export function ReminderModal({ isOpen, onClose, operators }: ReminderModalProps
           <Button
             onClick={handleSend}
             disabled={sending || !selectedOperator}
-            className="bg-[#FF0C60] hover:bg-[#FF0080]"
+            className="bg-brand hover:bg-brand-hover"
           >
             {sending ? (
               <>

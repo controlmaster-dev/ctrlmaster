@@ -151,7 +151,7 @@ export default function ReportsPage() {
           </div>
         </div>
         <Link href="/create-report">
-          <Button className="bg-gradient-to-r from-[#FF0C60] to-[#FF0C60]/80 hover:from-[#FF0C60]/90 hover:to-[#FF0C60]/70 text-white shadow-xl shadow-[#FF0C60]/25 hover:shadow-2xl hover:shadow-[#FF0C60]/40 transform hover:scale-[1.02] transition-all duration-300">
+          <Button className="bg-gradient-to-r from-brand to-brand/80 hover:from-brand/90 hover:to-brand/70 text-white shadow-xl shadow-brand/25 hover:shadow-2xl hover:shadow-brand/40 transform hover:scale-[1.02] transition-all duration-300">
             <Plus className="w-4 h-4 mr-2" /> Nuevo Reporte
           </Button>
         </Link>
@@ -318,7 +318,7 @@ export default function ReportsPage() {
                   : "No hay reportes que coincidan con los filtros aplicados."}
               </p>
               <Link href="/create-report">
-                <Button className="bg-gradient-to-r from-[#FF0C60] to-[#FF0C60]/80 hover:from-[#FF0C60]/90 hover:to-[#FF0C60]/70 text-white shadow-xl shadow-[#FF0C60]/25 hover:shadow-2xl hover:shadow-[#FF0C60]/40 transform hover:scale-[1.02] transition-all duration-300">
+                <Button className="bg-gradient-to-r from-brand to-brand/80 hover:from-brand/90 hover:to-brand/70 text-white shadow-xl shadow-brand/25 hover:shadow-2xl hover:shadow-brand/40 transform hover:scale-[1.02] transition-all duration-300">
                   <Plus className="w-4 h-4 mr-2" />
                   Crear Primer Reporte
                 </Button>

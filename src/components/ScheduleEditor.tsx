@@ -96,7 +96,7 @@ export function ScheduleEditor({ value, onChange }: ScheduleEditorProps) {
           variant="outline"
           size="sm"
           onClick={addShift}
-          className="h-9 px-4 text-[10px] font-bold uppercase tracking-widest border-border text-foreground hover:bg-[#FF0C60] hover:border-[#FF0C60] hover:text-white transition-all rounded-lg group shadow-sm active:scale-95"
+          className="h-9 px-4 text-[10px] font-bold uppercase tracking-widest border-border text-foreground hover:bg-brand hover:border-brand hover:text-white transition-all rounded-lg group shadow-sm active:scale-95"
         >
           <Plus className="w-3.5 h-3.5 mr-2 group-hover:rotate-90 transition-transform" />
           AÑADIR TURNO
@@ -134,8 +134,8 @@ export function ScheduleEditor({ value, onChange }: ScheduleEditorProps) {
               </Button>
 
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-8 h-8 bg-[#FF0C60]/10 rounded-lg flex items-center justify-center border border-[#FF0C60]/20">
-                  <Clock className="w-4 h-4 text-[#FF0C60]" />
+                <div className="w-8 h-8 bg-brand/10 rounded-lg flex items-center justify-center border border-brand/20">
+                  <Clock className="w-4 h-4 text-brand" />
                 </div>
                 <h5 className="text-[10px] font-semibold text-foreground uppercase tracking-[0.2em]">
                   Configuración del Turno
@@ -157,7 +157,7 @@ export function ScheduleEditor({ value, onChange }: ScheduleEditorProps) {
                           onClick={() => toggleDay(index, day.id)}
                           className={`h-10 px-4 rounded-xl text-xs font-semibold transition-all border ${
                             isActive
-                              ? "bg-[#FF0C60] text-white border-[#FF0C60] shadow-[0_5px_15px_-5px_rgba(255,12,96,0.4)] scale-105 z-10"
+                              ? "bg-brand text-white border-brand shadow-[0_5px_15px_-5px_rgba(255,12,96,0.4)] scale-105 z-10"
                               : "bg-muted/30 text-muted-foreground border-border hover:border-foreground/20 hover:bg-muted"
                           }`}
                         >
@@ -181,7 +181,7 @@ export function ScheduleEditor({ value, onChange }: ScheduleEditorProps) {
                         updateShift(index, "start", parseInt(v))
                       }
                     >
-                      <SelectTrigger className="h-12 bg-background border-input text-foreground font-semibold ring-offset-background focus:ring-1 focus:ring-[#FF0C60]/30 rounded-xl">
+                      <SelectTrigger className="h-12 bg-background border-input text-foreground font-semibold ring-offset-background focus:ring-1 focus:ring-brand/30 rounded-xl">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-popover border-border text-popover-foreground">
@@ -189,7 +189,7 @@ export function ScheduleEditor({ value, onChange }: ScheduleEditorProps) {
                           <SelectItem
                             key={h.value}
                             value={String(h.value)}
-                            className="focus:bg-[#FF0C60] focus:text-white hover:bg-muted"
+                            className="focus:bg-brand focus:text-white hover:bg-muted"
                           >
                             {h.label}
                           </SelectItem>
@@ -212,7 +212,7 @@ export function ScheduleEditor({ value, onChange }: ScheduleEditorProps) {
                         updateShift(index, "end", parseInt(v))
                       }
                     >
-                      <SelectTrigger className="h-12 bg-background border-input text-foreground font-semibold ring-offset-background focus:ring-1 focus:ring-[#FF0C60]/30 rounded-xl">
+                      <SelectTrigger className="h-12 bg-background border-input text-foreground font-semibold ring-offset-background focus:ring-1 focus:ring-brand/30 rounded-xl">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-popover border-border text-popover-foreground">
@@ -220,7 +220,7 @@ export function ScheduleEditor({ value, onChange }: ScheduleEditorProps) {
                           <SelectItem
                             key={h.value}
                             value={String(h.value)}
-                            className="focus:bg-[#FF0C60] focus:text-white hover:bg-muted"
+                            className="focus:bg-brand focus:text-white hover:bg-muted"
                           >
                             {h.label}
                           </SelectItem>
