@@ -1,9 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import videojs from "video.js";
-import "video.js/dist/video-js.css";
-import Player from "video.js/dist/types/player";
+import Hls from "hls.js";
 
 const METER_SEGMENTS = 12;
 const METER_TICK_MS = 300;
@@ -30,14 +28,12 @@ export const VideoJSPlayer = React.memo(function VideoJSPlayer({
   channelLabel,
   active = true,
 }: VideoJSPlayerProps) {
-  const videoRef = useRef<HTMLDivElement>(null);
-  const playerRef = useRef<Player | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const meterRef = useRef<HTMLDivElement>(null);
-  const meterTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const blackScreenTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastMetricAtRef = useRef<Record<string, number>>({});
   const titleRef = useRef(title);
   titleRef.current = title;
+  
   const [isBlackScreen, setIsBlackScreen] = useState(false);
 
   const reportMetric = useCallback(async (type: string, value: number) => {
@@ -59,63 +55,67 @@ export const VideoJSPlayer = React.memo(function VideoJSPlayer({
     }
   }, [active]);
 
-  const clearTimers = useCallback(() => {
-    if (meterTimerRef.current) {
-      clearInterval(meterTimerRef.current);
-      meterTimerRef.current = null;
-    }
-    if (blackScreenTimerRef.current) {
-      clearInterval(blackScreenTimerRef.current);
-      blackScreenTimerRef.current = null;
-    }
-  }, []);
-
   useEffect(() => {
-    if (!videoRef.current) return;
+    const videoEl = videoRef.current;
+    if (!videoEl) return;
 
+    let hls: Hls | null = null;
     let disposed = false;
-    const initialUrl = url;
+    let meterInterval: ReturnType<typeof setInterval> | null = null;
+    let blackScreenInterval: ReturnType<typeof setInterval> | null = null;
 
-    const videoElement = document.createElement("video-js");
-    videoElement.classList.add("vjs-big-play-centered", "w-full", "h-full");
-    videoElement.setAttribute("playsinline", "true");
-    videoElement.setAttribute("webkit-playsinline", "true");
-    videoRef.current.appendChild(videoElement);
-
-    const player = videojs(videoElement, {
-      autoplay: false,
-      controls: false,
-      responsive: true,
-      fill: true,
-      muted: true,
-      preload: "auto",
-      html5: {
-        vhs: {
-          enableLowInitialPlaylist: true,
-          smoothQualityChange: true,
-          limitRenditionByPlayerDimensions: true,
-        },
-      },
-      sources: [{ src: initialUrl, type: "application/x-mpegURL" }],
-    });
-
-    playerRef.current = player;
+    // Reiniciar estado de pantalla negra al cambiar de canal o URL
+    setIsBlackScreen(false);
 
     const tryPlay = () => {
       if (disposed || !isPageVisible()) return;
-      const p = player.play();
+      const p = videoEl.play();
       if (p && typeof p.catch === "function") p.catch(() => {});
     };
 
-    player.ready(() => {
-      if (disposed) return;
-      tryPlay();
+    // Configuración de Hls.js o reproducción nativa (Safari)
+    if (Hls.isSupported()) {
+      hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: true,
+        backBufferLength: 30,
+      });
+      hls.loadSource(url);
+      hls.attachMedia(videoEl);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        tryPlay();
+      });
+      hls.on(Hls.Events.ERROR, (event, data) => {
+        if (data.fatal) {
+          switch (data.type) {
+            case Hls.ErrorTypes.NETWORK_ERROR:
+              hls?.startLoad();
+              break;
+            case Hls.ErrorTypes.MEDIA_ERROR:
+              hls?.recoverMediaError();
+              break;
+            default:
+              reportMetric("ERROR", 1);
+              break;
+          }
+        }
+      });
+    } else if (videoEl.canPlayType("application/vnd.apple.mpegurl")) {
+      // HLS Nativo (Safari / iOS)
+      videoEl.src = url;
+      const handleMetadata = () => {
+        tryPlay();
+      };
+      videoEl.addEventListener("loadedmetadata", handleMetadata);
+      const handleError = () => {
+        reportMetric("ERROR", 1);
+      };
+      videoEl.addEventListener("error", handleError);
+    }
 
-      if (!active) return;
-
-      const videoEl = videoElement.querySelector("video");
-      if (!videoEl) return;
-
+    // Inicializar los analizadores visuales (si está activo)
+    if (active) {
+      // 1. VU Meter
       const mCanvas = document.createElement("canvas");
       mCanvas.width = 16;
       mCanvas.height = 16;
@@ -134,9 +134,9 @@ export const VideoJSPlayer = React.memo(function VideoJSPlayer({
         }
       };
 
-      meterTimerRef.current = setInterval(() => {
-        if (disposed || !playerRef.current || playerRef.current.isDisposed()) return;
-        if (!isPageVisible() || player.paused()) {
+      meterInterval = setInterval(() => {
+        if (disposed) return;
+        if (!isPageVisible() || videoEl.paused || videoEl.ended) {
           updateMeterUI(0);
           return;
         }
@@ -166,13 +166,14 @@ export const VideoJSPlayer = React.memo(function VideoJSPlayer({
         updateMeterUI(currentVol);
       }, METER_TICK_MS);
 
+      // 2. Detector de pantalla negra
       const bsCanvas = document.createElement("canvas");
       bsCanvas.width = 32;
       bsCanvas.height = 32;
       const bsCtx = bsCanvas.getContext("2d", { willReadFrequently: true });
 
-      blackScreenTimerRef.current = setInterval(() => {
-        if (disposed || !isPageVisible() || player.paused() || player.ended()) return;
+      blackScreenInterval = setInterval(() => {
+        if (disposed || !isPageVisible() || videoEl.paused || videoEl.ended) return;
         try {
           if (!bsCtx) return;
           bsCtx.drawImage(videoEl, 0, 0, 32, 32);
@@ -196,14 +197,12 @@ export const VideoJSPlayer = React.memo(function VideoJSPlayer({
           /* CORS o frame no listo */
         }
       }, BLACK_SCREEN_INTERVAL_MS);
-    });
-
-    player.on("error", () => reportMetric("ERROR", 1));
+    }
 
     const onVisibility = () => {
-      if (disposed || player.isDisposed()) return;
+      if (disposed) return;
       if (document.visibilityState === "hidden") {
-        player.pause();
+        videoEl.pause();
       } else {
         tryPlay();
       }
@@ -213,26 +212,17 @@ export const VideoJSPlayer = React.memo(function VideoJSPlayer({
     return () => {
       disposed = true;
       document.removeEventListener("visibilitychange", onVisibility);
-      clearTimers();
-      if (!player.isDisposed()) {
-        player.dispose();
-      }
-      playerRef.current = null;
-      if (videoRef.current) videoRef.current.innerHTML = "";
-    };
-    // Solo montar/desmontar el reproductor una vez
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+      
+      if (meterInterval) clearInterval(meterInterval);
+      if (blackScreenInterval) clearInterval(blackScreenInterval);
 
-  useEffect(() => {
-    const player = playerRef.current;
-    if (!player || player.isDisposed()) return;
-    player.src({ src: url, type: "application/x-mpegURL" });
-    if (isPageVisible()) {
-      const p = player.play();
-      if (p && typeof p.catch === "function") p.catch(() => {});
-    }
-  }, [url]);
+      if (hls) {
+        hls.destroy();
+      } else {
+        videoEl.src = "";
+      }
+    };
+  }, [url, active, reportMetric]);
 
   const isProgram = variant === "program";
   const isPreview = variant === "preview";
@@ -308,8 +298,15 @@ export const VideoJSPlayer = React.memo(function VideoJSPlayer({
         </div>
       )}
 
-      <div data-vjs-player className="h-full w-full bg-black">
-        <div ref={videoRef} className="h-full w-full object-cover" />
+      <div className="h-full w-full bg-black">
+        <video
+          ref={videoRef}
+          className="h-full w-full object-cover"
+          playsInline
+          muted
+          autoPlay
+          crossOrigin="anonymous"
+        />
       </div>
     </div>
   );
