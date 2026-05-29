@@ -8,9 +8,7 @@
     "start": "next start",
     "lint": "npx tsc --noEmit && npx eslint .",
     "format": "npx biome format --write",
-    "all": "next build && next start",
-    "migrate": "tsx scripts/migrate.ts",
-    "seed": "tsx scripts/seed.ts"
+    "all": "next build && next start"
   },
   "dependencies": {
     "@microsoft/microsoft-graph-client": "^3.0.7",
