@@ -1,14 +1,9 @@
--- ============================================================
--- CtrlMaster: Initial Database Schema
--- Migrated from Prisma to raw PostgreSQL
--- ============================================================
 
--- Extension for UUID generation
+
+
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- ============================================================
--- Helper: Auto-update "updatedAt" timestamp
--- ============================================================
+
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -17,11 +12,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- ============================================================
--- TABLES
--- ============================================================
 
--- User
 CREATE TABLE "User" (
   "id"              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "name"            TEXT NOT NULL,
@@ -45,7 +36,6 @@ CREATE TABLE "User" (
 CREATE INDEX "User_email_idx" ON "User" ("email");
 CREATE INDEX "User_role_idx" ON "User" ("role");
 
--- Report
 CREATE TABLE "Report" (
   "id"                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "operatorId"         UUID NOT NULL REFERENCES "User" ("id"),
@@ -72,7 +62,6 @@ CREATE TRIGGER "Report_updatedAt"
   BEFORE UPDATE ON "Report"
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- ReportView
 CREATE TABLE "ReportView" (
   "id"       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "userId"   UUID NOT NULL REFERENCES "User" ("id"),
@@ -85,7 +74,6 @@ CREATE TABLE "ReportView" (
 CREATE INDEX "ReportView_reportId_idx" ON "ReportView" ("reportId");
 CREATE INDEX "ReportView_userId_idx" ON "ReportView" ("userId");
 
--- Comment
 CREATE TABLE "Comment" (
   "id"        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "content"   TEXT NOT NULL,
@@ -99,7 +87,6 @@ CREATE INDEX "Comment_reportId_idx" ON "Comment" ("reportId");
 CREATE INDEX "Comment_authorId_idx" ON "Comment" ("authorId");
 CREATE INDEX "Comment_parentId_idx" ON "Comment" ("parentId");
 
--- CommentReaction
 CREATE TABLE "CommentReaction" (
   "id"        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "emoji"     TEXT NOT NULL,
@@ -113,7 +100,6 @@ CREATE TABLE "CommentReaction" (
 CREATE INDEX "CommentReaction_commentId_idx" ON "CommentReaction" ("commentId");
 CREATE INDEX "CommentReaction_authorId_idx" ON "CommentReaction" ("authorId");
 
--- Reaction
 CREATE TABLE "Reaction" (
   "id"        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "emoji"     TEXT NOT NULL,
@@ -127,7 +113,6 @@ CREATE TABLE "Reaction" (
 CREATE INDEX "Reaction_reportId_idx" ON "Reaction" ("reportId");
 CREATE INDEX "Reaction_authorId_idx" ON "Reaction" ("authorId");
 
--- Attachment
 CREATE TABLE "Attachment" (
   "id"        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "url"       TEXT NOT NULL,
@@ -139,7 +124,6 @@ CREATE TABLE "Attachment" (
 
 CREATE INDEX "Attachment_reportId_idx" ON "Attachment" ("reportId");
 
--- Task
 CREATE TABLE "Task" (
   "id"            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "title"         TEXT NOT NULL,
@@ -159,7 +143,6 @@ CREATE INDEX "Task_userId_idx" ON "Task" ("userId");
 CREATE INDEX "Task_status_idx" ON "Task" ("status");
 CREATE INDEX "Task_scheduledDate_idx" ON "Task" ("scheduledDate");
 
--- WorkSchedule
 CREATE TABLE "WorkSchedule" (
   "id"         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "date"       DATE NOT NULL UNIQUE,
@@ -170,7 +153,6 @@ CREATE TABLE "WorkSchedule" (
 CREATE INDEX "WorkSchedule_userId_idx" ON "WorkSchedule" ("userId");
 CREATE INDEX "WorkSchedule_date_idx" ON "WorkSchedule" ("date");
 
--- StreamMetric
 CREATE TABLE "StreamMetric" (
   "id"        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "channel"   TEXT NOT NULL,
@@ -183,14 +165,12 @@ CREATE INDEX "StreamMetric_createdAt_idx" ON "StreamMetric" ("createdAt");
 CREATE INDEX "StreamMetric_channel_idx" ON "StreamMetric" ("channel");
 CREATE INDEX "StreamMetric_type_idx" ON "StreamMetric" ("type");
 
--- ValidProgram
 CREATE TABLE "ValidProgram" (
   "id"        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "code"      TEXT NOT NULL UNIQUE,
   "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- SpecialEvent
 CREATE TABLE "SpecialEvent" (
   "id"        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "name"      TEXT NOT NULL,
@@ -200,7 +180,6 @@ CREATE TABLE "SpecialEvent" (
   "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- SpecialEventShift
 CREATE TABLE "SpecialEventShift" (
   "id"      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "eventId" UUID NOT NULL REFERENCES "SpecialEvent" ("id") ON DELETE CASCADE,
@@ -213,7 +192,6 @@ CREATE TABLE "SpecialEventShift" (
 CREATE INDEX "SpecialEventShift_userId_idx" ON "SpecialEventShift" ("userId");
 CREATE INDEX "SpecialEventShift_date_idx" ON "SpecialEventShift" ("date");
 
--- WeeklySchedule
 CREATE TABLE "WeeklySchedule" (
   "id"        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "dayOfWeek" INTEGER NOT NULL UNIQUE,
@@ -222,7 +200,6 @@ CREATE TABLE "WeeklySchedule" (
 
 CREATE INDEX "WeeklySchedule_dayOfWeek_idx" ON "WeeklySchedule" ("dayOfWeek");
 
--- Credential
 CREATE TABLE "Credential" (
   "id"        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "service"   TEXT NOT NULL,
@@ -238,7 +215,6 @@ CREATE TRIGGER "Credential_updatedAt"
   BEFORE UPDATE ON "Credential"
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- RegistrationCode
 CREATE TABLE "RegistrationCode" (
   "id"          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "code"        TEXT NOT NULL UNIQUE,
@@ -252,7 +228,6 @@ CREATE TABLE "RegistrationCode" (
 CREATE INDEX "RegistrationCode_code_idx" ON "RegistrationCode" ("code");
 CREATE INDEX "RegistrationCode_createdById_idx" ON "RegistrationCode" ("createdById");
 
--- SessionToken
 CREATE TABLE "SessionToken" (
   "id"        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "token"     TEXT NOT NULL UNIQUE,

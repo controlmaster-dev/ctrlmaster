@@ -1,12 +1,5 @@
-/**
- * Symmetric encryption for secrets stored at rest (e.g. service credentials).
- *
- * Uses AES-256-GCM with a key provided via CREDENTIALS_ENC_KEY (base64, 32 bytes).
- * Stored format: `enc:v1:<ivBase64>:<tagBase64>:<cipherBase64>`.
- *
- * Values that are not in this format are treated as legacy plaintext so that
- * existing rows keep working until they are re-saved (and thus encrypted).
- */
+
+
 
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 
@@ -32,10 +25,7 @@ export function isEncrypted(value: string): boolean {
   return typeof value === 'string' && value.startsWith(PREFIX);
 }
 
-/**
- * Encrypt a string. If no key is configured, returns the plaintext unchanged
- * (so the app keeps working) and logs a warning.
- */
+
 export function encryptSecret(plaintext: string): string {
   const key = getKey();
   if (!key) {
@@ -51,10 +41,6 @@ export function encryptSecret(plaintext: string): string {
   return `${PREFIX}${iv.toString('base64')}:${tag.toString('base64')}:${encrypted.toString('base64')}`;
 }
 
-/**
- * Decrypt a value produced by encryptSecret. Legacy (non-encrypted) values are
- * returned as-is.
- */
 export function decryptSecret(value: string): string {
   if (!isEncrypted(value)) return value;
 

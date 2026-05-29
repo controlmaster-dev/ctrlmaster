@@ -1,12 +1,9 @@
-/**
- * Schedule and shift types
- */
+
+
 
 import type { User } from './auth';
 
-/**
- * Day of week enum (0 = Sunday, 6 = Saturday)
- */
+
 export enum DayOfWeek {
   SUNDAY = 0,
   MONDAY = 1,
@@ -17,20 +14,16 @@ export enum DayOfWeek {
   SATURDAY = 6,
 }
 
-/**
- * Shift interface
- */
+
 export interface Shift {
   days: DayOfWeek[];
-  start: number; // Hour in 24h format (0-23)
-  end: number; // Hour in 24h format (0-23)
+  start: number;
+  end: number;
   userId?: string;
   userName?: string;
 }
 
-/**
- * Schedule configuration for a user
- */
+
 export interface UserSchedule {
   userId: string;
   userName: string;
@@ -38,18 +31,14 @@ export interface UserSchedule {
   label: string;
 }
 
-/**
- * Weekly schedule data
- */
+
 export interface WeeklySchedule {
   weekStart: string;
   weekEnd: string;
   schedules: UserSchedule[];
 }
 
-/**
- * Special event interface
- */
+
 export interface SpecialEvent {
   id: string;
   title: string;
@@ -61,9 +50,7 @@ export interface SpecialEvent {
   affectedUsers?: string[];
 }
 
-/**
- * Shift reminder data
- */
+
 export interface ShiftReminder {
   userId: string;
   userName: string;
@@ -74,9 +61,7 @@ export interface ShiftReminder {
   reminderSentAt?: Date;
 }
 
-/**
- * Calendar event interface
- */
+
 export interface CalendarEvent {
   id: string;
   title: string;

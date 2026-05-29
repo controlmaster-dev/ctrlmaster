@@ -1,20 +1,10 @@
-/**
- * API Authentication middleware helper
- * Use this in API routes to validate user authentication
- */
+
+
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserFromToken } from '@/lib/auth';
 
-/**
- * Validate user from request cookies
- * Returns user object if authenticated, or NextResponse if not
- *
- * Usage:
- *   const authResult = await validateApiAuth(req);
- *   if (authResult instanceof NextResponse) return authResult;
- *   const { user } = authResult;
- */
+
 export async function validateApiAuth(req: NextRequest) {
   const token = req.cookies.get('auth-token')?.value;
 
@@ -37,10 +27,7 @@ export async function validateApiAuth(req: NextRequest) {
   return { user };
 }
 
-/**
- * Check if user has required role
- * Returns NextResponse if unauthorized
- */
+
 export function requireRole(user: { role?: string } | Record<string, any>, allowedRoles: string[]) {
   const role = typeof user.role === 'string' ? user.role : '';
   if (!allowedRoles.includes(role)) {
@@ -52,16 +39,7 @@ export function requireRole(user: { role?: string } | Record<string, any>, allow
   return { authorized: true };
 }
 
-/**
- * Validate that a request comes from the cron scheduler.
- * Vercel Cron automatically sends `Authorization: Bearer ${CRON_SECRET}`
- * when CRON_SECRET is configured as an environment variable.
- *
- * Returns a NextResponse (to be returned by the route) when the request
- * is NOT authorized, or `null` when it is valid.
- *
- * Fails closed: if CRON_SECRET is not configured, every call is rejected.
- */
+
 export function requireCronAuth(req: Request): NextResponse | null {
   const secret = process.env.CRON_SECRET;
 

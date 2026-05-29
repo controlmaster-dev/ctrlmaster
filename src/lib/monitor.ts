@@ -1,9 +1,6 @@
 import puppeteer from 'puppeteer';
 
-/**
- * Screenshots are best-effort: on serverless hosts (Vercel) the filesystem is
- * read-only, so a failed write must not abort the monitoring run.
- */
+
 async function safeScreenshot(page: any, path: string, fullPage = false) {
   try {
     await page.screenshot({ path, fullPage });

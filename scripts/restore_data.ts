@@ -43,7 +43,7 @@ async function main() {
   await sql`DELETE FROM "User"`;
   console.log('✨ Database clean.');
 
-  // Users
+
   console.log(`Upserting ${data.users.length} users...`);
   for (const item of data.users) {
     await sql`
@@ -52,7 +52,7 @@ async function main() {
     `;
   }
 
-  // Reports
+
   console.log(`Upserting ${data.reports.length} reports...`);
   for (const item of data.reports) {
     await sql`
@@ -61,7 +61,7 @@ async function main() {
     `;
   }
 
-  // ReportViews (composite unique)
+
   console.log(`Upserting ${data.reportViews.length} reportViews...`);
   for (const item of data.reportViews) {
     await sql`
@@ -70,7 +70,7 @@ async function main() {
     `;
   }
 
-  // Comments
+
   console.log(`Upserting ${data.comments.length} comments...`);
   data.comments.sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
   for (const item of data.comments) {
@@ -80,7 +80,7 @@ async function main() {
     `;
   }
 
-  // Reactions (composite unique)
+
   console.log(`Upserting ${data.reactions.length} reactions...`);
   for (const item of data.reactions) {
     await sql`
@@ -89,7 +89,7 @@ async function main() {
     `;
   }
 
-  // CommentReactions (composite unique)
+
   console.log(`Upserting ${data.commentReactions.length} commentReactions...`);
   for (const item of data.commentReactions) {
     await sql`
@@ -98,7 +98,7 @@ async function main() {
     `;
   }
 
-  // Attachments
+
   console.log(`Upserting ${data.attachments.length} attachments...`);
   for (const item of data.attachments) {
     await sql`
@@ -107,7 +107,7 @@ async function main() {
     `;
   }
 
-  // Tasks
+
   console.log(`Upserting ${data.tasks.length} tasks...`);
   for (const item of data.tasks) {
     await sql`
@@ -116,7 +116,7 @@ async function main() {
     `;
   }
 
-  // WorkSchedules
+
   console.log(`Upserting ${data.workSchedules.length} workSchedules...`);
   for (const item of data.workSchedules) {
     await sql`
@@ -125,7 +125,7 @@ async function main() {
     `;
   }
 
-  // StreamMetrics
+
   console.log(`Upserting ${data.streamMetrics.length} streamMetrics...`);
   for (const item of data.streamMetrics) {
     await sql`
@@ -134,7 +134,7 @@ async function main() {
     `;
   }
 
-  // ValidPrograms
+
   console.log(`Upserting ${data.validPrograms.length} validPrograms...`);
   for (const item of data.validPrograms) {
     await sql`

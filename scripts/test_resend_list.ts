@@ -8,8 +8,8 @@ async function main() {
 
     try {
         console.log("Calling resend.emails.list()...")
-        // @ts-ignore
-        const response = await resend.emails.list()
+        const emails = resend.emails as unknown as { list: () => Promise<unknown> }
+        const response = await emails.list()
         console.log("Response:", JSON.stringify(response, null, 2))
     } catch (e) {
         console.error("Error with SDK:", e)

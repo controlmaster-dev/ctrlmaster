@@ -88,13 +88,13 @@ export function ReportesClient() {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Server-side state
+
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const limit = 20;
 
-  // Filter state
+
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
@@ -103,7 +103,7 @@ export function ReportesClient() {
   const [dateTo, setDateTo] = useState("");
   const [showFilters, setShowFilters] = useState(false);
 
-  // Modals
+
   const [modal, setModal] = useState({
     isOpen: false,
     type: "success" as "success" | "error",
@@ -125,7 +125,7 @@ export function ReportesClient() {
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [cachedDetail, setCachedDetail] = useState<any | null>(null);
 
-  // Operator stats
+
   const [showStats, setShowStats] = useState(false);
   const [operatorStats, setOperatorStats] = useState<any[]>([]);
   const [globalStats, setGlobalStats] = useState({
@@ -135,7 +135,7 @@ export function ReportesClient() {
   });
   const [initialLoad, setInitialLoad] = useState(true);
 
-  // Build query params
+
   const buildQuery = useCallback(() => {
     const params = new URLSearchParams();
     params.set('page', String(page));
@@ -229,7 +229,7 @@ export function ReportesClient() {
     if (savedUser) setCurrentUser(JSON.parse(savedUser));
   }, [page, statusFilter, priorityFilter, operatorFilter, dateFrom, dateTo]);
 
-  // Handle direct report link (?reportId=xxx) — usa caché de precarga si existe
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const reportId = params.get("reportId");
@@ -252,7 +252,7 @@ export function ReportesClient() {
     });
   }, []);
 
-  // Debounced search
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setPage(1);
@@ -261,7 +261,7 @@ export function ReportesClient() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  // Fetch operator stats
+
   const fetchOperatorStats = async () => {
     try {
       const res = await fetch('/api/reports?limit=500');
@@ -290,7 +290,7 @@ export function ReportesClient() {
     }
   };
 
-  // CSV Export
+
   const exportToCSV = () => {
     const headers = ['ID', 'Operador', 'Email', 'Descripción', 'Categoría', 'Prioridad', 'Estado', 'Fecha Inicio', 'Fecha Resolución', 'Email Enviado'];
     const rows = reports.map(r => [

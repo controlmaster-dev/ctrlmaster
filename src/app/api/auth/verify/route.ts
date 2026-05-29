@@ -1,6 +1,5 @@
-/**
- * Session verification endpoint.
- */
+
+
 
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -11,10 +10,7 @@ const verifyBodySchema = z.object({
   userId: z.string().min(1),
 });
 
-/**
- * POST /api/auth/verify
- * Verify if a known user/session pair is valid.
- */
+
 export const POST = apiHandler({ bodySchema: verifyBodySchema }, async ({ req, body }) => {
   const token = req.cookies.get('auth-token')?.value;
 
@@ -30,10 +26,7 @@ export const POST = apiHandler({ bodySchema: verifyBodySchema }, async ({ req, b
   return { valid: true };
 });
 
-/**
- * GET /api/auth/verify
- * Check current session status and return the safe user payload.
- */
+
 export const GET = apiHandler({}, async ({ req }) => {
   const token = req.cookies.get('auth-token')?.value;
   const userId = req.cookies.get('user-id')?.value;

@@ -1,4 +1,4 @@
-/** Caché de sesión para la Pauta Bitcentral (por semana, inicio lunes) */
+
 
 import { addDays, format, startOfWeek } from "date-fns";
 import { scheduleDateKey } from "@/lib/schedule";
@@ -59,7 +59,7 @@ export function setBitcentralCache(bundle: BitcentralBundle) {
     map[bundle.weekKey] = bundle;
     sessionStorage.setItem(KEY, JSON.stringify(map));
   } catch {
-    // ignore
+
   }
 }
 
@@ -76,11 +76,11 @@ export function invalidateBitcentralCache(weekStart?: Date) {
     delete map[weekKeyFromDate(weekStart)];
     sessionStorage.setItem(KEY, JSON.stringify(map));
   } catch {
-    // ignore
+
   }
 }
 
-/** Descarga y guarda en caché la pauta de una semana */
+
 export async function prefetchBitcentralWeek(
   weekStart: Date,
   options?: { force?: boolean }
@@ -138,11 +138,7 @@ export async function prefetchBitcentralWeek(
   }
 }
 
-/**
- * Precarga solo la semana actual al iniciar sesión.
- * Las semanas adyacentes se cargan bajo demanda al navegar (prefetchBitcentralWeek),
- * evitando 2 fetches extra (x3 endpoints) en cada login.
- */
+
 export async function prefetchBitcentralNearby(anchor = new Date()) {
   const current = getBitcentralWeekStart(anchor);
   await prefetchBitcentralWeek(current);

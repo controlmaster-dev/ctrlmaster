@@ -1,7 +1,7 @@
-/** @type {import('next').NextConfig} */
+
 const nextConfig = {
   images: {
-    // Enable Next.js image optimization
+
     formats: ['image/avif', 'image/webp'],
     remotePatterns: [
       {
@@ -34,38 +34,38 @@ const nextConfig = {
   productionBrowserSourceMaps: false,
   poweredByHeader: false,
   experimental: {
-    // Tree-shake large barrel imports so only used icons/helpers ship.
+
     optimizePackageImports: ['lucide-react', 'date-fns'],
   },
-  // Code splitting optimization (production only — skip in dev for speed)
+
   webpack: (config, { isServer, dev }) => {
     if (dev) return config;
     if (!isServer) {
-      // Split vendor chunks for better caching
+
       config.optimization.splitChunks = {
         chunks: 'all',
         cacheGroups: {
           default: false,
           vendors: false,
-          // Separate recharts into its own chunk
+
           recharts: {
             name: 'recharts',
             test: /[\\/]node_modules[\\/]recharts[\\/]/,
             priority: 30,
           },
-          // Separate framer-motion into its own chunk
+
           framerMotion: {
             name: 'framer-motion',
             test: /[\\/]node_modules[\\/]framer-motion[\\/]/,
             priority: 25,
           },
-          // Separate lucide-react icons
+
           lucide: {
             name: 'lucide-icons',
             test: /[\\/]node_modules[\\/]lucide-react[\\/]/,
             priority: 20,
           },
-          // Common vendor libraries
+
           vendor: {
             name: 'vendor',
             test: /[\\/]node_modules[\\/]/,
@@ -81,8 +81,8 @@ const nextConfig = {
   },
   async headers() {
     const isProd = process.env.NODE_ENV === 'production';
-    // In development we also allow plain http/ws so local services (e.g. the
-    // WhatsApp API on http://localhost:3001 and HMR websockets) keep working.
+
+
     const connectSrc = isProd
       ? "connect-src 'self' https:"
       : "connect-src 'self' https: http: ws: wss:";
@@ -93,9 +93,9 @@ const nextConfig = {
       "frame-ancestors 'self'",
       "form-action 'self'",
       "img-src 'self' data: blob: https:",
-      // Adobe Typekit serves the "obviously-variable" font files.
+
       "font-src 'self' data: https://use.typekit.net",
-      // Typekit also delivers its font CSS via @import from p.typekit.net.
+
       "style-src 'self' 'unsafe-inline' https://p.typekit.net https://use.typekit.net",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
       connectSrc,
@@ -137,7 +137,7 @@ const nextConfig = {
           },
         ],
       },
-      // Cache static assets
+
       {
         source: '/(uploads|icons|fonts)/(.*)',
         headers: [

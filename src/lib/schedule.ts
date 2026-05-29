@@ -1,6 +1,6 @@
 import { differenceInCalendarWeeks, format, getDay } from 'date-fns';
 
-/** Clave de calendario local (yyyy-MM-dd) para overrides — evita desfase UTC. */
+
 export function scheduleDateKey(date: Date | string): string {
   if (typeof date === 'string') {
     const match = date.match(/^(\d{4}-\d{2}-\d{2})/);

@@ -1,15 +1,11 @@
-/**
- * Logout API route.
- */
+
+
 
 import { NextResponse } from 'next/server';
 import { apiHandler } from '@/lib/api/handler';
 import { revokeToken } from '@/lib/auth';
 
-/**
- * POST /api/auth/logout
- * Revoke session and clear cookies.
- */
+
 export const POST = apiHandler({}, async ({ req }) => {
   const token = req.cookies.get('auth-token')?.value;
 

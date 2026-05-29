@@ -1,4 +1,4 @@
-/** Caché de sesión para la lista de reportes (primera página / filtros por defecto) */
+
 
 const KEY = "cm_reportes_list_v1";
 const TTL_MS = 3 * 60 * 1000;
@@ -36,7 +36,7 @@ export function setReportesListCache(bundle: ReportesListBundle) {
   try {
     sessionStorage.setItem(KEY, JSON.stringify(bundle));
   } catch {
-    // ignore
+
   }
 }
 

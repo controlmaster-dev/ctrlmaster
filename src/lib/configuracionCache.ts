@@ -16,7 +16,7 @@ export interface ConfiguracionBundle {
   users: unknown[];
   reports: unknown[];
   securityCodes: SecurityCode[];
-  /** false mientras se carga /api/reports?limit=500 en segundo plano */
+
   reportsReady?: boolean;
   fetchedAt: number;
 }
@@ -45,7 +45,7 @@ export function setConfiguracionCache(bundle: ConfiguracionBundle) {
   try {
     sessionStorage.setItem(KEY, JSON.stringify(bundle));
   } catch {
-    // ignore
+
   }
 }
 

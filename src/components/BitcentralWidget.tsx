@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { startOfWeek, addDays, format, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
-import { getBitcentralUser, scheduleDateKey } from "@/lib/schedule";
+import { scheduleDateKey } from "@/lib/schedule";
 import {
   getBitcentralCache,
   invalidateBitcentralCache,
@@ -22,20 +22,21 @@ import {
   type BitcentralEvent,
   type BitcentralOverride,
 } from "@/lib/bitcentralCache";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { toast } from "sonner";
+import {
+  BitcentralConfigDialog,
+  BitcentralEventsDialog,
+  BitcentralOverrideDialog,
+} from "@/components/bitcentral/BitcentralDialogs";
+import { BitcentralStatusBadge } from "@/components/bitcentral/BitcentralStatusBadge";
+import {
+  buildBaseScheduleMap,
+  buildOverrideMap,
+  dayUserId,
+  getDisplayInfo,
+  getInitials,
+  type BitcentralDisplayInfo,
+} from "@/components/bitcentral/bitcentralUtils";
 
 interface BitcentralWidgetProps {
   users: Array<{ id: string; name: string }>;
@@ -113,46 +114,15 @@ export function BitcentralWidget({
     [weekStart, applyBundle]
   );
 
-  const baseScheduleMap = baseSchedule.reduce((acc, curr) => {
-    if (curr.user) {
-      acc[curr.dayOfWeek.toString()] = curr.user.name;
-    }
-    return acc;
-  }, {} as Record<string, string>);
+  const baseScheduleMap = React.useMemo(
+    () => buildBaseScheduleMap(baseSchedule),
+    [baseSchedule]
+  );
 
-  const overrideMap = overrides.reduce((acc, curr) => {
-    const key = scheduleDateKey(curr.date);
-    if (key && curr.user?.name) {
-      acc[key] = curr.user.name;
-    }
-    return acc;
-  }, {} as Record<string, string>);
-
-  const getDisplayInfo = (date: Date) => {
-    const validEvents = Array.isArray(events) ? events : [];
-    const event = validEvents.find((e) => {
-      if (!e.isActive) return false;
-      const start = new Date(e.startDate);
-      const end = new Date(e.endDate);
-
-      start.setHours(0, 0, 0, 0);
-      end.setHours(23, 59, 59, 999);
-      const check = new Date(date);
-      check.setHours(12, 0, 0, 0);
-      return check >= start && check <= end;
-    });
-
-    if (event) {
-      return { name: event.name, isEvent: true, eventId: event.id };
-    }
-
-    const dateKey = scheduleDateKey(date);
-    if (overrideMap[dateKey]) {
-      return { name: overrideMap[dateKey], isOverride: true, isRotation: false };
-    }
-
-    return getBitcentralUser(date, {}, baseScheduleMap);
-  };
+  const overrideMap = React.useMemo(
+    () => buildOverrideMap(overrides),
+    [overrides]
+  );
 
   useEffect(() => {
     hasShownData.current = false;
@@ -274,9 +244,6 @@ export function BitcentralWidget({
     }
   };
 
-  const dayUserId = (entry?: BitcentralBaseDay) =>
-    entry?.userId || entry?.user?.id || "default";
-
   const buildConfigDraft = () => {
     const draft: Record<number, string> = {};
     for (const dayIndex of [0, 1, 2, 3, 4, 5, 6]) {
@@ -325,40 +292,6 @@ export function BitcentralWidget({
   };
 
   const days = Array.from({ length: 7 }).map((_, i) => addDays(weekStart, i));
-
-  const getInitials = (name: string) => {
-    return (name || "")
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .substring(0, 2)
-      .toUpperCase();
-  };
-
-  const statusBadge = (info: {
-    isOverride?: boolean;
-    isRotation?: boolean;
-  }) => {
-    if (info.isOverride) {
-      return (
-        <span className="rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">
-          Cambio manual
-        </span>
-      );
-    }
-    if (info.isRotation) {
-      return (
-        <span className="rounded-md bg-violet-500/10 px-1.5 py-0.5 text-[10px] font-medium text-violet-600 dark:text-violet-400">
-          Rotativo
-        </span>
-      );
-    }
-    return (
-      <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-        Regular
-      </span>
-    );
-  };
 
   const goToCurrentWeek = () => {
     setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }));
@@ -456,13 +389,12 @@ export function BitcentralWidget({
                 </div>
               ))
             : days.map((date) => {
-                const info = getDisplayInfo(date) as {
-                  name: string;
-                  isEvent?: boolean;
-                  eventId?: string;
-                  isOverride?: boolean;
-                  isRotation?: boolean;
-                };
+                const info: BitcentralDisplayInfo = getDisplayInfo(
+                  date,
+                  Array.isArray(events) ? events : [],
+                  overrideMap,
+                  baseScheduleMap
+                );
                 const isTodayStr = isSameDay(date, today);
                 const toISO = (d: Date) =>
                   isNaN(d.getTime()) ? `invalid-${Math.random()}` : d.toISOString();
@@ -540,7 +472,9 @@ export function BitcentralWidget({
                         <p className="truncate text-sm font-medium text-foreground">
                           {info.name}
                         </p>
-                        <div className="mt-0.5">{statusBadge(info)}</div>
+                        <div className="mt-0.5">
+                          <BitcentralStatusBadge info={info} />
+                        </div>
                       </div>
                     </div>
 
@@ -553,262 +487,40 @@ export function BitcentralWidget({
         </div>
       </div>
 
-      <Dialog open={isConfigOpen} onOpenChange={handleConfigOpenChange}>
-        <DialogContent className="!left-1/2 !top-[calc(3.5rem+0.5rem)] !max-w-xl w-[min(calc(100vw-2rem),36rem)] !-translate-x-1/2 !translate-y-0 gap-0 overflow-hidden border border-border bg-background/95 p-0 shadow-xl backdrop-blur-2xl sm:rounded-sm">
-          <DialogHeader className="shrink-0 border-b border-border/60 px-6 py-4 pr-12">
-            <DialogTitle className="flex items-center gap-2 text-foreground">
-              <Settings className="h-5 w-5 text-blue-500" />
-              Configuración de Horario Base
-            </DialogTitle>
-          </DialogHeader>
-          <div className="max-h-[min(60vh,calc(100dvh-10rem))] space-y-4 overflow-y-auto px-6 py-4 custom-scrollbar">
-            <p className="text-sm text-muted-foreground">
-              Define el operador predeterminado para cada día de la semana. Los
-              cambios aplicarán a todas las semanas futuras excepto donde haya
-              modificaciones manuales.
-            </p>
-            <form
-              id="bitcentral-config-form"
-              onSubmit={(e) => {
-                e.preventDefault();
-                const updates: Array<{ dayOfWeek: number; userId: string }> = [];
-                for (let i = 0; i < 7; i++) {
-                  const userId = configDraft[i] ?? "default";
-                  const hadAssignment = baseSchedule.some((s) => s.dayOfWeek === i);
-                  if (userId === "default") {
-                    if (hadAssignment) {
-                      updates.push({ dayOfWeek: i, userId: "REMOVE" });
-                    }
-                  } else {
-                    updates.push({ dayOfWeek: i, userId });
-                  }
-                }
-                void handleSaveConfig(updates);
-              }}
-              className="space-y-3"
-            >
-              {[1, 2, 3, 4, 5, 6, 0].map((dayIndex) => {
-                const dayName = format(
-                  addDays(
-                    startOfWeek(new Date(), { weekStartsOn: 1 }),
-                    dayIndex === 0 ? 6 : dayIndex - 1
-                  ),
-                  "EEEE",
-                  { locale: es }
-                );
+      <BitcentralConfigDialog
+        open={isConfigOpen}
+        onOpenChange={handleConfigOpenChange}
+        configDraft={configDraft}
+        setConfigDraft={setConfigDraft}
+        baseSchedule={baseSchedule}
+        users={users}
+        isSaving={isSaving}
+        onSave={(updates) => void handleSaveConfig(updates)}
+      />
 
-                const currentConfig = baseSchedule.find(
-                  (s) => s.dayOfWeek === dayIndex
-                );
+      <BitcentralOverrideDialog
+        selectedDate={selectedDate}
+        setSelectedDate={setSelectedDate}
+        users={users}
+        isSaving={isSaving}
+        onOverride={(userId) => void handleOverride(userId)}
+      />
 
-                return (
-                  <div
-                    key={dayIndex}
-                    className="flex items-center justify-between p-3 rounded-sm bg-muted/30 border border-border"
-                  >
-                    <span className="capitalize font-medium text-sm w-24 text-foreground">
-                      {dayName}
-                    </span>
-                    <Select
-                      value={
-                        configDraft[dayIndex] ?? dayUserId(currentConfig)
-                      }
-                      onValueChange={(val) =>
-                        setConfigDraft((prev) => ({ ...prev, [dayIndex]: val }))
-                      }
-                      disabled={isSaving}
-                    >
-                      <SelectTrigger className="h-9 w-[min(200px,50vw)] border-input bg-background text-sm">
-                        <SelectValue placeholder="Seleccionar..." />
-                      </SelectTrigger>
-                      <SelectContent className="z-[10060]">
-                        <SelectItem
-                          value="default"
-                          className="text-muted-foreground font-light"
-                        >
-                          Sin asignar (Legacy)
-                        </SelectItem>
-                        {users
-                          .filter((u) => u.id)
-                          .map((u) => (
-                            <SelectItem key={u.id} value={u.id}>
-                              {u.name}
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                );
-              })}
+      <BitcentralEventsDialog
+        open={isManageEventsOpen}
+        onOpenChange={setIsManageEventsOpen}
+        events={events}
+        newEventName={newEventName}
+        setNewEventName={setNewEventName}
+        newEventStart={newEventStart}
+        setNewEventStart={setNewEventStart}
+        newEventEnd={newEventEnd}
+        setNewEventEnd={setNewEventEnd}
+        isSaving={isSaving}
+        onCreateEvent={() => void handleCreateEvent()}
+        onDeleteEvent={(id) => void handleDeleteEvent(id)}
+      />
 
-            </form>
-          </div>
-          <div className="flex shrink-0 justify-end gap-2 border-t border-border/60 bg-card px-6 py-4">
-            <Button
-              variant="outline"
-              type="button"
-              disabled={isSaving}
-              onClick={() => setIsConfigOpen(false)}
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              form="bitcentral-config-form"
-              disabled={isSaving}
-              className="bg-blue-600 text-white hover:bg-blue-700"
-            >
-              {isSaving ? "Guardando…" : "Guardar cambios"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={!!selectedDate}
-        onOpenChange={(o) => {
-          if (!o) setSelectedDate(null);
-        }}
-      >
-        <DialogContent className="bg-background/95 backdrop-blur-2xl border border-border shadow-xl sm:rounded-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-foreground">
-              <Edit2 className="w-5 h-5 text-blue-500" />
-              Editar Horario:{" "}
-              <span className="text-blue-500">
-                {selectedDate && format(selectedDate, "EEEE d MMMM", { locale: es })}
-              </span>
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 pt-4">
-            <div className="p-4 rounded-sm bg-muted/50 border border-border">
-              <p className="text-sm text-muted-foreground mb-3">
-                Selecciona quién cubrirá este turno (Modo Vacaciones/Cambio):
-              </p>
-              <Select onValueChange={handleOverride} disabled={isSaving}>
-                <SelectTrigger className="h-11 border-input bg-background text-foreground focus:ring-blue-500/50">
-                  <SelectValue placeholder="Seleccionar operador..." />
-                </SelectTrigger>
-                <SelectContent className="z-[10060] border-border bg-popover text-popover-foreground">
-                  <SelectItem
-                    value="reset"
-                    className="text-red-500 focus:text-red-600 font-bold focus:bg-red-500/10"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span>🔄</span> Restaurar Original
-                    </div>
-                  </SelectItem>
-                  {users
-                    .filter((u) => u.id)
-                    .map((u) => (
-                      <SelectItem
-                        key={u.id}
-                        value={u.id}
-                        className="focus:bg-accent focus:text-accent-foreground"
-                      >
-                        {u.name}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isManageEventsOpen} onOpenChange={setIsManageEventsOpen}>
-        <DialogContent className="bg-background/95 backdrop-blur-2xl border border-border shadow-xl sm:rounded-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-yellow-500">
-              ★ Gestionar Eventos Especiales
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-6 pt-4">
-            <div className="p-4 rounded-sm bg-yellow-500/10 border border-yellow-500/20 space-y-4">
-              <h4 className="text-sm font-semibold text-yellow-600 dark:text-yellow-400">
-                Nuevo Evento
-              </h4>
-              <div className="grid gap-3">
-                <input
-                  placeholder="Nombre (ej. Maratónica)"
-                  className="w-full bg-background border border-input rounded-sm h-9 px-3 text-sm text-foreground focus:outline-none focus:border-yellow-500/50 placeholder:text-muted-foreground"
-                  value={newEventName}
-                  onChange={(e) => setNewEventName(e.target.value)}
-                />
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground">Inicio</label>
-                    <input
-                      type="date"
-                      className="w-full bg-background border border-input rounded-sm h-9 px-3 text-sm text-foreground"
-                      value={newEventStart ? format(newEventStart, "yyyy-MM-dd") : ""}
-                      onChange={(e) =>
-                        setNewEventStart(new Date(e.target.value + "T12:00:00"))
-                      }
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground">Fin</label>
-                    <input
-                      type="date"
-                      className="w-full bg-background border border-input rounded-sm h-9 px-3 text-sm text-foreground"
-                      value={newEventEnd ? format(newEventEnd, "yyyy-MM-dd") : ""}
-                      onChange={(e) =>
-                        setNewEventEnd(new Date(e.target.value + "T12:00:00"))
-                      }
-                    />
-                  </div>
-                </div>
-                <Button
-                  type="button"
-                  disabled={isSaving}
-                  className="h-9 w-full bg-yellow-500 font-bold text-black hover:bg-yellow-600"
-                  onClick={() => void handleCreateEvent()}
-                >
-                  {isSaving ? "Guardando…" : "Crear evento"}
-                </Button>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <h4 className="text-sm font-semibold text-muted-foreground">
-                Eventos Activos
-              </h4>
-              <div className="max-h-[200px] overflow-y-auto custom-scrollbar space-y-2">
-                {events.map((event) => (
-                  <div
-                    key={event.id}
-                    className="flex items-center justify-between p-3 rounded-sm bg-muted/50 border border-border"
-                  >
-                    <div>
-                      <div className="font-medium text-foreground text-sm">
-                        {event.name}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {format(new Date(event.startDate), "d MMM")} -{" "}
-                        {format(new Date(event.endDate), "d MMM")}
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-red-500 hover:text-red-700 hover:bg-red-500/10"
-                      onClick={() => handleDeleteEvent(event.id)}
-                    >
-                      <div className="w-4 h-4">×</div>
-                    </Button>
-                  </div>
-                ))}
-                {events.length === 0 && (
-                  <p className="text-center text-xs text-muted-foreground py-4">
-                    No hay eventos programados.
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </BentoCard>
   );
 }

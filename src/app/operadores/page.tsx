@@ -1,6 +1,6 @@
 "use client";
- 
-import { useState, useEffect } from "react";
+
+import { useCallback, useState, useEffect } from "react";
 import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -56,9 +56,8 @@ export default function OperatorsPage() {
     useOperadoresWeek(modalWeekStart);
   const eventsList = specialEvents as SpecialEvent[];
 
-  // ─── helpers ──────────────────────────────────────────────────────────────
 
-  const getDayRangeLabel = (days: number[]) => {
+  const getDayRangeLabel = useCallback((days: number[]) => {
     if (!days || days.length === 0) return "";
     const dayNames = ["Dom", "Lun", "Mar", "Mie", "Jue", "Vie", "Sab"];
     const sorted = [...days].sort((a, b) => a - b);
@@ -67,17 +66,16 @@ export default function OperatorsPage() {
     if (sorted.length === 7) return "Todos los días";
     if (sorted.length === 2 && sorted.includes(0) && sorted.includes(6)) return "Fines de Sem";
     return sorted.map((d) => dayNames[d]).join(", ");
-  };
+  }, []);
 
-  const formatTime = (hour: number) => {
+  const formatTime = useCallback((hour: number) => {
     const ampm = hour >= 12 ? "pm" : "am";
     const h = hour % 12 || 12;
     return `${h}${ampm}`;
-  };
+  }, []);
 
-  // ─── predictions ──────────────────────────────────────────────────────────
 
-  const calculatePredictions = (ops: Operator[]) => {
+  const calculatePredictions = useCallback((ops: Operator[]) => {
     const now = new Date();
     const currentDay = now.getDay();
     const currentHour = now.getHours();
@@ -141,7 +139,7 @@ export default function OperatorsPage() {
     }
 
     setPredictions(uniquePredictions);
-  };
+  }, [formatTime, getDayRangeLabel]);
 
   useEffect(() => {
     if (operators.length > 0) {
@@ -149,10 +147,8 @@ export default function OperatorsPage() {
     } else {
       setPredictions([]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [operators]);
+  }, [operators, calculatePredictions]);
 
-  // ─── shift stats ──────────────────────────────────────────────────────────
 
   const getCurrentShiftStats = (op: Operator) => {
     if (!op.shifts) return null;
@@ -193,12 +189,11 @@ export default function OperatorsPage() {
     );
   };
 
-  // ─── calendar subscribe ───────────────────────────────────────────────────
 
   const handleSubscribe = (mode: boolean | 'copy') => {
     const operatorId = user?.id;
     console.log("HandleSubscribe context:", { operatorId, mode, user });
-    
+
     if (!operatorId) {
       toast.error("No se pudo identificar tu sesión de usuario", {
         description: "Por favor, intenta cerrar sesión e iniciarla de nuevo."
@@ -210,17 +205,17 @@ export default function OperatorsPage() {
     if (baseUrl.includes("0.0.0.0")) baseUrl = baseUrl.replace("0.0.0.0", "localhost");
 
     if (mode === true) {
-      // Protocol subscribe
+
       window.location.href = baseUrl.replace(/^https?:/, "webcal:");
       toast.info("Abriendo aplicación de calendario...", {
         description: "Si no sucede nada, intenta usar la opción de copiar enlace."
       });
     } else if (mode === false) {
-      // Direct ICS download
+
       window.open(baseUrl, "_blank");
       toast.success("Descargando archivo de calendario");
     } else if (mode === 'copy') {
-      // Copy to clipboard
+
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(baseUrl)
           .then(() => {
@@ -256,12 +251,11 @@ export default function OperatorsPage() {
     });
   }).length;
 
-  // ─── render ───────────────────────────────────────────────────────────────
 
   return (
     <div className="operadores-ui relative min-h-screen overflow-hidden pb-20 text-foreground selection:bg-brand selection:text-white">
       <Navbar />
- 
+
       <main className={pageMainClass}>
         {!isReady ? (
           <OperadoresPageSkeleton />
@@ -278,8 +272,8 @@ export default function OperatorsPage() {
                   <h1 className="text-xl font-bold tracking-tight md:text-2xl">
                     Horarios de operadores
                   </h1>
-                  
-                  {/* Calendar Dialog Trigger placed contextually next to the title */}
+
+
                   <Dialog>
                     <DialogTrigger asChild>
                       <Button
@@ -301,7 +295,7 @@ export default function OperatorsPage() {
                             Turnos de todos los operadores
                           </DialogDescription>
                         </div>
- 
+
                         {user && (
                           <div className="flex flex-wrap items-center gap-2">
                             <select
@@ -314,7 +308,7 @@ export default function OperatorsPage() {
                               <option value={12}>3 meses</option>
                               <option value={24}>6 meses</option>
                             </select>
- 
+
                             <div className="flex rounded-[6px] border border-border bg-muted/20 p-0.5">
                               <Button
                                 onClick={() => handleSubscribe(true)}
@@ -347,7 +341,7 @@ export default function OperatorsPage() {
                           </div>
                         )}
                       </div>
- 
+
                       <div className="flex flex-1 flex-col overflow-hidden p-0 md:p-6">
                         <WeeklyCalendar
                           operators={modalOperators}
@@ -363,7 +357,7 @@ export default function OperatorsPage() {
                   Estado en vivo de los trabajadores de Control Máster.
                 </p>
               </div>
- 
+
               {operators.length > 0 && (
                 <div className="flex shrink-0 border border-border bg-muted/20 rounded-[6px] overflow-hidden text-center text-xs shadow-none">
                   <div className="min-w-[5.5rem] px-4 py-2.5 bg-card flex flex-col items-center justify-center">
@@ -397,7 +391,7 @@ export default function OperatorsPage() {
               )}
             </div>
           </div>
- 
+
           {predictions.length > 0 && (
             <div className="px-4 py-3 md:px-5">
               <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">

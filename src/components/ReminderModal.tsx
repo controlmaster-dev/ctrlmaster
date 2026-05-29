@@ -104,7 +104,7 @@ export function ReminderModal({ isOpen, onClose, operators }: ReminderModalProps
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {/* Operator Selection */}
+
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Operador</label>
             <Select value={selectedOperator} onValueChange={setSelectedOperator}>
@@ -127,7 +127,7 @@ export function ReminderModal({ isOpen, onClose, operators }: ReminderModalProps
             </Select>
           </div>
 
-          {/* Selected Operator Info */}
+
           {selectedOp && (
             <div className="p-3 rounded-lg bg-muted/50 border border-border">
               <div className="flex items-center gap-3">
@@ -146,7 +146,7 @@ export function ReminderModal({ isOpen, onClose, operators }: ReminderModalProps
             </div>
           )}
 
-          {/* Method Selection */}
+
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Método de envío</label>
             <div className="grid grid-cols-3 gap-2">
@@ -188,7 +188,7 @@ export function ReminderModal({ isOpen, onClose, operators }: ReminderModalProps
             </div>
           </div>
 
-          {/* Result Status */}
+
           {result && (
             <div className="space-y-2 p-3 rounded-lg bg-muted/30 border border-border">
               <p className="text-xs font-medium text-foreground mb-2">Estado del envío:</p>

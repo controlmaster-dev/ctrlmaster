@@ -1,4 +1,4 @@
-/** Ancho máximo y márgenes laterales compartidos en páginas de la app */
+
 
 export const PAGE_MAX_WIDTH = "max-w-[2200px]";
 

@@ -1,10 +1,6 @@
-/**
- * Custom error classes for better error handling
- */
 
-/**
- * Base API error class
- */
+
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -24,9 +20,7 @@ export class ApiError extends Error {
   }
 }
 
-/**
- * Validation error class
- */
+
 export class ValidationError extends ApiError {
   constructor(message: string, details?: unknown) {
     super(message, 400, details);
@@ -34,9 +28,7 @@ export class ValidationError extends ApiError {
   }
 }
 
-/**
- * Authentication error class
- */
+
 export class AuthenticationError extends ApiError {
   constructor(message = 'Authentication failed') {
     super(message, 401);
@@ -44,9 +36,7 @@ export class AuthenticationError extends ApiError {
   }
 }
 
-/**
- * Authorization error class
- */
+
 export class AuthorizationError extends ApiError {
   constructor(message = 'You do not have permission to perform this action') {
     super(message, 403);
@@ -54,9 +44,7 @@ export class AuthorizationError extends ApiError {
   }
 }
 
-/**
- * Not found error class
- */
+
 export class NotFoundError extends ApiError {
   constructor(resource = 'Resource') {
     super(`${resource} not found`, 404);
@@ -64,9 +52,7 @@ export class NotFoundError extends ApiError {
   }
 }
 
-/**
- * Conflict error class
- */
+
 export class ConflictError extends ApiError {
   constructor(message: string) {
     super(message, 409);
@@ -74,9 +60,7 @@ export class ConflictError extends ApiError {
   }
 }
 
-/**
- * Rate limit error class
- */
+
 export class RateLimitError extends ApiError {
   constructor(message = 'Too many requests') {
     super(message, 429);
@@ -84,9 +68,7 @@ export class RateLimitError extends ApiError {
   }
 }
 
-/**
- * File upload error class
- */
+
 export class FileUploadError extends ApiError {
   constructor(message: string) {
     super(message, 400);
@@ -94,9 +76,7 @@ export class FileUploadError extends ApiError {
   }
 }
 
-/**
- * Email error class
- */
+
 export class EmailError extends ApiError {
   constructor(message: string) {
     super(message, 500);
@@ -104,9 +84,7 @@ export class EmailError extends ApiError {
   }
 }
 
-/**
- * Database error class
- */
+
 export class DatabaseError extends ApiError {
   constructor(message: string, details?: unknown) {
     super(message, 500, details);
@@ -114,9 +92,7 @@ export class DatabaseError extends ApiError {
   }
 }
 
-/**
- * External service error class
- */
+
 export class ExternalServiceError extends ApiError {
   constructor(service: string, message = 'External service error') {
     super(`${service}: ${message}`, 502);
@@ -124,16 +100,12 @@ export class ExternalServiceError extends ApiError {
   }
 }
 
-/**
- * Check if error is an instance of ApiError
- */
+
 export function isApiError(error: unknown): error is ApiError {
   return error instanceof ApiError;
 }
 
-/**
- * Get error message from unknown error
- */
+
 export function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
@@ -144,9 +116,7 @@ export function getErrorMessage(error: unknown): string {
   return 'An unknown error occurred';
 }
 
-/**
- * Get error status code from unknown error
- */
+
 export function getErrorStatusCode(error: unknown): number {
   if (isApiError(error)) {
     return error.statusCode;

@@ -17,7 +17,7 @@ function generateCode(): string {
     return code;
 }
 
-// GET - List all registration codes (admin only)
+
 export async function GET(req: NextRequest) {
     try {
         const authResult = await validateApiAuth(req);
@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
     }
 }
 
-// POST - Generate a new registration code
+
 export async function POST(req: NextRequest) {
     try {
         const authResult = await validateApiAuth(req);
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
     }
 }
 
-// DELETE - Remove a registration code
+
 export async function DELETE(req: NextRequest) {
     try {
         const authResult = await validateApiAuth(req);

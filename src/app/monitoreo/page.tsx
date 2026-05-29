@@ -114,10 +114,10 @@ export default function MonitoringPage() {
                   <div className="flex items-center gap-2 text-sm bg-black/40 p-2 rounded border border-white/5 font-mono text-slate-300">
                     <span className="truncate">p: {creds.pass || "---"}</span>
                   </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="w-full text-xs h-7 gap-2 bg-transparent text-slate-400 hover:text-white" 
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-xs h-7 gap-2 bg-transparent text-slate-400 hover:text-white"
                     onClick={copyCreds}
                     disabled={!creds.user}
                   >

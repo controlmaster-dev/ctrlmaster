@@ -1,4 +1,4 @@
-/** Caché en memoria para detalle de reportes (precarga instantánea al abrir modal) */
+
 
 const cache = new Map<string, unknown>();
 const inflight = new Map<string, Promise<unknown | null>>();
@@ -44,10 +44,7 @@ export function prefetchReportDetail(id: string): Promise<unknown | null> {
   return promise;
 }
 
-/**
- * Precarga unos pocos reportes (los más relevantes). El resto se precarga al
- * pasar el cursor (hover) sobre cada fila, evitando 10-20 requests por carga.
- */
+
 const MAX_BULK_PREFETCH = 3;
 
 export async function prefetchReportDetails(ids: string[]) {

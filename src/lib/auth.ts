@@ -1,19 +1,13 @@
-/**
- * Authentication utilities
- * Token generation, validation, and session management
- */
+
+
 
 import { generateToken } from '@/lib/crypto';
 import sql from '@/lib/db';
 
-/**
- * Session token configuration
- */
-const TOKEN_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
 
-/**
- * Generate a session token for a user
- */
+const TOKEN_EXPIRY = 24 * 60 * 60 * 1000;
+
+
 export async function createToken(userId: string): Promise<string> {
   const token = generateToken(64);
   const expiresAt = new Date(Date.now() + TOKEN_EXPIRY);
@@ -26,9 +20,7 @@ export async function createToken(userId: string): Promise<string> {
   return token;
 }
 
-/**
- * Validate a session token
- */
+
 export async function validateToken(
   userId: string,
   token: string
@@ -57,27 +49,21 @@ export async function validateToken(
   }
 }
 
-/**
- * Revoke a session token
- */
+
 export async function revokeToken(token: string): Promise<void> {
   try {
     await sql`DELETE FROM "SessionToken" WHERE "token" = ${token}`;
   } catch {
-    // Token may not exist, ignore
+
   }
 }
 
-/**
- * Revoke all tokens for a user
- */
+
 export async function revokeAllUserTokens(userId: string): Promise<void> {
   await sql`DELETE FROM "SessionToken" WHERE "userId" = ${userId}`;
 }
 
-/**
- * Clean up expired tokens
- */
+
 export async function cleanupExpiredTokens(): Promise<number> {
   const result = await sql`
     DELETE FROM "SessionToken" WHERE "expiresAt" < NOW()
@@ -85,9 +71,7 @@ export async function cleanupExpiredTokens(): Promise<number> {
   return result.count;
 }
 
-/**
- * Get user from session token
- */
+
 export async function getUserFromToken(token: string | undefined) {
   if (!token) {
     return null;
@@ -116,7 +100,7 @@ export async function getUserFromToken(token: string | undefined) {
       return null;
     }
 
-    // Exclude password from the returned user object
+
     const { tokenExpiresAt, ...user } = row;
     return user;
   } catch {

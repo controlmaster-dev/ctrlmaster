@@ -82,7 +82,7 @@ async function generateAndSendReport(recipients: string[], mode: 'LAST' | 'CURRE
     stats.sort((a, b) => b.percentage - a.percentage);
 
     const doc = new jsPDF();
-    // (PDF generation code preserved from original - jsPDF calls don't use Prisma)
+
     doc.setFontSize(24);
     doc.setTextColor(50, 50, 50);
     doc.setFont("helvetica", "bold");

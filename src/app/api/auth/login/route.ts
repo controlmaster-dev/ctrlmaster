@@ -1,6 +1,5 @@
-/**
- * Login API route with enhanced security
- */
+
+
 
 import { NextRequest, NextResponse } from 'next/server';
 import sql from '@/lib/db';
@@ -13,9 +12,7 @@ import { createToken } from '@/lib/auth';
 import { fetchWithTimeout } from '@/lib/fetch';
 import { EMAIL_CONFIG } from '@/config/constants';
 
-/**
- * Get country from IP address
- */
+
 async function getCountryFromIp(ip: string): Promise<string> {
   const privateIps = ['::1', '127.0.0.1'];
   const privateRanges = ['192.168.', '10.', '172.16.'];
@@ -40,17 +37,13 @@ async function getCountryFromIp(ip: string): Promise<string> {
   return 'Desconocido';
 }
 
-/**
- * Check if login is from a foreign country
- */
+
 function isForeignLogin(country: string): boolean {
   const allowedCountries = ['Costa Rica', 'Localhost', 'Desconocido'];
   return !allowedCountries.includes(country);
 }
 
-/**
- * Send security alert email
- */
+
 async function sendSecurityAlert(user: { name: string; email: string }, country: string, ip: string): Promise<void> {
   try {
     await sendEmail({
@@ -75,9 +68,6 @@ async function sendSecurityAlert(user: { name: string; email: string }, country:
   }
 }
 
-/**
- * POST /api/auth/login
- */
 export async function POST(req: NextRequest) {
   try {
     const rateLimitResult = await withRateLimit('AUTH')(req);
@@ -123,7 +113,6 @@ export async function POST(req: NextRequest) {
       throw new AuthenticationError('Credenciales inválidas');
     }
 
-    // Lazily upgrade legacy (plaintext / SHA-256) hashes to salted scrypt.
     if (needsRehash(user.password)) {
       try {
         const upgraded = await hashPassword(password);

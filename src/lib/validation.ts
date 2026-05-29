@@ -1,20 +1,15 @@
-/**
- * Input validation schemas using Zod
- */
+
+
 
 import { z } from 'zod';
 
-/**
- * Login validation schema
- */
+
 export const loginSchema = z.object({
   email: z.string().min(1, 'Email o nombre de usuario es requerido'),
   password: z.string().min(1, 'Contraseña es requerida'),
 });
 
-/**
- * Register validation schema
- */
+
 export const registerSchema = z.object({
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
   email: z.string().email('Email inválido'),
@@ -23,16 +18,12 @@ export const registerSchema = z.object({
   role: z.enum(['ADMIN', 'ENGINEER', 'OPERATOR']).optional(),
 });
 
-/**
- * Registration code validation schema
- */
+
 export const validateRegistrationCodeSchema = z.object({
   code: z.string().min(1, 'El código es requerido'),
 });
 
-/**
- * Create report validation schema
- */
+
 export const createReportSchema = z.object({
   operatorId: z.string().min(1, 'ID de operador es requerido'),
   operatorName: z.string().min(1, 'Nombre de operador es requerido'),
@@ -54,25 +45,19 @@ export const createReportSchema = z.object({
   ).optional(),
 });
 
-/**
- * Update report validation schema
- */
+
 export const updateReportSchema = z.object({
   id: z.string().min(1, 'ID de reporte es requerido'),
   status: z.enum(['pending', 'in-progress', 'resolved']).optional(),
   dateResolved: z.date().nullable().optional(),
 });
 
-/**
- * Delete report validation schema
- */
+
 export const deleteReportSchema = z.object({
   id: z.string().min(1, 'ID de reporte es requerido'),
 });
 
-/**
- * User update validation schema
- */
+
 export const updateUserSchema = z.object({
   id: z.string().min(1, 'ID de usuario es requerido'),
   name: z.string().min(2).optional(),
@@ -83,9 +68,7 @@ export const updateUserSchema = z.object({
   birthday: z.string().optional(),
 });
 
-/**
- * Comment validation schema
- */
+
 export const createCommentSchema = z.object({
   reportId: z.string().min(1, 'ID de reporte es requerido'),
   userId: z.string().min(1, 'ID de usuario es requerido'),
@@ -93,18 +76,14 @@ export const createCommentSchema = z.object({
   content: z.string().min(1, 'El contenido es requerido'),
 });
 
-/**
- * Reaction validation schema
- */
+
 export const createReactionSchema = z.object({
   reportId: z.string().min(1, 'ID de reporte es requerido'),
   userId: z.string().min(1, 'ID de usuario es requerido'),
   emoji: z.string().min(1, 'El emoji es requerido'),
 });
 
-/**
- * Task validation schema
- */
+
 export const createTaskSchema = z.object({
   title: z.string().min(1, 'El título es requerido'),
   description: z.string().optional(),
@@ -114,9 +93,7 @@ export const createTaskSchema = z.object({
   priority: z.enum(['low', 'medium', 'high']).optional(),
 });
 
-/**
- * Special event validation schema
- */
+
 export const createSpecialEventSchema = z.object({
   title: z.string().min(1, 'El título es requerido'),
   description: z.string().optional(),
@@ -127,9 +104,7 @@ export const createSpecialEventSchema = z.object({
   affectedUsers: z.array(z.string()).optional(),
 });
 
-/**
- * Schedule configuration validation schema
- */
+
 export const updateScheduleConfigSchema = z.object({
   userId: z.string().min(1, 'ID de usuario es requerido'),
   shifts: z.array(
@@ -142,9 +117,7 @@ export const updateScheduleConfigSchema = z.object({
   label: z.string().min(1, 'La etiqueta es requerida'),
 });
 
-/**
- * Upload file validation schema
- */
+
 export const uploadFileSchema = z.object({
   file: z.any().refine(
     (file) => file instanceof File,
@@ -158,27 +131,21 @@ export const uploadFileSchema = z.object({
   ),
 });
 
-/**
- * Pagination validation schema
- */
+
 export const paginationSchema = z.object({
   page: z.number().default(1),
   limit: z.number().default(20),
   offset: z.number().optional(),
 });
 
-/**
- * Search validation schema
- */
+
 export const searchSchema = z.object({
   query: z.string().min(1, 'La consulta es requerida'),
   limit: z.coerce.number().min(1).max(100).optional(),
   offset: z.coerce.number().min(0).optional(),
 });
 
-/**
- * Calendar event validation schema
- */
+
 export const calendarEventSchema = z.object({
   title: z.string().min(1, 'El título es requerido'),
   start: z.string().or(z.date()),
@@ -189,9 +156,7 @@ export const calendarEventSchema = z.object({
   description: z.string().optional(),
 });
 
-/**
- * Type inference helpers
- */
+
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type CreateReportInput = z.infer<typeof createReportSchema>;

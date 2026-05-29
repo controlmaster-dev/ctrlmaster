@@ -20,7 +20,7 @@ interface CommentItem {
 interface LiveActivityCardProps {
   comments: CommentItem[];
   loading: boolean;
-  /** Abre el modal en el dashboard sin navegar a /reportes */
+
   onReportClick?: (
     reportId: string,
     hint?: { problemDescription?: string }

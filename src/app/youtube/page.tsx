@@ -11,7 +11,7 @@ export const metadata = {
 export default function YoutubePage() {
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-rose-500/30">
-      {/* Simple Navigation Header */}
+
       <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-xl px-4 md:px-8 py-4 flex justify-between items-center">
         <div className="flex items-center gap-4">
           <Link href="/">
@@ -24,7 +24,7 @@ export default function YoutubePage() {
             <span className="font-bold tracking-tight">YouTube Downloader</span>
           </div>
         </div>
-        
+
         <Link href="/">
           <Button variant="outline" size="sm" className="gap-2 border-border bg-card hover:bg-muted hidden md:flex">
             <Home className="w-4 h-4" />

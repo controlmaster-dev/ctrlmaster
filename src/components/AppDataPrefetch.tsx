@@ -31,7 +31,7 @@ function parseReports(data: unknown): unknown[] {
   return [];
 }
 
-/** Precalienta datos de inicio, operadores y configuración en segundo plano */
+
 export function AppDataPrefetch() {
   const { user } = useAuth();
   const started = useRef(false);
@@ -47,9 +47,7 @@ export function AppDataPrefetch() {
     const needOperadores = !getOperadoresBundle(weekStart);
     const needReportes = !getReportesListCache(reportesQuery);
 
-    // Single shared users fetch (current week availability) reused by the
-    // dashboard, operadores and configuración caches — was previously fetched
-    // up to 4 separate times on login.
+
     const usersPromise: Promise<any[]> =
       needDashboard || needOperadores
         ? fetch("/api/users")
@@ -58,7 +56,7 @@ export function AppDataPrefetch() {
             .catch(() => [])
         : Promise.resolve([]);
 
-    // One consolidated request feeds both the dashboard and the reports list.
+
     if (needDashboard || needReportes) {
       Promise.all([
         fetch("/api/bootstrap").then((r) => (r.ok ? r.json() : null)),

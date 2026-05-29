@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-/** Barra fina bajo el navbar al cambiar de ruta. */
+
 export function NavRouteIndicator({ pathname }: { pathname: string }) {
   const [active, setActive] = useState(false);
 

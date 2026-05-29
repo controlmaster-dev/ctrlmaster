@@ -103,7 +103,6 @@ import {
   triggerRefetch,
 } from "@/hooks/useDashboardData";
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
 
 function reportInitials(name: string) {
   return name
@@ -206,7 +205,6 @@ const ReportListItem = React.memo(function ReportListItem({
   );
 });
 
-// ─── DashboardClient ──────────────────────────────────────────────────────────
 
 export function DashboardClient() {
   const [successModal, setSuccessModal] = useState({
@@ -295,16 +293,15 @@ export function DashboardClient() {
     data?: { messagesSent?: number; messagesFailed?: number; queueSize?: number };
   } | null;
 
-  // ─────────────────────────────────────────────────────────────────────────
 
   return (
     <div className="dashboard-ui relative min-h-screen overflow-hidden pb-20 text-foreground selection:bg-brand selection:text-white">
-      {/* Ambient background */}
+
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -right-32 top-0 h-[28rem] w-[28rem] rounded-full bg-foreground/[0.02] blur-3xl" />
       </div>
 
-      {/* Modals */}
+
       <ProcessingModal isOpen={processingModal.isOpen} title={processingModal.title} message={processingModal.message} />
       <SuccessModal
         isOpen={successModal.isOpen}
@@ -337,7 +334,7 @@ export function DashboardClient() {
             transition={{ duration: 0.25, ease: "easeOut" }}
             className="space-y-4 md:space-y-5"
           >
-            {/* ═══════ ROW 1: Hero ═══════ */}
+
             <DashboardHero
               firstName={firstName}
               isEngineer={isEngineer}
@@ -345,7 +342,7 @@ export function DashboardClient() {
               pendingCount={stats.pendingReports}
             />
 
-            {/* ═══════ ROW 2: Stats ═══════ */}
+
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <StatsCard
                 title="Total reportes"
@@ -370,12 +367,12 @@ export function DashboardClient() {
               />
             </div>
 
-            {/* ═══════ MAIN CONTENT BENTO GRID ═══════ */}
+
             <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-              
-              {/* Bento Card 1: Recent Reports (spans 2 cols on large screens) */}
+
+
               <div className="xl:col-span-2 flex flex-col gap-4">
-                {/* Pending alerts (compact, inline) */}
+
                 {stats.pendingReports > 0 && (
                   <BentoCard variant="default">
                     <div className="flex items-center gap-3 px-5 py-4">
@@ -409,7 +406,7 @@ export function DashboardClient() {
                   </BentoCard>
                 )}
 
-                {/* Recent Reports */}
+
                 <BentoCard variant="elevated" className="flex-1">
                   <div className="flex items-center justify-between border-b border-border/30 px-5 py-3.5">
                     <div className="flex items-center gap-2.5">
@@ -444,12 +441,12 @@ export function DashboardClient() {
                 </BentoCard>
               </div>
 
-              {/* Bento Card 2: Bitcentral Schedule (spans 1 col on large screens) */}
+
               <div className="flex flex-col">
                 <BitcentralWidget users={users} className="h-full" />
               </div>
 
-              {/* Bento Card 3: Weekly Trend Chart (spans 2 cols on large screens, only for engineers) */}
+
               {isEngineer && (
                 <div className="xl:col-span-2 flex flex-col">
                   <BentoCard variant="default" className="flex-1">
@@ -469,12 +466,12 @@ export function DashboardClient() {
                 </div>
               )}
 
-              {/* Bento Card 4: BirthdayWidget (spans 2 cols if not engineer to fill layout, else 1 col) */}
+
               <div className={cn("flex flex-col", !isEngineer ? "xl:col-span-2" : "xl:col-span-1")}>
                 <BirthdayWidget users={users} className="h-full" />
               </div>
 
-              {/* Bento Card 5: Live Activity (spans 2 cols if engineer, else 1 col to perfectly fill layout) */}
+
               <div className={cn("flex flex-col", isEngineer ? "xl:col-span-2" : "xl:col-span-1")}>
                 <BentoCard variant="default" className="h-full">
                   <LiveActivityCard
@@ -485,7 +482,7 @@ export function DashboardClient() {
                 </BentoCard>
               </div>
 
-              {/* Bento Card 6: WhatsApp Status (spans 3 cols if not engineer as a utility bar, else 1 col) */}
+
               <div className={cn("flex flex-col", !isEngineer ? "xl:col-span-3" : "xl:col-span-1")}>
                 <BentoCard variant="default" className="h-full">
                   <div className="p-4 md:p-5">

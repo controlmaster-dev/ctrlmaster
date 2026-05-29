@@ -1,4 +1,4 @@
-/** Domingo de la semana actual en formato YYYY-MM-DD (zona local) */
+
 export function getSundayWeekStart(date = new Date()): string {
   const d = new Date(date);
   const day = d.getDay();

@@ -1,14 +1,9 @@
-/**
- * Email configuration and templates
- */
 
-/**
- * Email templates
- */
+
+
 export const EMAIL_TEMPLATES = {
-  /**
-   * New report notification email
-   */
+
+
   NEW_REPORT: (data: { operatorName: string; description: string; priority: string; category: string }) => ({
     subject: `📋 Nuevo Reporte: ${data.priority} - ${data.category}`,
     html: `
@@ -26,9 +21,7 @@ export const EMAIL_TEMPLATES = {
     `,
   }),
 
-  /**
-   * Security alert email for unusual login
-   */
+
   SECURITY_ALERT: (data: { userName: string; country: string; ip: string; timestamp: Date }) => ({
     subject: '🔒 Seguridad: Inicio de Sesión Inusual Detectado',
     html: `
@@ -48,9 +41,6 @@ export const EMAIL_TEMPLATES = {
     `,
   }),
 
-  /**
-   * Daily summary email
-   */
   DAILY_SUMMARY: (data: { date: string; totalReports: number; resolvedReports: number; pendingReports: number }) => ({
     subject: `📊 Resumen Diario - ${data.date}`,
     html: `
@@ -69,9 +59,6 @@ export const EMAIL_TEMPLATES = {
     `,
   }),
 
-  /**
-   * Weekly report email
-   */
   WEEKLY_REPORT: (data: { startDate: string; endDate: string; totalReports: number; resolvedReports: number; pendingReports: number }) => ({
     subject: `📈 Reporte Semanal - ${data.startDate} a ${data.endDate}`,
     html: `
@@ -90,9 +77,6 @@ export const EMAIL_TEMPLATES = {
     `,
   }),
 
-  /**
-   * Shift reminder email
-   */
   SHIFT_REMINDER: (data: { userName: string; shiftDate: string; shiftStart: string; shiftEnd: string }) => ({
     subject: `⏰ Recordatorio de Turno - ${data.userName}`,
     html: `
@@ -112,41 +96,20 @@ export const EMAIL_TEMPLATES = {
   }),
 } as const;
 
-/**
- * Email configuration
- */
 export const EMAIL_CONFIG = {
-  /**
-   * Default email recipients
-   */
   DEFAULT_RECIPIENTS: process.env.NEXT_PUBLIC_EMAIL_DEFAULT_RECIPIENTS
     ? process.env.NEXT_PUBLIC_EMAIL_DEFAULT_RECIPIENTS.split(',').map(e => e.trim())
     : ['ingenieria@enlace.org', 'rjimenez@enlace.org'],
 
-  /**
-   * Security alert recipient
-   */
   SECURITY_ALERT_RECIPIENT: process.env.NEXT_PUBLIC_EMAIL_SECURITY_RECIPIENT || 'knunez@enlace.org',
 
-  /**
-   * From email address
-   */
   FROM_EMAIL: process.env.EMAIL_FROM || 'noreply@enlace.org',
 
-  /**
-   * From name
-   */
   FROM_NAME: process.env.NEXT_PUBLIC_EMAIL_FROM_NAME || 'Control Master',
 
-  /**
-   * Reply-to email
-   */
   REPLY_TO: process.env.NEXT_PUBLIC_EMAIL_REPLY_TO || 'soporte@enlace.org',
 } as const;
 
-/**
- * Get email template by type
- */
 export function getEmailTemplate(type: keyof typeof EMAIL_TEMPLATES, data: unknown) {
   const template = EMAIL_TEMPLATES[type];
   if (!template) {

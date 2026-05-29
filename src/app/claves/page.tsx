@@ -147,7 +147,7 @@ export default function CredentialsPage() {
 
   return (
     <div className="flex min-h-[calc(100dvh-3.5rem)] flex-col bg-background text-foreground selection:bg-brand selection:text-white md:flex-row">
-      {/* Panel lateral — filtros y resumen */}
+
       <aside className="flex w-full shrink-0 flex-col border-b border-border/60 bg-card/40 md:h-[calc(100dvh-3.5rem)] md:w-72 md:border-b-0 md:border-r lg:w-80">
         <div className="border-b border-border/50 p-5">
           <h1 className="text-xl font-semibold tracking-tight">
@@ -228,7 +228,7 @@ export default function CredentialsPage() {
         </div>
       </aside>
 
-      {/* Grid principal */}
+
       <main className="relative flex min-h-0 flex-1 flex-col md:h-[calc(100dvh-3.5rem)] md:overflow-hidden">
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute -right-20 top-0 h-72 w-72 rounded-full bg-brand/5 blur-3xl" />

@@ -42,13 +42,12 @@ export function PautaReminderProvider({ children }: { children: ReactNode }) {
   >([]);
   const [scheduleLoading, setScheduleLoading] = useState(true);
   const [pautaReminder, setPautaReminder] = useState<PautaReminderInfo | null>(null);
-  /** Solo en memoria: al recargar la página vuelve a mostrarse */
+
   const [dismissedKey, setDismissedKey] = useState<string | null>(null);
 
   const fetchSchedule = useCallback(async () => {
-    // Reuse the shared Bitcentral cache (same data the widget/prefetch use) to
-    // avoid duplicate /api/schedule + /api/special-events + /api/schedule/config
-    // requests. The reminder targets today/tomorrow, so cover current + next week.
+
+
     const currentWeek = getBitcentralWeekStart();
     const nextWeek = addDays(currentWeek, 7);
 

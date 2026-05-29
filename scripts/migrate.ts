@@ -1,7 +1,5 @@
-// ============================================================
-// Database Migration Runner
-// Usage: npx tsx scripts/migrate.ts
-// ============================================================
+
+
 
 import postgres from 'postgres';
 import { readFileSync, readdirSync } from 'node:fs';
@@ -20,7 +18,7 @@ try {
 async function runMigrations() {
   const sql = postgres(dbUrl!, { ssl: 'require', max: 1 });
 
-  // Create migrations tracking table if it doesn't exist
+
   await sql`
     CREATE TABLE IF NOT EXISTS "_migrations" (
       "name" TEXT PRIMARY KEY,
@@ -30,7 +28,7 @@ async function runMigrations() {
 
   const migrationsDir = join(import.meta.dirname || __dirname, '..', 'migrations');
 
-  // Get all .sql migration files sorted alphabetically
+
   const files = readdirSync(migrationsDir)
     .filter((f) => f.endsWith('.sql'))
     .sort();
@@ -42,7 +40,7 @@ async function runMigrations() {
   }
 
   for (const file of files) {
-    // Check if already executed
+
     const [existing] = await sql`
       SELECT "name" FROM "_migrations" WHERE "name" = ${file}
     `;

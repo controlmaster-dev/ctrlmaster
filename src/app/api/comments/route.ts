@@ -103,14 +103,14 @@ export async function POST(req: NextRequest) {
       RETURNING *
     `;
 
-    // Fetch author
+
     const [author] = await sql`
       SELECT * FROM "User" WHERE "id" = ${authorId} LIMIT 1
     `;
 
     const commentWithAuthor = { ...newComment, author };
 
-    // Fire-and-forget notifications
+
     void sendCommentNotifications({
       reportId,
       authorId,

@@ -1,6 +1,5 @@
--- ============================================================
--- Durable rate limit counters
--- ============================================================
+
+
 
 CREATE TABLE IF NOT EXISTS "RateLimit" (
   "key"       TEXT PRIMARY KEY,

@@ -1,10 +1,6 @@
-/**
- * Authentication and authorization types
- */
 
-/**
- * User interface
- */
+
+
 export interface User {
   id: string;
   name: string;
@@ -25,9 +21,7 @@ export interface User {
   };
 }
 
-/**
- * User role enum for authorization
- */
+
 export enum UserRole {
   ADMIN = 'ADMIN',
   ENGINEER = 'ENGINEER',
@@ -35,9 +29,7 @@ export enum UserRole {
   BOSS = 'BOSS',
 }
 
-/**
- * Authentication state interface
- */
+
 export interface AuthState {
   user: User | null;
   isLoading: boolean;
@@ -45,17 +37,13 @@ export interface AuthState {
   logout: () => void;
 }
 
-/**
- * Login request payload
- */
+
 export interface LoginRequest {
   email: string;
   password: string;
 }
 
-/**
- * Registration request payload
- */
+
 export interface RegisterRequest {
   name: string;
   email: string;
@@ -64,25 +52,19 @@ export interface RegisterRequest {
   role?: UserRole;
 }
 
-/**
- * Registration code validation request
- */
+
 export interface ValidateRegistrationCodeRequest {
   code: string;
 }
 
-/**
- * Registration code response
- */
+
 export interface RegistrationCodeResponse {
   isValid: boolean;
   role?: UserRole;
   email?: string;
 }
 
-/**
- * User session data (returned from login)
- */
+
 export interface UserSession {
   id: string;
   name: string;

@@ -19,13 +19,13 @@ function getInitials(name: string) {
   return (name[0] || 'U').toUpperCase();
 }
 
-export function WeeklyCalendar({ 
-  operators, 
-  onUpdateSchedule, 
-  currentWeekStart, 
-  onWeekChange, 
-  isLoading = false, 
-  onEditUser 
+export function WeeklyCalendar({
+  operators,
+  onUpdateSchedule,
+  currentWeekStart,
+  onWeekChange,
+  isLoading = false,
+  onEditUser
 }: WeeklyCalendarProps) {
   const isEditingEnabled = !!onUpdateSchedule;
 

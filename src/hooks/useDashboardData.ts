@@ -1,7 +1,5 @@
-/**
- * Custom hooks for Dashboard data fetching and state management.
- * Extracts all business logic from DashboardClient.tsx for better separation of concerns.
- */
+
+
 
 "use client";
 
@@ -19,7 +17,7 @@ import {
   type DashboardBundle,
 } from "@/lib/dashboardCache";
 
-// Global refetch registry - allows any component to trigger a refetch in others
+
 type RefetchCallback = () => void;
 const refetchRegistry = new Map<string, Set<RefetchCallback>>();
 
@@ -119,10 +117,7 @@ function deriveRecentReports(reports: Report[]): Report[] {
     .slice(0, UI_CONFIG.RECENT_REPORTS_LIMIT);
 }
 
-/**
- * Carga paralela de todo el dashboard + caché de sesión.
- * La UI espera a `isReady` y muestra el contenido completo de una vez.
- */
+
 export function useDashboardBundle() {
   const [reports, setReports] = useState<Report[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -290,7 +285,7 @@ export function useDashboardStats() {
       })
       .catch((err) => {
         if (err.name !== 'AbortError') {
-          // Ignore abort errors
+
         }
       })
       .finally(() => setIsLoading(false));
@@ -303,14 +298,14 @@ export function useDashboardStats() {
     };
   }, [doFetch]);
 
-  // Register for global refetch events
+
   useEffect(() => {
     const refetch = () => doFetch();
     registerRefetch('reports', refetch);
     return () => unregisterRefetch('reports', refetch);
   }, [doFetch]);
 
-  /** Memoized stats derived from reports */
+
   const stats = useMemo<DashboardStats>(() => {
     const today = new Date().toDateString();
     return {
@@ -329,7 +324,7 @@ export function useDashboardStats() {
     };
   }, [reports]);
 
-  /** Top 5 most recent reports */
+
   const recentReports = useMemo<Report[]>(
     () =>
       [...reports]
@@ -341,7 +336,7 @@ export function useDashboardStats() {
     [reports]
   );
 
-  /** Weekly trend chart data (last 7 days) */
+
   const chartData = useMemo<ChartData>(() => {
     const days: string[] = [];
     const values: number[] = [];
@@ -350,11 +345,11 @@ export function useDashboardStats() {
       const date = new Date();
       date.setDate(date.getDate() - i);
 
-      // Format day name in Spanish (e.g., "Lun", "Mar")
+
       const dayName = date.toLocaleDateString("es-CR", { weekday: "short" });
       days.push(dayName.charAt(0).toUpperCase() + dayName.slice(1));
 
-      // Count reports created on this specific day
+
       const dayStr = date.toDateString();
       const count = reports.filter(
         (r) => new Date(r.createdAt).toDateString() === dayStr
@@ -381,7 +376,7 @@ export function useUsers() {
         if (Array.isArray(data)) setUsers(data);
       })
       .catch(() => {
-        // Errors handled by error boundary upstream
+
       })
       .finally(() => setIsLoading(false));
   }, []);
@@ -408,7 +403,7 @@ export function useRecentComments() {
         }
       })
       .catch(() => {
-        // Errors handled by error boundary upstream
+
       })
       .finally(() => setIsLoading(false));
   }, []);
@@ -438,7 +433,7 @@ export function useBirthdayNotifications(users: User[], isLoadingUsers: boolean)
 
     if (lastShown === todayStr) return;
 
-    // Show birthday toast for each user with a birthday today
+
     birthdayUsers.forEach((u) => {
       const firstName = u.name.split(" ")[0];
       toast(`¡Feliz Cumpleaños ${firstName}! 🎂`, {
@@ -464,7 +459,7 @@ export function useCurrentUser(): User | null {
       const savedUser = localStorage.getItem(STORAGE_KEYS.USER);
       if (savedUser) setCurrentUser(JSON.parse(savedUser));
     } catch {
-      // Ignore JSON parse errors
+
     }
   }, []);
 

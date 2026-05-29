@@ -1,7 +1,5 @@
-/**
- * Small in-memory cache + de-duplication for the @mention user list.
- * Avoids refetching the whole user list every time a report modal opens.
- */
+
+
 
 interface MentionUser {
   id: string;

@@ -1,21 +1,12 @@
-/**
- * Migración directa: Supabase → Neon
- * 
- * Uso: npx tsx scripts/migrate-supabase-to-neon.ts
- * 
- * Requiere .env con:
- *   - DATABASE_URL (Neon)
- *   - SUPABASE_URL (Supabase con PgBouncer)
- *   - SUPABASE_DIRECT_URL (Supabase directo, sin PgBouncer)
- */
+
+
 
 import postgres from 'postgres';
 import 'dotenv/config';
 
-// Tablas en orden de dependencia: las independientes primero
-// (respetamos FKs para DELETE y para INSERT)
+
 const TABLES = [
-  // Tablas sin dependencias
+
   'User',
   'Credential',
   'StreamMetric',
@@ -23,29 +14,29 @@ const TABLES = [
   'SpecialEvent',
   'WeeklySchedule',
 
-  // Dependen de User
+
   'RegistrationCode',
   'SessionToken',
 
-  // Dependen de User + SpecialEvent
+
   'SpecialEventShift',
 
-  // Dependen de User
+
   'WorkSchedule',
   'Task',
   'Report',
 
-  // Dependen de Report + User
+
   'ReportView',
   'Comment',
   'Reaction',
   'Attachment',
 
-  // Dependen de Comment + User
+
   'CommentReaction',
 ];
 
-// Tablas que no se deben limpiar/tocar
+
 const SKIP_TABLES = ['_migrations'];
 
 async function migrate() {
@@ -83,7 +74,7 @@ async function migrate() {
     idle_timeout: 30,
   });
 
-  // ====================== VERIFICAR SUPABASE ======================
+
   console.log('\n📊 Verificando Supabase...');
   const supabaseStats: Record<string, number> = {};
   for (const table of TABLES) {
@@ -107,7 +98,7 @@ async function migrate() {
     return;
   }
 
-  // ====================== VERIFICAR NEON ======================
+
   console.log('\n📊 Verificando Neon...');
   const neonStats: Record<string, number> = {};
   for (const table of TABLES) {
@@ -123,12 +114,12 @@ async function migrate() {
     console.log('\n⚠️  Neon ya tiene datos. ¿Deseas LIMPIAR Neon antes de migrar?');
     console.log('   Escribe "SI" para continuar o cualquier otra cosa para cancelar.');
 
-    // Auto-confirm en modo no-interactivo (pipeline)
+
     const autoConfirm = process.argv.includes('--yes') || process.argv.includes('-y');
     if (autoConfirm) {
       console.log('   ✅ Confirmación automática (--yes). Limpiando Neon...');
     } else {
-      // En modo interactivo, pedimos confirmación
+
       const readline = (await import('readline')).default;
       const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
       const answer = await new Promise<string>((resolve) => {
@@ -144,9 +135,9 @@ async function migrate() {
     }
   }
 
-  // ====================== LIMPIAR NEON ======================
+
   console.log('\n🧹 Limpiando Neon (orden inverso de dependencias)...');
-  // Eliminar en orden inverso para respetar FKs
+
   const reversedTables = [...TABLES].reverse();
   for (const table of reversedTables) {
     if (SKIP_TABLES.includes(table)) continue;
@@ -158,7 +149,7 @@ async function migrate() {
     }
   }
 
-  // ====================== MIGRAR DATOS ======================
+
   console.log('\n🚀 Migrando datos de Supabase a Neon...');
   let totalMigrated = 0;
 
@@ -171,16 +162,16 @@ async function migrate() {
     }
 
     try {
-      // Leer TODAS las filas de Supabase
+
       const rows = await supabase.unsafe(`SELECT * FROM "${table}"`);
 
-      // Insertar en Neon una por una (INSERT INTO ... VALUES)
+
       let inserted = 0;
       for (const row of rows) {
         const columns = Object.keys(row);
         const values = Object.values(row);
 
-        // Construir INSERT dinámico
+
         const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
         const colNames = columns.map((c) => `"${c}"`).join(', ');
 
@@ -191,10 +182,10 @@ async function migrate() {
           );
           inserted++;
         } catch (insertErr: any) {
-          // Si falla una fila, mostrar advertencia pero continuar
+
           if (inserted === 0) {
             console.error(`   ⚠️  ${table}: primera fila falló: ${insertErr.message}`);
-            // Intentar con la siguiente tabla
+
             break;
           }
         }
@@ -207,7 +198,7 @@ async function migrate() {
     }
   }
 
-  // ====================== VERIFICACIÓN FINAL ======================
+
   console.log('\n📊 Verificando migración...');
   let neonTotalAfter = 0;
   for (const table of TABLES) {
@@ -226,7 +217,7 @@ async function migrate() {
     console.log('   Esto puede deberse a conflictos de clave única o datos inválidos.');
   }
 
-  // Cerrar conexiones
+
   await supabase.end();
   await neon.end();
 }

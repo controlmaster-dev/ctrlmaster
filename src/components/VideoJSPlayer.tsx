@@ -13,7 +13,7 @@ interface VideoJSPlayerProps {
   title: string;
   variant?: "default" | "program" | "preview";
   channelLabel?: string;
-  /** Activa medidor y detección de pantalla negra (solo reproductores principales). */
+
   active?: boolean;
 }
 
@@ -33,7 +33,7 @@ export const VideoJSPlayer = React.memo(function VideoJSPlayer({
   const lastMetricAtRef = useRef<Record<string, number>>({});
   const titleRef = useRef(title);
   titleRef.current = title;
-  
+
   const [isBlackScreen, setIsBlackScreen] = useState(false);
 
   const reportMetric = useCallback(async (type: string, value: number) => {
@@ -50,9 +50,7 @@ export const VideoJSPlayer = React.memo(function VideoJSPlayer({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ channel, type, value }),
       });
-    } catch {
-      /* métricas opcionales */
-    }
+    } catch {}
   }, [active]);
 
   useEffect(() => {
@@ -64,7 +62,7 @@ export const VideoJSPlayer = React.memo(function VideoJSPlayer({
     let meterInterval: ReturnType<typeof setInterval> | null = null;
     let blackScreenInterval: ReturnType<typeof setInterval> | null = null;
 
-    // Reiniciar estado de pantalla negra al cambiar de canal o URL
+
     setIsBlackScreen(false);
 
     const tryPlay = () => {
@@ -73,7 +71,7 @@ export const VideoJSPlayer = React.memo(function VideoJSPlayer({
       if (p && typeof p.catch === "function") p.catch(() => {});
     };
 
-    // Configuración de Hls.js o reproducción nativa (Safari)
+
     if (Hls.isSupported()) {
       hls = new Hls({
         enableWorker: true,
@@ -101,7 +99,7 @@ export const VideoJSPlayer = React.memo(function VideoJSPlayer({
         }
       });
     } else if (videoEl.canPlayType("application/vnd.apple.mpegurl")) {
-      // HLS Nativo (Safari / iOS)
+
       videoEl.src = url;
       const handleMetadata = () => {
         tryPlay();
@@ -113,9 +111,9 @@ export const VideoJSPlayer = React.memo(function VideoJSPlayer({
       videoEl.addEventListener("error", handleError);
     }
 
-    // Inicializar los analizadores visuales (si está activo)
+
     if (active) {
-      // 1. VU Meter
+
       const mCanvas = document.createElement("canvas");
       mCanvas.width = 16;
       mCanvas.height = 16;
@@ -166,7 +164,7 @@ export const VideoJSPlayer = React.memo(function VideoJSPlayer({
         updateMeterUI(currentVol);
       }, METER_TICK_MS);
 
-      // 2. Detector de pantalla negra
+
       const bsCanvas = document.createElement("canvas");
       bsCanvas.width = 32;
       bsCanvas.height = 32;
@@ -193,9 +191,7 @@ export const VideoJSPlayer = React.memo(function VideoJSPlayer({
           } else {
             setIsBlackScreen(false);
           }
-        } catch {
-          /* CORS o frame no listo */
-        }
+        } catch {}
       }, BLACK_SCREEN_INTERVAL_MS);
     }
 
@@ -212,7 +208,7 @@ export const VideoJSPlayer = React.memo(function VideoJSPlayer({
     return () => {
       disposed = true;
       document.removeEventListener("visibilitychange", onVisibility);
-      
+
       if (meterInterval) clearInterval(meterInterval);
       if (blackScreenInterval) clearInterval(blackScreenInterval);
 

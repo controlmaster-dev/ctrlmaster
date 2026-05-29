@@ -1,7 +1,6 @@
-/**
- * Normaliza DATABASE_URL. En Vercel u otros hosts a veces se pega por error:
- * "DATABASE_URL=postgresql://..." como valor de la variable.
- */
+
+
+
 export function resolveDatabaseUrl(raw?: string): string {
   if (!raw?.trim()) {
     throw new Error('DATABASE_URL environment variable is not set');

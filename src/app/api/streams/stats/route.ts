@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
 
     const since = subDays(new Date(), 1);
 
-    // Aggregate counts in SQL instead of pulling every row into Node.
+
     const rows = await sql`
       SELECT "channel",
              COUNT(*) FILTER (WHERE "type" = 'ERROR')::int AS "errors",

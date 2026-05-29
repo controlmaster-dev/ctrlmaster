@@ -4,11 +4,7 @@ import { validateApiAuth } from '@/lib/apiAuth';
 
 export const dynamic = 'force-dynamic';
 
-/**
- * Consolidated first-render payload. Returns the data the dashboard and the
- * reports list need in a single request, replacing ~8 separate calls
- * (reports list + 3 stats count calls + recent comments + reportes list).
- */
+
 export async function GET(req: NextRequest) {
   try {
     const authResult = await validateApiAuth(req);

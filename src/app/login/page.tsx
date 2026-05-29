@@ -128,7 +128,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen flex-col text-foreground selection:bg-brand selection:text-white lg:flex-row">
-      {/* ── Left: marca ── */}
+
       <section className="relative hidden flex-col justify-center overflow-hidden border-border/50 bg-muted/20 lg:flex lg:min-h-screen lg:w-[44%] lg:border-r lg:p-14 xl:p-16">
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute -left-20 top-0 h-72 w-72 rounded-full bg-brand/15 blur-[90px]" />
@@ -158,7 +158,7 @@ export default function LoginPage() {
         </motion.div>
       </section>
 
-      {/* ── Right: form (full panel, no outer card) ── */}
+
       <section className="flex flex-1 flex-col justify-center bg-background px-6 py-10 sm:px-12 lg:px-16 xl:px-20">
         <motion.div
           initial={{ opacity: 0, x: 16 }}
@@ -166,7 +166,7 @@ export default function LoginPage() {
           transition={{ duration: 0.45 }}
           className="mx-auto w-full max-w-[420px]"
         >
-          {/* Mobile brand */}
+
           <div className="mb-6 flex items-center gap-3 lg:hidden">
             <Image
               src="https://res.cloudinary.com/dtgpm5idm/image/upload/v1760034292/cropped-logo-3D-preview-192x192_c8yd8r.png"

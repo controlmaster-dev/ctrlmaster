@@ -27,7 +27,7 @@ interface ReportSocialsProps {
   initialReactions: any[];
   availableUsers: any[];
   onUpdate: () => void;
-  /** Sin borde superior — para panel de actividad del modal */
+
   embedded?: boolean;
 }
 

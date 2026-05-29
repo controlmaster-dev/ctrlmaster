@@ -58,7 +58,7 @@ export async function GET(
       return NextResponse.json({ error: 'Report not found' }, { status: 404 });
     }
 
-    // Comment reactions in one query (if any comments)
+
     const commentIds = comments.map((c) => String(c.id));
     let commentsWithReactions = comments.map((c) => ({ ...c, reactions: [] as unknown[] }));
 

@@ -65,6 +65,7 @@ const LoginMap = dynamic(
 import { ActiveUsersWidget } from "@/components/ActiveUsersWidget";
 import { SpecialEventsManager } from "@/components/SpecialEventsManager";
 import { ConfiguracionSkeleton } from "@/components/skeletons/ConfiguracionSkeleton";
+import { UserRoleGridSection, type ConfiguracionUserCard } from "@/components/configuracion/UserRoleGridSection";
 import { useConfiguracionBundle } from "@/hooks/useConfiguracionBundle";
 import { isConfigAdmin } from "@/lib/adminAccess";
 import { getSundayWeekStart } from "@/lib/weekUtils";
@@ -351,196 +352,8 @@ export default function ConfigurationPage() {
     );
   }
 
-  const usersList = users as any[];
+  const usersList = users as ConfiguracionUserCard[];
   const reportsList = reports as any[];
-
-  const renderUserGrid = (title: string, roleFilter: (r: string) => boolean, icon: any) => {
-    const filteredUsers = usersList.filter((u) => roleFilter(u.role));
-    if (filteredUsers.length === 0) return null;
-
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-muted/40 border border-border flex items-center justify-center">
-            {icon}
-          </div>
-          <h3 className="text-[10px] font-semibold text-muted-foreground tracking-widest uppercase">
-            {title} ({filteredUsers.length})
-          </h3>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredUsers.map((u) => {
-            const initials = u.name
-              ?.split(" ")
-              .filter(Boolean)
-              .map((n: string) => n[0])
-              .join("")
-              .substring(0, 2)
-              .toUpperCase() || "OP";
-            const roleBadge = u.role === "BOSS"
-              ? { text: "Coordinador", bg: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20" }
-              : u.role === "ENGINEER"
-              ? { text: "Ingeniero", bg: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20" }
-              : { text: "Operador", bg: "bg-brand/10 text-brand border-brand/20" };
-            return (
-              <div
-                key={u.id}
-                className="group relative bg-card border border-border hover:border-foreground/15 rounded-lg overflow-hidden transition-all duration-200 shadow-none flex flex-col justify-between"
-              >
-                <div className="p-4 flex flex-col gap-3">
-                  <div className="flex justify-between items-start gap-2">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="relative shrink-0">
-                        <Avatar className="w-10 h-10 border border-border/80 rounded-lg">
-                          <AvatarImage src={u.image} className="rounded-lg object-cover" />
-                          <AvatarFallback className="bg-muted text-muted-foreground font-semibold text-xs rounded-lg">
-                            {initials}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div
-                          className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-background shadow-sm"
-                          style={{ backgroundColor: u.lastLogin ? "#10b981" : "#6b7280" }}
-                        />
-                      </div>
-                      <div className="min-w-0">
-                        <h4 className="text-xs font-semibold text-foreground leading-snug truncate group-hover:text-brand transition-colors">
-                          {u.name}
-                        </h4>
-                        <span className="text-[9px] text-muted-foreground font-mono font-medium opacity-50 block mt-0.5">
-                          #{u.id.slice(0, 8)}
-                        </span>
-                      </div>
-                    </div>
-
-                    <span className={cn("shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-[2px] border text-[8px] font-semibold tracking-wider uppercase", roleBadge.bg)}>
-                      {roleBadge.text}
-                    </span>
-                  </div>
-
-                  <div className="space-y-2 text-[11px]">
-                    <div className="bg-muted/10 rounded-lg p-2 border border-border/40">
-                      <p className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider mb-0.5 opacity-60">
-                        Correo Electrónico
-                      </p>
-                      <p className="text-foreground font-medium truncate leading-tight">
-                        {u.email}
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-1.5">
-                      <div className="bg-muted/10 rounded-lg p-2 border border-border/40 min-w-0">
-                        <p className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider mb-0.5 opacity-60">
-                          Último Acceso
-                        </p>
-                        <p className="text-foreground font-medium truncate leading-tight">
-                          {u.lastLogin
-                            ? new Date(u.lastLogin).toLocaleDateString("es-CR", {
-                                month: "short",
-                                day: "numeric",
-                              })
-                            : "Nunca"}
-                        </p>
-                      </div>
-                      <div className="bg-muted/10 rounded-lg p-2 border border-border/40 min-w-0">
-                        <p className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider mb-0.5 opacity-60">
-                          Ubicación
-                        </p>
-                        <p className="text-foreground font-medium truncate leading-tight">
-                          {u.lastLoginCountry || "N/A"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="px-4 py-2 bg-muted/10 border-t border-border/40 flex justify-between items-center">
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground p-0 px-2"
-                      >
-                        <Search className="w-3.5 h-3.5 mr-1" /> Detalles
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="bg-card border-border text-foreground max-w-md p-0 overflow-hidden shadow-2xl rounded-lg ring-1 ring-border">
-                      <div className="bg-muted/30 border-b border-border p-6">
-                        <div className="flex items-center gap-4">
-                          <Avatar className="w-16 h-16 border border-border rounded-lg shadow-sm">
-                            <AvatarImage src={u.image} className="rounded-lg object-cover" />
-                            <AvatarFallback className="bg-background text-muted-foreground text-lg font-semibold rounded-lg">
-                              {initials}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <div className="text-primary font-semibold text-[9px] uppercase tracking-wider mb-1">
-                              {roleBadge.text}
-                            </div>
-                            <h3 className="text-2xl font-semibold tracking-tight text-foreground leading-none">
-                              {u.name}
-                            </h3>
-                            <p className="text-muted-foreground text-xs font-medium mt-1.5 tracking-tight">
-                              {u.email}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="p-6 space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-1">
-                            <p className="text-muted-foreground text-[9px] font-semibold uppercase tracking-widest opacity-60">
-                              Último acceso
-                            </p>
-                            <p className="text-foreground font-medium text-xs">
-                              {u.lastLogin
-                                ? new Date(u.lastLogin).toLocaleString("es-CR")
-                                : "Nunca"}
-                            </p>
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-muted-foreground text-[9px] font-semibold uppercase tracking-widest opacity-60">
-                              IP de conexión
-                            </p>
-                            <p className="text-foreground font-mono font-medium text-xs tracking-tighter">
-                              {u.lastLoginIP || "N/A"}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleEditUser(u)}
-                      className="h-7 w-7 rounded-md text-muted-foreground hover:text-brand hover:bg-brand/10 transition-colors"
-                    >
-                      <Settings className="w-3.5 h-3.5" />
-                    </Button>
-                    {u.role !== "BOSS" && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => confirmDeleteUser(u.id)}
-                        className="h-7 w-7 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
 
   return (
     <div className="configuracion-ui relative min-h-screen overflow-hidden bg-background pb-20 text-foreground selection:bg-brand selection:text-white">
@@ -566,7 +379,7 @@ export default function ConfigurationPage() {
         />
 
         <div className={`${pageContainerClass} space-y-5`}>
-          {/* Header Card — Clean & Organized */}
+
           <section className="rounded-lg border border-border bg-card shadow-none p-5 md:p-6 transition-all duration-300">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="space-y-1.5">
@@ -598,7 +411,7 @@ export default function ConfigurationPage() {
             </div>
           </section>
 
-          {/* Premium Segmented Navigation */}
+
           <div className="flex gap-1.5 overflow-x-auto rounded-lg border border-border bg-card p-1 shadow-none no-scrollbar">
             {[
               { id: "users", label: "Personal", icon: Shield },
@@ -638,7 +451,7 @@ export default function ConfigurationPage() {
                 transition={{ duration: 0.3, ease: "easeOut" }}
                 className="space-y-6"
               >
-                {/* 1. Stats Grid */}
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   {[
                     {
@@ -693,7 +506,7 @@ export default function ConfigurationPage() {
                   ))}
                 </div>
 
-                {/* 2. Personal Explorer */}
+
                 <Card className="bg-card border border-border shadow-none rounded-lg overflow-hidden">
                   <CardHeader className="bg-muted/10 border-b border-border py-4 px-6">
                     <div className="flex items-center gap-3">
@@ -712,26 +525,35 @@ export default function ConfigurationPage() {
                   </CardHeader>
                   <CardContent className="p-6">
                     <div className="space-y-12">
-                      {renderUserGrid(
-                        "Coordinadores",
-                        (role) => role === "BOSS",
-                        <Crown className="w-4 h-4 text-amber-500" />
-                      )}
-                      {renderUserGrid(
-                        "Ingenieros",
-                        (role) => role === "ENGINEER",
-                        <Wrench className="w-4 h-4 text-purple-500" />
-                      )}
-                      {renderUserGrid(
-                        "Operadores",
-                        (role) => !["BOSS", "ENGINEER"].includes(role || ""),
-                        <Shield className="w-4 h-4 text-blue-500" />
-                      )}
+                      <UserRoleGridSection
+                        title="Coordinadores"
+                        users={usersList}
+                        roleFilter={(role) => role === "BOSS"}
+                        icon={<Crown className="w-4 h-4 text-amber-500" />}
+                        onEditUser={handleEditUser}
+                        onDeleteUser={confirmDeleteUser}
+                      />
+                      <UserRoleGridSection
+                        title="Ingenieros"
+                        users={usersList}
+                        roleFilter={(role) => role === "ENGINEER"}
+                        icon={<Wrench className="w-4 h-4 text-purple-500" />}
+                        onEditUser={handleEditUser}
+                        onDeleteUser={confirmDeleteUser}
+                      />
+                      <UserRoleGridSection
+                        title="Operadores"
+                        users={usersList}
+                        roleFilter={(role) => !["BOSS", "ENGINEER"].includes(role || "")}
+                        icon={<Shield className="w-4 h-4 text-blue-500" />}
+                        onEditUser={handleEditUser}
+                        onDeleteUser={confirmDeleteUser}
+                      />
                     </div>
                   </CardContent>
                 </Card>
 
-                {/* 3. Platform Activity — elegantly placed at the bottom */}
+
                 <Card className="bg-card border border-border shadow-none rounded-lg overflow-hidden">
                   <CardHeader className="bg-muted/10 border-b border-border py-4 px-6">
                     <div className="flex items-center gap-3">

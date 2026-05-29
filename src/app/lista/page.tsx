@@ -384,7 +384,7 @@ function LogItem({ program }: { program: any }) {
     color: "text-slate-500",
     bg: "bg-slate-500/5",
     icon: AlertOctagon,
-    label: "???",
+    label: "??",
   };
   const Icon = config.icon;
 

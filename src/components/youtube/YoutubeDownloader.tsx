@@ -36,7 +36,7 @@ export function YoutubeDownloader() {
     try {
       const res = await fetch(`/api/youtube/info?url=${encodeURIComponent(url)}`);
       const data = await res.json();
-      
+
       if (data.error) throw new Error(data.error);
       setVideoInfo(data);
     } catch (error) {
@@ -49,37 +49,31 @@ export function YoutubeDownloader() {
 
   const handleDownload = async (type: 'audio' | 'video' = 'audio') => {
     if (!videoInfo) return;
-    
+
     if (type === 'audio') setDownloadingAudio(true);
     else setDownloadingVideo(true);
-    
+
     toast.info(`Iniciando descarga de ${type === 'audio' ? 'audio' : 'video'}...`);
-    
+
     try {
       const downloadUrl = `/api/youtube/download?url=${encodeURIComponent(url)}&type=${type}`;
-      
-      // We fetch the header first to see if it's successful before triggering browser download
+
       const response = await fetch(downloadUrl);
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || `Error al descargar el ${type}`);
       }
 
-      // If it's OK, we can trigger the actual download
-      // Since it's a stream, we can use the same URL for a real browser download
-      // or we can use the blob approach, but blob might fail for large videos due to memory.
-      // The best way for large files is a hidden link, but we already know it's OK now.
       const link = document.createElement('a');
       link.href = downloadUrl;
       const extension = type === 'audio' ? 'm4a' : 'mp4';
-      // Sanitize title for filename
       const safeTitle = videoInfo.title.replace(/[^\w\s-]/gi, '').trim() || 'video';
       link.setAttribute('download', `${safeTitle}.${extension}`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       toast.success(`La descarga de ${type === 'audio' ? 'audio' : 'video'} debería comenzar en breve`);
     } catch (error: unknown) {
       console.error(error);
@@ -101,7 +95,7 @@ export function YoutubeDownloader() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
-      {/* Header Section */}
+
       <div className="space-y-4">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-2xl bg-rose-500/10 flex items-center justify-center border border-rose-500/20 shadow-sm">
@@ -114,7 +108,7 @@ export function YoutubeDownloader() {
         </div>
       </div>
 
-      {/* Input Section */}
+
       <Card className="border-border bg-card shadow-xl shadow-rose-500/5 overflow-hidden">
         <CardContent className="p-6 md:p-8 space-y-6">
           <div className="relative group">
@@ -129,7 +123,7 @@ export function YoutubeDownloader() {
               onChange={(e) => setUrl(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && fetchInfo()}
             />
-            <Button 
+            <Button
               onClick={fetchInfo}
               disabled={loading || !url}
               className="absolute right-2 top-2 bottom-2 bg-brand hover:bg-rose-600 text-white rounded-lg px-6 font-medium transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
@@ -149,8 +143,8 @@ export function YoutubeDownloader() {
                 <div className="flex flex-col md:flex-row gap-6 items-start">
                   <div className="w-full md:w-64 aspect-video rounded-xl overflow-hidden bg-muted border border-border shadow-lg shrink-0 relative group">
                     {videoInfo.thumbnails && videoInfo.thumbnails.length > 0 ? (
-                      <img 
-                        src={videoInfo.thumbnails[videoInfo.thumbnails.length - 1].url} 
+                      <img
+                        src={videoInfo.thumbnails[videoInfo.thumbnails.length - 1].url}
                         alt={videoInfo.title}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />
@@ -163,7 +157,7 @@ export function YoutubeDownloader() {
                       <Clock className="w-3 h-3" /> {formatDuration(videoInfo.duration)}
                     </div>
                   </div>
-                  
+
                   <div className="flex-1 space-y-4 py-1">
                     <div className="space-y-1">
                       <h2 className="text-xl font-bold text-foreground leading-tight line-clamp-2">{videoInfo.title}</h2>
@@ -174,7 +168,7 @@ export function YoutubeDownloader() {
                     </div>
 
                     <div className="flex flex-wrap gap-3 pt-2">
-                      <Button 
+                      <Button
                         onClick={() => handleDownload('audio')}
                         disabled={downloadingAudio || downloadingVideo}
                         className="bg-emerald-500 hover:bg-emerald-600 text-white gap-2 px-6 h-12 rounded-xl font-bold shadow-lg shadow-emerald-500/10 transition-all hover:scale-[1.05] active:scale-95"
@@ -192,7 +186,7 @@ export function YoutubeDownloader() {
                         )}
                       </Button>
 
-                      <Button 
+                      <Button
                         onClick={() => handleDownload('video')}
                         disabled={downloadingAudio || downloadingVideo}
                         variant="secondary"
@@ -210,8 +204,8 @@ export function YoutubeDownloader() {
                           </>
                         )}
                       </Button>
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         onClick={() => { setUrl(''); setVideoInfo(null); }}
                         className="border-border bg-card text-muted-foreground hover:text-foreground h-12 rounded-xl px-6"
                       >
@@ -242,7 +236,7 @@ export function YoutubeDownloader() {
         </CardContent>
       </Card>
 
-      {/* Info Tips */}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {[
           { icon: Music, title: "Alta Calidad", desc: "Extraemos el audio en el mejor bitrate disponible automáticamente." },

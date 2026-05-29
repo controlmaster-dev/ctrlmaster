@@ -1,7 +1,5 @@
-/**
- * WhatsApp API Client
- * Send messages via CtrlMaster WhatsApp API
- */
+
+
 
 const WHATSAPP_API_URL = process.env.WHATSAPP_API_URL || 'http://localhost:3001';
 const WHATSAPP_API_KEY = process.env.WHATSAPP_API_KEY || '';
@@ -21,9 +19,7 @@ interface WhatsAppResponse {
   error?: string;
 }
 
-/**
- * Send a single WhatsApp message
- */
+
 export async function sendWhatsApp(
   phone: string,
   message: string
@@ -50,9 +46,7 @@ export async function sendWhatsApp(
   }
 }
 
-/**
- * Send bulk WhatsApp messages
- */
+
 export async function sendWhatsAppBulk(
   messages: WhatsAppMessage[]
 ): Promise<WhatsAppResponse> {
@@ -77,9 +71,7 @@ export async function sendWhatsAppBulk(
   }
 }
 
-/**
- * Check WhatsApp API health
- */
+
 export async function checkWhatsAppHealth(): Promise<boolean> {
   try {
     const res = await fetch(`${WHATSAPP_API_URL}/api/health`);

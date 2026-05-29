@@ -31,7 +31,7 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
   }, [isLoading, user, pathname, router]);
 
   if (pathname.startsWith("/operadores")) {
-    // Public route - page has its own header, no global navbar
+
     return <>{children}</>;
   }
 

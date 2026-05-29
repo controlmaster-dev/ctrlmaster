@@ -66,11 +66,11 @@ export async function POST(req: NextRequest) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Reporte de Incidencia</title>
         <style>
-          body { 
-            font-family: Arial, Helvetica, sans-serif; 
-            background-color: #ffffff; 
-            margin: 0; 
-            padding: 40px 20px; 
+          body {
+            font-family: Arial, Helvetica, sans-serif;
+            background-color: #ffffff;
+            margin: 0;
+            padding: 40px 20px;
             color: #111111;
             line-height: 1.5;
           }

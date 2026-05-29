@@ -15,13 +15,13 @@ export async function GET(req: NextRequest) {
     const isTest = searchParams.get('test') === 'true';
 
     if (isTest) {
-      // Manual test trigger from the UI: require an authenticated elevated user.
+
       const authResult = await validateApiAuth(req);
       if (authResult instanceof NextResponse) return authResult;
       const roleResult = requireRole(authResult.user, ['ADMIN', 'BOSS', 'ENGINEER']);
       if (roleResult instanceof NextResponse) return roleResult;
     } else {
-      // Scheduled run: require the cron secret (Vercel Cron Bearer token).
+
       const cronCheck = requireCronAuth(req);
       if (cronCheck) return cronCheck;
     }
@@ -84,7 +84,6 @@ export async function GET(req: NextRequest) {
     if (info.isRotation) tipoDeTurno = "Rotativo";
     if (info.isOverride) tipoDeTurno = "Cambio Manual (Reemplazo)";
 
-    // WhatsApp
     let whatsappStatus = "Not attempted";
     if (user.phone) {
       try {

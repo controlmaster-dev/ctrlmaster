@@ -1,12 +1,9 @@
-/**
- * Video stream configurations
- */
+
+
 
 import { VideoStream } from '@/types/stream';
 
-/**
- * Available video streams
- */
+
 export const VIDEO_STREAMS: VideoStream[] = [
   {
     title: 'Enlace TV',
@@ -50,9 +47,7 @@ export const VIDEO_STREAMS: VideoStream[] = [
   },
 ] as const;
 
-/**
- * Stream player configuration
- */
+
 export const STREAM_PLAYER_CONFIG = {
   autoplay: true,
   muted: false,
@@ -70,9 +65,7 @@ export const STREAM_PLAYER_CONFIG = {
   ],
 } as const;
 
-/**
- * Video.js options for different variants
- */
+
 export const VIDEO_JS_OPTIONS = {
   preview: {
     ...STREAM_PLAYER_CONFIG,

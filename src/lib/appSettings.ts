@@ -1,16 +1,9 @@
-/**
- * Lightweight key/value settings store backed by the database.
- *
- * Replaces writing runtime flags to the .env file, which does not work on
- * serverless hosts (Vercel) where the filesystem is read-only/ephemeral.
- */
+
+
 
 import sql from '@/lib/db';
 
-/**
- * Read a setting. Falls back to the matching environment variable (for
- * backwards compatibility) and finally to the provided default.
- */
+
 export async function getSetting(
   key: string,
   fallback = ''
@@ -32,17 +25,13 @@ export async function getSetting(
   return fallback;
 }
 
-/**
- * Read a boolean setting (true only when the stored value is the string "true").
- */
+
 export async function getBooleanSetting(key: string): Promise<boolean> {
   const value = await getSetting(key, 'false');
   return value === 'true';
 }
 
-/**
- * Upsert a setting value.
- */
+
 export async function setSetting(key: string, value: string): Promise<void> {
   await sql`
     INSERT INTO "AppSetting" ("key", "value", "updatedAt")

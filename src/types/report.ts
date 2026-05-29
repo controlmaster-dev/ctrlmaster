@@ -1,19 +1,13 @@
-/**
- * Report and incident types
- */
 
-/**
- * Report status enum
- */
+
+
 export enum ReportStatus {
   PENDING = 'pending',
   IN_PROGRESS = 'in-progress',
   RESOLVED = 'resolved',
 }
 
-/**
- * Report priority levels
- */
+
 export enum ReportPriority {
   ENLACE = 'Enlace',
   EJTV = 'EJTV',
@@ -21,9 +15,7 @@ export enum ReportPriority {
   TODOS = 'Todos',
 }
 
-/**
- * Report categories
- */
+
 export enum ReportCategory {
   TRANSMISSION = 'Transmisión',
   AUDIO = 'Audio',
@@ -34,9 +26,7 @@ export enum ReportCategory {
   OTHER = 'Otros',
 }
 
-/**
- * Email status for report notifications
- */
+
 export enum EmailStatus {
   NONE = 'none',
   PENDING = 'pending',
@@ -44,9 +34,7 @@ export enum EmailStatus {
   FAILED = 'failed',
 }
 
-/**
- * Report interface
- */
+
 export interface Report {
   id: string;
   operatorId: string;
@@ -71,9 +59,7 @@ export interface Report {
   };
 }
 
-/**
- * Attachment interface
- */
+
 export interface Attachment {
   id: string;
   reportId: string;
@@ -83,9 +69,7 @@ export interface Attachment {
   createdAt: Date;
 }
 
-/**
- * Comment interface
- */
+
 export interface Comment {
   id: string;
   reportId: string;
@@ -96,9 +80,7 @@ export interface Comment {
   updatedAt: Date;
 }
 
-/**
- * Reaction interface
- */
+
 export interface Reaction {
   id: string;
   reportId: string;
@@ -107,9 +89,7 @@ export interface Reaction {
   createdAt: Date;
 }
 
-/**
- * Create report request payload
- */
+
 export interface CreateReportRequest {
   operatorId: string;
   operatorName: string;
@@ -125,27 +105,21 @@ export interface CreateReportRequest {
   attachments?: AttachmentInput[];
 }
 
-/**
- * Attachment input for report creation
- */
+
 export interface AttachmentInput {
   url: string;
   type: 'IMAGE' | 'VIDEO' | 'DOCUMENT';
   data?: string;
 }
 
-/**
- * Update report request payload
- */
+
 export interface UpdateReportRequest {
   id: string;
   status?: ReportStatus;
   dateResolved?: Date | null;
 }
 
-/**
- * Report list options
- */
+
 export interface ReportListOptions {
   status?: ReportStatus;
   priority?: string;
@@ -157,9 +131,7 @@ export interface ReportListOptions {
   endDate?: Date;
 }
 
-/**
- * Dashboard statistics
- */
+
 export interface DashboardStats {
   totalReports: number;
   pendingReports: number;
@@ -169,17 +141,13 @@ export interface DashboardStats {
   averageResolutionTime: number;
 }
 
-/**
- * Chart data point
- */
+
 export interface ChartDataPoint {
   label: string;
   value: number;
 }
 
-/**
- * Chart data
- */
+
 export interface ChartData {
   labels: string[];
   values: number[];

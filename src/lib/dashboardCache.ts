@@ -1,4 +1,4 @@
-/** Caché de sesión del dashboard — pinta la página al instante en visitas repetidas */
+
 
 import type { Report } from "@/types/report";
 import type { User } from "@/types/auth";
@@ -37,7 +37,7 @@ export function setDashboardCache(bundle: DashboardBundle) {
   try {
     sessionStorage.setItem(KEY, JSON.stringify(bundle));
   } catch {
-    // quota exceeded — ignore
+
   }
 }
 

@@ -1,7 +1,5 @@
-// ============================================================
-// Database Type Definitions
-// Matches the PostgreSQL schema defined in migrations/
-// ============================================================
+
+
 
 export interface User {
   id: string;

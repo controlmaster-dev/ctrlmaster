@@ -24,7 +24,7 @@ export function setClavesCache(cache: ClavesCache) {
   try {
     sessionStorage.setItem(KEY, JSON.stringify(cache));
   } catch {
-    // ignore
+
   }
 }
 

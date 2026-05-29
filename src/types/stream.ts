@@ -1,19 +1,13 @@
-/**
- * Video stream and monitoring types
- */
 
-/**
- * Stream variant types
- */
+
+
 export enum StreamVariant {
   DEFAULT = 'default',
   PREVIEW = 'preview',
   PROGRAM = 'program',
 }
 
-/**
- * Video stream interface
- */
+
 export interface VideoStream {
   title: string;
   url: string;
@@ -21,9 +15,7 @@ export interface VideoStream {
   id?: string;
 }
 
-/**
- * Stream metrics interface
- */
+
 export interface StreamMetrics {
   streamId: string;
   timestamp: Date;
@@ -34,9 +26,7 @@ export interface StreamMetrics {
   latency?: number;
 }
 
-/**
- * Stream statistics interface
- */
+
 export interface StreamStats {
   totalStreams: number;
   onlineStreams: number;
@@ -45,18 +35,14 @@ export interface StreamStats {
   uptime: number;
 }
 
-/**
- * Monitoring state interface
- */
+
 export interface MonitoringState {
   pvwIndex: number;
   prgIndex: number;
   currentTime: string;
 }
 
-/**
- * Stream player props
- */
+
 export interface StreamPlayerProps {
   url: string;
   title: string;

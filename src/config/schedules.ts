@@ -1,19 +1,16 @@
-/**
- * User schedules and shifts configuration
- */
+
+
 
 import { UserSchedule } from '@/types/schedule';
 
-/**
- * User schedules mapping
- */
+
 export const USER_SCHEDULES: Record<string, UserSchedule> = {
   Gabriel: {
     userId: 'gabriel',
     userName: 'Gabriel',
     shifts: [
       {
-        days: [0, 1, 2, 3, 4], // Dom-Jue
+        days: [0, 1, 2, 3, 4],
         start: 6,
         end: 18,
       },
@@ -25,17 +22,17 @@ export const USER_SCHEDULES: Record<string, UserSchedule> = {
     userName: 'Diego',
     shifts: [
       {
-        days: [1, 2], // Lun-Mar
+        days: [1, 2],
         start: 0,
         end: 6,
       },
       {
-        days: [3, 4], // Mie-Jue
+        days: [3, 4],
         start: 18,
         end: 24,
       },
       {
-        days: [6], // Sab
+        days: [6],
         start: 6,
         end: 12,
       },
@@ -47,7 +44,7 @@ export const USER_SCHEDULES: Record<string, UserSchedule> = {
     userName: 'Alex',
     shifts: [
       {
-        days: [1, 2, 3, 4, 5], // Lun-Vie
+        days: [1, 2, 3, 4, 5],
         start: 6,
         end: 15,
       },
@@ -59,7 +56,7 @@ export const USER_SCHEDULES: Record<string, UserSchedule> = {
     userName: 'Andres',
     shifts: [
       {
-        days: [4, 5, 6, 0, 1], // Jue-Lun
+        days: [4, 5, 6, 0, 1],
         start: 8,
         end: 18,
       },
@@ -71,7 +68,7 @@ export const USER_SCHEDULES: Record<string, UserSchedule> = {
     userName: 'Josue',
     shifts: [
       {
-        days: [3, 4, 5, 6, 0], // Mie-Dom
+        days: [3, 4, 5, 6, 0],
         start: 0,
         end: 6,
       },
@@ -83,7 +80,7 @@ export const USER_SCHEDULES: Record<string, UserSchedule> = {
     userName: 'Jeremy',
     shifts: [
       {
-        days: [5, 6, 0, 1, 2], // Vie-Mar
+        days: [5, 6, 0, 1, 2],
         start: 18,
         end: 24,
       },
@@ -95,7 +92,7 @@ export const USER_SCHEDULES: Record<string, UserSchedule> = {
     userName: 'Ronald',
     shifts: [
       {
-        days: [1, 2, 3, 4, 5], // Lun-Vie
+        days: [1, 2, 3, 4, 5],
         start: 8,
         end: 16,
       },
@@ -104,16 +101,12 @@ export const USER_SCHEDULES: Record<string, UserSchedule> = {
   },
 } as const;
 
-/**
- * Get schedule for a user by name
- */
+
 export function getUserSchedule(userName: string): UserSchedule | undefined {
   return USER_SCHEDULES[userName];
 }
 
-/**
- * Get all schedules
- */
+
 export function getAllSchedules(): UserSchedule[] {
   return Object.values(USER_SCHEDULES);
 }

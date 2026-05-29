@@ -48,14 +48,14 @@ export function DashboardHero({
     <BentoCard variant="elevated" className={cn("p-5 md:p-6", className)}>
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="min-w-0 flex-1 space-y-3">
-          {/* Top date/time row */}
+
           <div className="flex items-center text-[11px] font-medium text-muted-foreground/70 capitalize tracking-wider select-none">
             <span>{dateLabel}</span>
             <span className="mx-1.5 text-muted-foreground/40 font-normal">·</span>
             <span className="tabular-nums text-muted-foreground/60">{timeLabel}</span>
           </div>
 
-          {/* Greeting + title */}
+
           <div>
             {firstName && (
               <p className="text-sm text-muted-foreground">
@@ -78,9 +78,9 @@ export function DashboardHero({
             </h1>
           </div>
 
-          {/* Inline stats + quick actions */}
+
           <div className="flex flex-wrap items-center gap-3">
-            {/* Mini stat pills */}
+
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-lg border border-border/50 bg-muted/40 px-3 py-1.5 text-xs">
                 <span className="text-base font-bold tabular-nums text-foreground">
@@ -103,7 +103,7 @@ export function DashboardHero({
               )}
             </div>
 
-            {/* Quick action buttons */}
+
             <div className="hidden items-center gap-1 md:flex">
               <Button
                 variant="ghost"
@@ -154,7 +154,7 @@ export function DashboardHero({
           </div>
         </div>
 
-        {/* Right side: CTA */}
+
         <div className="hidden shrink-0 md:block">
           <Button
             className="h-10 gap-2 rounded-xl bg-brand px-5 text-sm font-semibold text-white shadow-none hover:bg-brand-hover"

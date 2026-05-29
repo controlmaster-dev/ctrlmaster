@@ -1,7 +1,5 @@
-/**
- * Cron job to clean up expired session tokens
- * Run daily at 3:00 AM (Costa Rica time)
- */
+
+
 
 import { NextRequest, NextResponse } from 'next/server';
 import { cleanupExpiredTokens } from '@/lib/auth';

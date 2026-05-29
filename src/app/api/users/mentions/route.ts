@@ -4,11 +4,7 @@ import { validateApiAuth } from '@/lib/apiAuth';
 
 export const dynamic = 'force-dynamic';
 
-/**
- * Lightweight list of users for @mention autocomplete.
- * Returns only id/name/image and is cached briefly to avoid re-querying the
- * whole User table on every report detail open.
- */
+
 export async function GET(req: NextRequest) {
   try {
     const authResult = await validateApiAuth(req);

@@ -145,7 +145,7 @@ export function ReportDetailModal({
       }).catch(console.error);
     }
 
-    // Load the mention user list lazily (cached across opens).
+
     void fetchMentionUsers().then((users) => setMentionUsers(users));
   }, [isOpen, report?.id, currentUser, loadDetail, initialDetail]);
 
@@ -197,7 +197,7 @@ export function ReportDetailModal({
           "md:rounded-2xl md:border md:border-border md:shadow-2xl md:ring-1 md:ring-border/50"
         )}
       >
-        {/* Cabecera */}
+
         <header className="shrink-0 border-b border-border bg-muted/30 px-4 py-4 md:px-8 md:py-5">
           <div className="flex items-start gap-3">
             <button
@@ -237,7 +237,7 @@ export function ReportDetailModal({
             </div>
           </div>
 
-          {/* Metadatos */}
+
           <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3 md:mt-5 md:gap-3">
             <MetaItem
               icon={UserIcon}
@@ -269,9 +269,9 @@ export function ReportDetailModal({
           )}
         </header>
 
-        {/* Cuerpo: descripción | actividad */}
+
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden md:flex-row">
-          {/* Descripción */}
+
           <section className="flex min-h-0 flex-col border-b border-border md:w-[44%] md:border-b-0 md:border-r">
             <div className="flex shrink-0 items-center gap-2 border-b border-border/60 px-4 py-3 md:px-6">
               <Paperclip className="h-4 w-4 text-muted-foreground" />
@@ -312,7 +312,7 @@ export function ReportDetailModal({
             </ScrollArea>
           </section>
 
-          {/* Actividad */}
+
           <section className="flex min-h-0 flex-1 flex-col bg-muted/10">
             <div className="flex shrink-0 items-center gap-2 border-b border-border/60 px-4 py-3 md:px-6">
               <MessageSquare className="h-4 w-4 text-primary" />

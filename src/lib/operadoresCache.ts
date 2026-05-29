@@ -40,7 +40,7 @@ export function setOperadoresBundle(bundle: OperadoresBundle) {
   try {
     sessionStorage.setItem(BUNDLE_KEY, JSON.stringify(bundle));
   } catch {
-    // ignore
+
   }
 }
 
@@ -66,7 +66,7 @@ export function setOperadoresWeekCache(slice: OperadoresWeekSlice) {
     map[slice.weekStart] = slice;
     sessionStorage.setItem(WEEK_KEY, JSON.stringify(map));
   } catch {
-    // ignore
+
   }
 }
 

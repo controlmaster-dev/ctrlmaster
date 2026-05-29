@@ -1,7 +1,5 @@
-/**
- * Custom hook for report form management.
- * Extracts business logic from CrearReporteClient.tsx.
- */
+
+
 
 "use client";
 
@@ -54,7 +52,7 @@ export function useReportForm() {
     emailRecipients: "ingenieria@enlace.org, rjimenez@enlace.org",
   });
 
-  // Initialize form with current user on mount
+
   useEffect(() => {
     try {
       const savedUserStr = localStorage.getItem(STORAGE_KEYS.USER);
@@ -65,7 +63,7 @@ export function useReportForm() {
       const user = JSON.parse(savedUserStr);
 
       const now = new Date();
-      // Format as local ISO (YYYY-MM-DDTHH:mm) for datetime-local input
+
       const localIso = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
         .toISOString()
         .slice(0, 16);
@@ -155,7 +153,7 @@ export function useReportForm() {
   }, []);
 
   const submitReport = useCallback(async () => {
-    // Basic validation
+
     if (formData.priority.length === 0) {
       toast.error("Selecciona al menos un sistema");
       return;
@@ -198,13 +196,13 @@ export function useReportForm() {
 
       toast.success("¡Reporte creado con éxito!");
 
-      // Trigger refetch across all components that display reports
+
       try {
         const { triggerRefetch } = await import('./useDashboardData');
         triggerRefetch('reports');
       } catch {}
 
-      // Handle email/pdf generation
+
       if (formData.sendEmail) {
         toast.loading("Generando PDF y enviando correo...", { id: "sending-email" });
         try {
@@ -247,7 +245,7 @@ export function useReportForm() {
         }
       }
 
-      // Success!
+
       router.push("/reportes");
     } catch (error: any) {
       console.error("Submission error:", error);

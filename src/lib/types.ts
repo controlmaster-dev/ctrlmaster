@@ -1,6 +1,5 @@
-/**
- * Common TypeScript interfaces and types for CtrlMaster
- */
+
+
 
 export type UserRole = 'ADMIN' | 'ENGINEER' | 'OPERATOR' | 'BOSS';
 
