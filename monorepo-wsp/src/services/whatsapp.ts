@@ -9,6 +9,8 @@ import type { HealthStatus } from '../types/index.js';
 import { logger } from '../lib/logger.js';
 import { config } from '../config/index.js';
 import { messageQueue } from '../lib/messageQueue.js';
+import fs from 'fs';
+import path from 'path';
 
 type ConnectionState = 'disconnected' | 'connecting' | 'connected';
 
@@ -22,9 +24,38 @@ export class WhatsAppService {
   private messagesFailed = 0;
   private isShuttingDown = false;
   private messageStore = new Map<string, any>();
+  private messageStorePath = `./sessions/${config.sessionName}/sent_messages.json`;
+
+  private loadMessageStore() {
+    try {
+      if (fs.existsSync(this.messageStorePath)) {
+        const data = fs.readFileSync(this.messageStorePath, 'utf-8');
+        const parsed = JSON.parse(data);
+        this.messageStore = new Map(Object.entries(parsed));
+        logger.info({ size: this.messageStore.size }, '💾 Almacén de mensajes cargado desde disco');
+      }
+    } catch (error) {
+      logger.error({ error }, '❌ Error al cargar messageStore desde disco');
+    }
+  }
+
+  private saveMessageStore() {
+    try {
+      const dir = path.dirname(this.messageStorePath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      const obj = Object.fromEntries(this.messageStore.entries());
+      fs.writeFileSync(this.messageStorePath, JSON.stringify(obj, null, 2), 'utf-8');
+    } catch (error) {
+      logger.error({ error }, '❌ Error al guardar messageStore en disco');
+    }
+  }
 
   async initialize(): Promise<void> {
     logger.info('Inicializando WhatsApp connection...');
+
+    this.loadMessageStore();
 
     const { state, saveCreds } = await useMultiFileAuthState(`./sessions/${config.sessionName}`);
     const { version } = await fetchLatestBaileysVersion();
@@ -153,6 +184,8 @@ export class WhatsAppService {
           const firstKey = this.messageStore.keys().next().value;
           if (firstKey) this.messageStore.delete(firstKey);
         }
+
+        this.saveMessageStore();
       }
 
       this.messagesSent++;
