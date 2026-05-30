@@ -37,48 +37,6 @@ const nextConfig = {
 
     optimizePackageImports: ['lucide-react', 'date-fns'],
   },
-
-  webpack: (config, { isServer, dev }) => {
-    if (dev) return config;
-    if (!isServer) {
-
-      config.optimization.splitChunks = {
-        chunks: 'all',
-        cacheGroups: {
-          default: false,
-          vendors: false,
-
-          recharts: {
-            name: 'recharts',
-            test: /[\\/]node_modules[\\/]recharts[\\/]/,
-            priority: 30,
-          },
-
-          framerMotion: {
-            name: 'framer-motion',
-            test: /[\\/]node_modules[\\/]framer-motion[\\/]/,
-            priority: 25,
-          },
-
-          lucide: {
-            name: 'lucide-icons',
-            test: /[\\/]node_modules[\\/]lucide-react[\\/]/,
-            priority: 20,
-          },
-
-          vendor: {
-            name: 'vendor',
-            test: /[\\/]node_modules[\\/]/,
-            priority: 10,
-            reuseExistingChunk: true,
-          },
-        },
-        maxInitialRequests: 25,
-        minSize: 20000,
-      };
-    }
-    return config;
-  },
   async headers() {
     const isProd = process.env.NODE_ENV === 'production';
 

@@ -4,6 +4,8 @@ import { ApiError, ValidationError } from '@/lib/errors';
 import { validateApiAuth } from '@/lib/apiAuth';
 import { z } from 'zod';
 
+export const dynamic = 'force-dynamic';
+
 const reactionSchema = z.object({
   reportId: z.string().min(1, 'ID de reporte es requerido'),
   emoji: z.string().min(1, 'Emoji es requerido'),

@@ -196,7 +196,7 @@ export function WeeklyCalendar({
     if (!editingState || !onUpdateSchedule) return;
     const { originalOpId, dayIndex, shifts } = editingState;
 
-    const shiftsByOp: Record<string, any[]> = {};
+    const shiftsByOp: Record<string, EditingState["shifts"]> = {};
     shiftsByOp[originalOpId] = [];
 
     shifts.forEach((s) => {

@@ -30,12 +30,15 @@ export async function GET(req: NextRequest) {
     if (overallStatus === 'healthy') overallStatus = 'degraded';
   }
 
-  try {
-    const { stat } = await import('fs/promises');
-    await stat(`${process.cwd()}/public/uploads`);
-    checks.uploads = { status: 'ok' };
-  } catch {
-    checks.uploads = { status: 'ok', message: 'Uploads directory not created yet' };
+  const uploadEncryptionConfigured = !!(process.env.FILE_ENC_KEY || process.env.CREDENTIALS_ENC_KEY);
+  checks.uploads = {
+    status: uploadEncryptionConfigured ? 'ok' : 'degraded',
+    message: uploadEncryptionConfigured
+      ? 'Encrypted Neon upload storage configured'
+      : 'Encrypted upload storage key is not configured',
+  };
+  if (!uploadEncryptionConfigured && overallStatus === 'healthy') {
+    overallStatus = 'degraded';
   }
 
   return NextResponse.json(

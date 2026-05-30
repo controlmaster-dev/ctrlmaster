@@ -14,7 +14,6 @@ export const AUTH_ENDPOINTS = {
 export const REPORTS_ENDPOINTS = {
   LIST: `${API_BASE}/reports`,
   DETAIL: (id: string) => `${API_BASE}/reports/${id}`,
-  QUICK: `${API_BASE}/reports/quick`,
   VIEW: `${API_BASE}/reports/view`,
 } as const;
 
@@ -32,11 +31,6 @@ export const COMMENTS_ENDPOINTS = {
 
 export const REACTIONS_ENDPOINTS = {
   LIST: `${API_BASE}/reactions`,
-} as const;
-
-
-export const TASKS_ENDPOINTS = {
-  LIST: `${API_BASE}/tasks`,
 } as const;
 
 
@@ -84,29 +78,13 @@ export const SPELLCHECK_ENDPOINTS = {
 } as const;
 
 
-export const DEBUG_ENDPOINTS = {
-  YOUTUBE: `${API_BASE}/debug-youtube`,
-  YOUTUBE_API: `${API_BASE}/debug-youtube-api`,
-  TEST_DB: `${API_BASE}/test-db`,
-} as const;
-
-
 export const CRON_ENDPOINTS = {
-  DAILY_SUMMARY: `${API_BASE}/cron/daily-summary`,
-  MONITOR: `${API_BASE}/cron/monitor`,
-  REMINDERS: `${API_BASE}/cron/reminders`,
   SHIFT_REMINDERS: `${API_BASE}/cron/shift-reminders`,
-  WEEKLY_REPORT: `${API_BASE}/cron/weekly-report`,
 } as const;
 
 
 export const RESEND_ENDPOINTS = {
   HISTORY: `${API_BASE}/resend/history`,
-} as const;
-
-
-export const VALIDATOR_ENDPOINTS = {
-  KB: `${API_BASE}/validator/kb`,
 } as const;
 
 
@@ -116,7 +94,6 @@ export const API_ENDPOINTS = {
   USERS: USERS_ENDPOINTS,
   COMMENTS: COMMENTS_ENDPOINTS,
   REACTIONS: REACTIONS_ENDPOINTS,
-  TASKS: TASKS_ENDPOINTS,
   SCHEDULE: SCHEDULE_ENDPOINTS,
   CALENDAR: CALENDAR_ENDPOINTS,
   SPECIAL_EVENTS: SPECIAL_EVENTS_ENDPOINTS,
@@ -125,8 +102,6 @@ export const API_ENDPOINTS = {
   UPLOAD: UPLOAD_ENDPOINTS,
   CREDENTIALS: CREDENTIALS_ENDPOINTS,
   SPELLCHECK: SPELLCHECK_ENDPOINTS,
-  DEBUG: DEBUG_ENDPOINTS,
   CRON: CRON_ENDPOINTS,
   RESEND: RESEND_ENDPOINTS,
-  VALIDATOR: VALIDATOR_ENDPOINTS,
 } as const;

@@ -7,6 +7,11 @@ export const dynamic = 'force-dynamic';
 
 const CREDENTIAL_ROLES = ['ENGINEER', 'ADMIN', 'BOSS'];
 
+interface CredentialRow {
+  password: string;
+  [key: string]: unknown;
+}
+
 export async function GET(req: NextRequest) {
   try {
     const authResult = await validateApiAuth(req);
@@ -20,7 +25,7 @@ export async function GET(req: NextRequest) {
       FROM "Credential" ORDER BY "createdAt" DESC
     `;
 
-    const decrypted = credentials.map((c: any) => ({
+    const decrypted = (credentials as unknown as CredentialRow[]).map((c) => ({
       ...c,
       password: decryptSecret(c.password),
     }));

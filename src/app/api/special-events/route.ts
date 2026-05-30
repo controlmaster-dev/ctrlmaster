@@ -6,6 +6,11 @@ export const dynamic = 'force-dynamic';
 
 const EVENT_ADMIN_ROLES = ['ADMIN', 'BOSS', 'ENGINEER'];
 
+interface SpecialEventRow {
+  shiftCount: number;
+  [key: string]: unknown;
+}
+
 export async function GET() {
   try {
     const events = await sql`
@@ -18,7 +23,7 @@ export async function GET() {
       ORDER BY se."startDate" DESC
     `;
 
-    const mapped = events.map((e: any) => ({
+    const mapped = (events as unknown as SpecialEventRow[]).map((e) => ({
       ...e,
       _count: { shifts: e.shiftCount },
     }));

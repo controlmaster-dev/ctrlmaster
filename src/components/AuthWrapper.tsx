@@ -17,7 +17,7 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
       router.replace("/login");
     }
 
-    if (user?.role === 'ENGINEER' && (pathname.startsWith('/configuracion') || pathname.startsWith('/usuarios') || pathname.startsWith('/tareas'))) {
+    if (user?.role === 'ENGINEER' && (pathname.startsWith('/configuracion') || pathname.startsWith('/usuarios'))) {
       router.replace("/");
     }
 

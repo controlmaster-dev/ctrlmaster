@@ -7,6 +7,17 @@ import { getBitcentralUser } from '@/lib/schedule';
 import { sendWhatsApp } from '@/lib/whatsapp';
 import { validateApiAuth } from '@/lib/apiAuth';
 
+interface ScheduleUser {
+  id: string;
+  name: string;
+}
+
+interface ScheduleRow {
+  dayOfWeek: number;
+  date: Date;
+  user?: ScheduleUser | null;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const authResult = await validateApiAuth(req);
@@ -35,7 +46,7 @@ export async function POST(req: NextRequest) {
       JOIN "User" u ON u."id" = ws."userId"
     `;
 
-    const baseScheduleMap = baseScheduleData.reduce((acc: any, curr: any) => {
+    const baseScheduleMap = (baseScheduleData as unknown as ScheduleRow[]).reduce<Record<string, string>>((acc, curr) => {
       if (curr.user) acc[curr.dayOfWeek.toString()] = curr.user.name;
       return acc;
     }, {});
@@ -49,8 +60,8 @@ export async function POST(req: NextRequest) {
         AND ws."isOverride" = TRUE
     `;
 
-    const overridesMap = overridesData.reduce((acc: any, curr: any) => {
-      acc[curr.date.toISOString().split('T')[0]] = curr.user.name;
+    const overridesMap = (overridesData as unknown as ScheduleRow[]).reduce<Record<string, string>>((acc, curr) => {
+      if (curr.user) acc[curr.date.toISOString().split('T')[0]] = curr.user.name;
       return acc;
     }, {});
 

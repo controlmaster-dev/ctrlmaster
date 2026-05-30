@@ -47,11 +47,17 @@ export function EvidenceStep({
                 className="flex items-center gap-3 rounded-lg border border-border/60 bg-card/80 p-3"
               >
                 <div className="h-11 w-11 shrink-0 overflow-hidden rounded-md bg-muted">
-                  <img
-                    src={(file.data as string) || file.url}
-                    className="h-full w-full object-cover"
-                    alt=""
-                  />
+                  {file.type === "IMAGE" ? (
+                    <img
+                      src={(file.data as string) || file.url}
+                      className="h-full w-full object-cover"
+                      alt=""
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-muted-foreground">
+                      VIDEO
+                    </div>
+                  )}
                 </div>
                 <span className="flex-1 truncate text-sm text-muted-foreground">
                   {file.url}
@@ -75,7 +81,7 @@ export function EvidenceStep({
               <span className="text-sm text-muted-foreground">
                 {uploading ? "Subiendo…" : "Seleccionar archivos"}
               </span>
-              <span className="mt-1 text-xs text-muted-foreground/70">Máx. 4 MB</span>
+              <span className="mt-1 text-xs text-muted-foreground/70">Máx. 10 MB</span>
               <input type="file" multiple hidden onChange={handleFileUpload} disabled={uploading} />
             </label>
           </div>

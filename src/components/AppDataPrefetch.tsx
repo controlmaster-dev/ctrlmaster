@@ -20,6 +20,7 @@ import {
 import { sortOperators } from "@/hooks/useOperadoresBundle";
 import type { Report } from "@/types/report";
 import type { Operator } from "@/lib/types";
+import type { User as AuthUser } from "@/types/auth";
 import { UI_CONFIG } from "@/config/constants";
 
 function parseReports(data: unknown): unknown[] {
@@ -48,7 +49,7 @@ export function AppDataPrefetch() {
     const needReportes = !getReportesListCache(reportesQuery);
 
 
-    const usersPromise: Promise<any[]> =
+    const usersPromise: Promise<AuthUser[]> =
       needDashboard || needOperadores
         ? fetch("/api/users")
             .then((r) => (r.ok ? r.json() : []))
@@ -119,7 +120,7 @@ export function AppDataPrefetch() {
       Promise.all([usersPromise, fetch("/api/special-events").then((r) => r.json())])
         .then(([allData, eventsData]) => {
           const all = Array.isArray(allData) ? allData : [];
-          const ops = sortOperators(all);
+          const ops = sortOperators(all as unknown as Operator[]);
           const events = Array.isArray(eventsData) ? eventsData : [];
           setOperadoresBundle({
             weekStart,

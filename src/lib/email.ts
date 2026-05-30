@@ -2,7 +2,7 @@ import nodemailer from 'nodemailer';
 
 interface EmailAttachment {
   filename: string;
-  content: any;
+  content: Buffer | string;
 }
 
 interface EmailOptions {
@@ -40,7 +40,7 @@ export async function sendEmail(options: EmailOptions) {
         filename: att.filename,
         content: att.content
       }))
-    });
+    }) as { messageId?: string };
 
     console.log("Email sent: ", info.messageId);
     return { success: true };

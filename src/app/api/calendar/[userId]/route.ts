@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import sql from '@/lib/db';
 import { generateICS } from '@/utils/icsGenerator';
+import type { Shift } from '@/lib/types';
+
+interface CalendarUserRow {
+  name?: string | null;
+  schedule?: string | null;
+  tempSchedule?: string | null;
+}
 
 export async function GET(
   request: NextRequest,
@@ -30,10 +37,11 @@ export async function GET(
     const weeksRequested = parseInt(searchParams.get('weeks') || '4', 10);
     const startWeekDate = weekStart;
 
-    const fixedParsed = user.schedule ? JSON.parse(user.schedule) : [];
-    const tempParsed = user.tempSchedule ? JSON.parse(user.tempSchedule) : {};
+    const userRow = user as CalendarUserRow;
+    const fixedParsed = userRow.schedule ? JSON.parse(userRow.schedule) as Shift[] : [];
+    const tempParsed = userRow.tempSchedule ? JSON.parse(userRow.tempSchedule) as Shift[] | Record<string, Shift[]> : {};
 
-    const combinedShifts: Record<string, any[]> = {};
+    const combinedShifts: Record<string, Shift[]> = {};
 
     for (let i = 0; i < weeksRequested; i++) {
       const currentWeekDate = new Date(startWeekDate + 'T12:00:00');
@@ -53,12 +61,12 @@ export async function GET(
       }
     }
 
-    const icsContent = generateICS(combinedShifts, startWeekDate, user.name || 'Operador', weeksRequested);
+    const icsContent = generateICS(combinedShifts, startWeekDate, userRow.name || 'Operador', weeksRequested);
 
     return new NextResponse(icsContent, {
       headers: {
         'Content-Type': 'text/calendar; charset=utf-8',
-        'Content-Disposition': `attachment; filename="horario_${user.name}.ics"`
+        'Content-Disposition': `attachment; filename="horario_${userRow.name}.ics"`
       }
     });
 

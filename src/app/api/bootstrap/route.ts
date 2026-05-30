@@ -4,6 +4,11 @@ import { validateApiAuth } from '@/lib/apiAuth';
 
 export const dynamic = 'force-dynamic';
 
+interface BootstrapReportRow {
+  commentCount: number;
+  reactionCount: number;
+  [key: string]: unknown;
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -47,7 +52,7 @@ export async function GET(req: NextRequest) {
       `,
     ]);
 
-    const reports = reportsRaw.map((r: any) => ({
+    const reports = (reportsRaw as unknown as BootstrapReportRow[]).map((r) => ({
       ...r,
       _count: { comments: r.commentCount, reactions: r.reactionCount },
     }));

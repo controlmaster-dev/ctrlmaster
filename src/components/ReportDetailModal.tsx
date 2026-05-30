@@ -7,7 +7,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { ReportSocials } from "@/components/ReportSocials";
+import {
+  ReportSocials,
+  type CommentItem,
+  type ReactionItem,
+  type SocialUser,
+} from "@/components/ReportSocials";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   User as UserIcon,
@@ -28,10 +33,60 @@ import { cn } from "@/lib/utils";
 interface ReportDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
-  report: any;
-  currentUser: any;
+  report: ReportDetail | null;
+  currentUser: SocialUser | null;
   onUpdate: () => void;
-  initialDetail?: any | null;
+  initialDetail?: ReportDetail | null;
+}
+
+interface ReportAttachment {
+  data?: string;
+  url?: string;
+  type?: string;
+}
+
+interface ReportView {
+  user: {
+    name?: string | null;
+  };
+}
+
+export interface ReportDetail {
+  id: string;
+  status?: string;
+  createdAt?: string | Date;
+  operatorName?: string;
+  category?: string;
+  priority?: string;
+  problemDescription?: string;
+  attachments?: ReportAttachment[];
+  views?: unknown[];
+  comments?: unknown[];
+  reactions?: unknown[];
+  mentionUsers?: unknown[];
+}
+
+function toReportDetail(value: unknown): ReportDetail | null {
+  if (value && typeof value === "object" && "id" in value) {
+    return value as ReportDetail;
+  }
+  return null;
+}
+
+function toCommentItems(value: unknown[] | undefined): CommentItem[] {
+  return Array.isArray(value) ? (value as CommentItem[]) : [];
+}
+
+function toReactionItems(value: unknown[] | undefined): ReactionItem[] {
+  return Array.isArray(value) ? (value as ReactionItem[]) : [];
+}
+
+function toSocialUsers(value: unknown[] | undefined, fallback: SocialUser[]): SocialUser[] {
+  return Array.isArray(value) ? (value as SocialUser[]) : fallback;
+}
+
+function toViews(value: unknown[] | undefined): ReportView[] {
+  return Array.isArray(value) ? (value as ReportView[]) : [];
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -95,9 +150,9 @@ export function ReportDetailModal({
   onUpdate,
   initialDetail,
 }: ReportDetailModalProps) {
-  const [fullReport, setFullReport] = React.useState<any>(null);
+  const [fullReport, setFullReport] = React.useState<ReportDetail | null>(null);
   const [loadingSocials, setLoadingSocials] = React.useState(false);
-  const [mentionUsers, setMentionUsers] = React.useState<any[]>(
+  const [mentionUsers, setMentionUsers] = React.useState<SocialUser[]>(
     () => getCachedMentionUsers() ?? []
   );
 
@@ -105,7 +160,8 @@ export function ReportDetailModal({
     if (!silent) setLoadingSocials(true);
     try {
       const data = await prefetchReportDetail(reportId);
-      if (data) setFullReport(data);
+      const detail = toReportDetail(data);
+      if (detail) setFullReport(detail);
     } catch (err) {
       console.error("Failed to load report details", err);
     } finally {
@@ -129,8 +185,10 @@ export function ReportDetailModal({
         ? initialDetail
         : getReportDetailCache(report.id);
 
-    if (cached) {
-      setFullReport(cached);
+    const cachedDetail = toReportDetail(cached);
+
+    if (cachedDetail) {
+      setFullReport(cachedDetail);
       setLoadingSocials(false);
       loadDetail(report.id, true);
     } else {
@@ -151,7 +209,7 @@ export function ReportDetailModal({
 
   React.useEffect(() => {
     if (isOpen && initialDetail?.id === report?.id) {
-      setFullReport(initialDetail);
+      setFullReport(initialDetail ?? null);
       setLoadingSocials(false);
     }
   }, [isOpen, initialDetail, report?.id]);
@@ -166,12 +224,15 @@ export function ReportDetailModal({
   if (!displayReport?.id) return null;
 
   const shortId = String(displayReport.id).slice(0, 6);
-  const createdAt = new Date(displayReport.createdAt);
-  const hasAttachments =
-    displayReport.attachments && displayReport.attachments.length > 0;
-  const hasViews = displayReport.views && displayReport.views.length > 0;
+  const createdAt = new Date(displayReport.createdAt || Date.now());
+  const attachments = displayReport.attachments || [];
+  const views = toViews(displayReport.views);
+  const comments = toCommentItems(displayReport.comments);
+  const reactions = toReactionItems(displayReport.reactions);
+  const hasAttachments = attachments.length > 0;
+  const hasViews = views.length > 0;
 
-  const openAttachment = (file: { data?: string; url?: string }) => {
+  const openAttachment = (file: ReportAttachment) => {
     const src = file.data || file.url;
     if (!src) return;
     if (src.startsWith("data:") || src.startsWith("http") || src.startsWith("/")) {
@@ -214,7 +275,7 @@ export function ReportDetailModal({
                 <DialogTitle className="text-xl font-bold tracking-tight md:text-2xl">
                   Reporte #{shortId}
                 </DialogTitle>
-                <StatusBadge status={displayReport.status} />
+                <StatusBadge status={displayReport.status || "pending"} />
               </div>
               <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
                 <span className="inline-flex items-center gap-1.5">
@@ -242,17 +303,17 @@ export function ReportDetailModal({
             <MetaItem
               icon={UserIcon}
               label="Operador"
-              value={displayReport.operatorName}
+              value={displayReport.operatorName || "Operador"}
             />
             <MetaItem
               icon={Tag}
               label="Categoría"
-              value={displayReport.category}
+              value={displayReport.category || "Sin categoria"}
             />
             <MetaItem
               icon={AlertCircle}
               label="Prioridad"
-              value={displayReport.priority}
+              value={displayReport.priority || "Sin prioridad"}
             />
           </div>
 
@@ -262,7 +323,7 @@ export function ReportDetailModal({
               <span>
                 Visto por{" "}
                 <span className="text-foreground/80">
-                  {displayReport.views.map((v: { user: { name: string } }) => v.user.name).join(", ")}
+                  {views.map((v) => v.user.name || "Usuario").join(", ")}
                 </span>
               </span>
             </div>
@@ -282,16 +343,16 @@ export function ReportDetailModal({
 
             <ScrollArea className="flex-1 px-4 py-4 md:px-6 md:py-5">
               <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-foreground/95">
-                {displayReport.problemDescription}
+                {displayReport.problemDescription || ""}
               </p>
 
               {hasAttachments && (
                 <div className="mt-6 border-t border-border pt-5">
                   <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Adjuntos ({displayReport.attachments.length})
+                    Adjuntos ({attachments.length})
                   </p>
                   <div className="flex flex-wrap gap-3">
-                    {displayReport.attachments.map((file: { data?: string; url?: string }, idx: number) => (
+                    {attachments.map((file, idx) => (
                       <button
                         key={idx}
                         type="button"
@@ -320,18 +381,18 @@ export function ReportDetailModal({
                 Actividad y comentarios
               </h3>
               {!loadingSocials &&
-                (displayReport.comments?.length > 0 ||
-                  displayReport.reactions?.length > 0) && (
+                (comments.length > 0 ||
+                  reactions.length > 0) && (
                   <Badge variant="secondary" className="ml-auto text-[10px] font-normal">
-                    {displayReport.comments?.length || 0} comentario
-                    {(displayReport.comments?.length || 0) !== 1 ? "s" : ""}
+                    {comments.length} comentario
+                    {comments.length !== 1 ? "s" : ""}
                   </Badge>
                 )}
             </div>
 
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-4 md:px-6 md:py-5">
               {loadingSocials &&
-              !(fullReport?.comments?.length || fullReport?.reactions?.length) ? (
+              !(toCommentItems(fullReport?.comments).length || toReactionItems(fullReport?.reactions).length) ? (
                 <div className="flex flex-1 items-center justify-center">
                   <p className="text-sm text-muted-foreground animate-pulse">
                     Cargando actividad...
@@ -342,9 +403,9 @@ export function ReportDetailModal({
                   embedded
                   reportId={displayReport.id}
                   currentUser={currentUser}
-                  initialComments={displayReport.comments || []}
-                  initialReactions={displayReport.reactions || []}
-                  availableUsers={displayReport.mentionUsers || mentionUsers}
+                  initialComments={comments}
+                  initialReactions={reactions}
+                  availableUsers={toSocialUsers(displayReport.mentionUsers, mentionUsers)}
                   onUpdate={handleSocialUpdate}
                 />
               )}

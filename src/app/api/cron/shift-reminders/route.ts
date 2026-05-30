@@ -8,6 +8,17 @@ import { validateApiAuth, requireRole, requireCronAuth } from '@/lib/apiAuth';
 
 export const dynamic = 'force-dynamic';
 
+interface ScheduleUser {
+  id: string;
+  name: string;
+}
+
+interface ScheduleRow {
+  dayOfWeek: number;
+  date: Date;
+  user?: ScheduleUser | null;
+}
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -36,7 +47,7 @@ export async function GET(req: NextRequest) {
       JOIN "User" u ON u."id" = ws."userId"
     `;
 
-    const baseScheduleMap = baseScheduleData.reduce((acc: any, curr: any) => {
+    const baseScheduleMap = (baseScheduleData as unknown as ScheduleRow[]).reduce<Record<string, string>>((acc, curr) => {
       if (curr.user) acc[curr.dayOfWeek.toString()] = curr.user.name;
       return acc;
     }, {});
@@ -53,8 +64,8 @@ export async function GET(req: NextRequest) {
         AND ws."isOverride" = TRUE
     `;
 
-    const overridesMap = overridesData.reduce((acc: any, curr: any) => {
-      acc[curr.date.toISOString().split('T')[0]] = curr.user.name;
+    const overridesMap = (overridesData as unknown as ScheduleRow[]).reduce<Record<string, string>>((acc, curr) => {
+      if (curr.user) acc[curr.date.toISOString().split('T')[0]] = curr.user.name;
       return acc;
     }, {});
 

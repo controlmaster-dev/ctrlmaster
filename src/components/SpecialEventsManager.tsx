@@ -20,12 +20,44 @@ import {
   Calendar as CalendarIcon,
 } from "lucide-react";
 import { WeeklyCalendar } from "@/components/WeeklyCalendar";
+import type { Operator, Shift } from "@/lib/types";
+
+interface SpecialEvent {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+  _count?: {
+    shifts?: number;
+  };
+}
+
+interface EventUser {
+  id: string;
+  name: string;
+  email?: string;
+  image?: string;
+  role?: string;
+}
+
+interface EventShift extends Shift {
+  date?: string;
+  specificDates?: string[];
+}
+
+interface PersistedEventShift {
+  userId: string;
+  date: string;
+  start: number;
+  end: number;
+}
 
 export function SpecialEventsManager() {
-  const [events, setEvents] = useState<any[]>([]);
-  const [users, setUsers] = useState<any[]>([]);
-  const [viewingEvent, setViewingEvent] = useState<any>(null);
-  const [eventShifts, setEventShifts] = useState<Record<string, any[]>>({});
+  const [events, setEvents] = useState<SpecialEvent[]>([]);
+  const [users, setUsers] = useState<EventUser[]>([]);
+  const [viewingEvent, setViewingEvent] = useState<SpecialEvent | null>(null);
+  const [eventShifts, setEventShifts] = useState<Record<string, EventShift[]>>({});
   const [isCreating, setIsCreating] = useState(false);
   const [newEvent, setNewEvent] = useState({
     name: "",
@@ -85,7 +117,7 @@ export function SpecialEventsManager() {
     }
   };
 
-  const handleToggleActive = async (event: any) => {
+  const handleToggleActive = async (event: SpecialEvent) => {
     try {
       await fetch("/api/special-events", {
         method: "PATCH",
@@ -100,7 +132,7 @@ export function SpecialEventsManager() {
 
   const [viewedWeekStart, setViewedWeekStart] = useState("");
 
-  const openEventSchedule = async (event: any) => {
+  const openEventSchedule = async (event: SpecialEvent) => {
     setViewingEvent(event);
 
     const dateRaw = event.startDate;
@@ -128,8 +160,8 @@ export function SpecialEventsManager() {
       if (res.ok) {
         const data = await res.json();
 
-        const map: Record<string, any[]> = {};
-        data.forEach((s: any) => {
+        const map: Record<string, EventShift[]> = {};
+        (data as PersistedEventShift[]).forEach((s) => {
           if (!map[s.userId]) map[s.userId] = [];
           map[s.userId].push({
             days: [],
@@ -145,7 +177,7 @@ export function SpecialEventsManager() {
     }
   };
 
-  const handleUpdateEventSchedule = async (userId: string, newShifts: any[]) => {
+  const handleUpdateEventSchedule = async (userId: string, newShifts: Shift[]) => {
     if (!viewedWeekStart) return;
     const parseSafe = (dStr: string) =>
       new Date(dStr.includes("T") ? dStr : dStr + "T12:00:00");
@@ -173,11 +205,11 @@ export function SpecialEventsManager() {
 
     setEventShifts((prev) => {
       const existing = prev[userId] || [];
-      const otherWeeks = existing.filter((s) => !weekDates.includes(s.date));
+      const otherWeeks = existing.filter((s) => !s.date || !weekDates.includes(s.date));
 
-      const newExploded: any[] = [];
+      const newExploded: EventShift[] = [];
       eventSpecificShifts.forEach((s) => {
-        s.specificDates.forEach((d: string) => {
+        s.specificDates?.forEach((d: string) => {
           newExploded.push({ date: d, start: s.start, end: s.end, days: [] });
         });
       });
@@ -189,7 +221,7 @@ export function SpecialEventsManager() {
       const userShifts = current[userId] || [];
 
       const flatShifts = userShifts.map((s) => ({
-        date: s.date,
+        date: s.date || "",
         start: s.start,
         end: s.end,
       }));
@@ -208,9 +240,9 @@ export function SpecialEventsManager() {
     });
   };
 
-  const eventOperators = users.map((u) => {
+  const eventOperators: Operator[] = users.map((u) => {
     const userShifts = eventShifts[u.id] || [];
-    const weekShifts: any[] = [];
+    const weekShifts: Shift[] = [];
 
     if (viewedWeekStart) {
       const parseSafe = (dStr: string) =>
@@ -226,7 +258,7 @@ export function SpecialEventsManager() {
       }).filter((d) => d !== "");
 
       userShifts.forEach((s) => {
-        const dayIdx = weekDates.indexOf(s.date);
+        const dayIdx = s.date ? weekDates.indexOf(s.date) : -1;
         if (dayIdx !== -1) {
           const existing = weekShifts.find(
             (ws) => ws.start === s.start && ws.end === s.end

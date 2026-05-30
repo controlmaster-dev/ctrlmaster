@@ -12,6 +12,11 @@ interface LoginMapProps {
   users: User[];
 }
 
+interface MapGeography {
+  properties: { name: string };
+  rsmKey: string;
+}
+
 export function LoginMap({ users }: LoginMapProps) {
   const countryCounts: Record<string, number> = {};
   users.forEach((u) => {
@@ -48,8 +53,8 @@ export function LoginMap({ users }: LoginMapProps) {
         height={300}
       >
         <Geographies geography={geoUrl}>
-          {({ geographies }: { geographies: any[] }) =>
-            geographies.map((geo: { properties: { name: string }; rsmKey: string }) => {
+          {({ geographies }: { geographies: MapGeography[] }) =>
+            geographies.map((geo) => {
               const countryName = geo.properties.name;
               const count = countryCounts[countryName] || 0;
 

@@ -3,6 +3,13 @@ import sql from '@/lib/db';
 import { subDays } from 'date-fns';
 import { validateApiAuth } from '@/lib/apiAuth';
 
+interface StreamStatsRow {
+  channel: string;
+  errors: number;
+  blackScreen: number;
+  silence: number;
+}
+
 export async function GET(req: NextRequest) {
   try {
     const authResult = await validateApiAuth(req);
@@ -21,7 +28,7 @@ export async function GET(req: NextRequest) {
       GROUP BY "channel"
     `;
 
-    const result = rows.map((r: any) => ({
+    const result = (rows as unknown as StreamStatsRow[]).map((r) => ({
       name: r.channel,
       errors: r.errors,
       blackScreen: r.blackScreen,

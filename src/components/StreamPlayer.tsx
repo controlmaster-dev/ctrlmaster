@@ -5,7 +5,21 @@ import dynamic from "next/dynamic";
 
 const ReactPlayer = dynamic(() => import("react-player"), { ssr: false });
 
-const ReactPlayerAny = ReactPlayer as any;
+type ReactPlayerProps = {
+  url: string;
+  width: string;
+  height: string;
+  controls: boolean;
+  playing: boolean;
+  muted: boolean;
+  config: {
+    file: {
+      forceHLS: boolean;
+    };
+  };
+};
+
+const ReactPlayerComponent = ReactPlayer as React.ComponentType<ReactPlayerProps>;
 
 interface StreamPlayerProps {
   url: string;
@@ -36,7 +50,7 @@ export function StreamPlayer({ url, title }: StreamPlayerProps) {
 
       <div className="relative aspect-video bg-black rounded-md overflow-hidden bg-muted">
         {hasWindow && (
-          <ReactPlayerAny
+          <ReactPlayerComponent
             url={url}
             width="100%"
             height="100%"

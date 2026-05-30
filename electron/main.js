@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 
 let mainWindow = null;
-let tray = null;
+const tray = null;
 let serverUrl = '';
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;

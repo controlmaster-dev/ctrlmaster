@@ -71,6 +71,24 @@ import { isConfigAdmin } from "@/lib/adminAccess";
 import { getSundayWeekStart } from "@/lib/weekUtils";
 import { pageContainerClass } from "@/lib/page-layout";
 import { cn } from "@/lib/utils";
+import type { Shift } from "@/lib/types";
+
+type EditableUser = ConfiguracionUserCard & {
+  birthday?: string;
+  schedule?: string | Shift[];
+};
+
+type SaveUserBody = Omit<UserFormState, "password"> & {
+  id?: string;
+  password?: string;
+};
+
+type ReportCleanupRow = {
+  id: string;
+  createdAt: string | Date;
+  operatorName: string;
+  problemDescription: string;
+};
 
 export default function ConfigurationPage() {
   const router = useRouter();
@@ -176,11 +194,11 @@ export default function ConfigurationPage() {
     }
   };
 
-  const handleEditUser = (user: any) => {
+  const handleEditUser = (user: EditableUser) => {
     setIsEditing(true);
     setEditId(user.id);
 
-    let schedule = [];
+    let schedule: Shift[] = [];
     try {
       if (
         user.defaultShifts &&
@@ -204,7 +222,7 @@ export default function ConfigurationPage() {
 
     setNewUser({
       name: user.name,
-      email: user.email,
+      email: user.email || "",
       password: "",
       role: user.role || "OPERATOR",
       schedule,
@@ -231,10 +249,10 @@ export default function ConfigurationPage() {
   const handleSaveUser = async () => {
     try {
       const method = isEditing ? "PATCH" : "POST";
-      const body: any = { ...newUser };
+      const body: SaveUserBody = { ...newUser };
 
       if (isEditing) {
-        body.id = editId;
+        if (editId) body.id = editId;
         if (!body.password) delete body.password;
       }
 
@@ -310,11 +328,11 @@ export default function ConfigurationPage() {
 
   const handleScheduleUpdate = async (
     userId: string,
-    newShifts: any[],
+    newShifts: Shift[],
     weekStart: string
   ) => {
     try {
-      const body: any = { id: userId };
+      const body: { id: string; schedule?: Shift[]; tempSchedule?: Shift[]; weekStart?: string } = { id: userId };
 
       if (scheduleMode === "default") {
         body.schedule = newShifts;
@@ -353,7 +371,7 @@ export default function ConfigurationPage() {
   }
 
   const usersList = users as ConfiguracionUserCard[];
-  const reportsList = reports as any[];
+  const reportsList = reports as ReportCleanupRow[];
 
   return (
     <div className="configuracion-ui relative min-h-screen overflow-hidden bg-background pb-20 text-foreground selection:bg-brand selection:text-white">

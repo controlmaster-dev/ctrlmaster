@@ -15,7 +15,7 @@ interface WhatsAppBulkMessage {
 
 interface WhatsAppResponse {
   success: boolean;
-  data?: any;
+  data?: unknown;
   error?: string;
 }
 

@@ -10,6 +10,10 @@ import { config } from '../config/index.js';
 
 const router = express.Router();
 
+function getErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
 // ─── Health (no auth required) ──────────────────────────────────────────────
 
 router.get('/health', (req, res) => {
@@ -50,11 +54,12 @@ router.post('/send-message', authMiddleware, async (req, res) => {
       success: true,
       data: { phone, sentAt: new Date().toISOString() },
     });
-  } catch (error: any) {
-    logger.error({ phone, error: error.message }, 'Error enviando mensaje');
+  } catch (error: unknown) {
+    const message = getErrorMessage(error, 'Error enviando mensaje');
+    logger.error({ phone, error: message }, 'Error enviando mensaje');
     res.status(500).json({
       success: false,
-      error: error.message || 'Error enviando mensaje',
+      error: message,
     });
   }
 });
@@ -91,11 +96,12 @@ router.post('/send-bulk', authMiddleware, async (req, res) => {
         queuedAt: new Date().toISOString(),
       },
     });
-  } catch (error: any) {
-    logger.error({ error: error.message }, 'Error enviando mensajes masivos');
+  } catch (error: unknown) {
+    const message = getErrorMessage(error, 'Error enviando mensajes masivos');
+    logger.error({ error: message }, 'Error enviando mensajes masivos');
     res.status(500).json({
       success: false,
-      error: error.message || 'Error enviando mensajes masivos',
+      error: message,
     });
   }
 });

@@ -15,6 +15,8 @@ const eslintConfig = [
       ".next/**",
       "node_modules/**",
       "dist/**",
+      "monorepo-wsp/dist/**",
+      "monorepo-wsp/node_modules/**",
       "build/**",
       "coverage/**",
       "public/**",
@@ -40,6 +42,13 @@ const eslintConfig = [
       "react/no-unescaped-entities": "off",
       "@next/next/no-img-element": "off",
       "jsx-a11y/alt-text": "off",
+    },
+  },
+  {
+    files: ["monorepo-wsp/src/**/*.ts"],
+    rules: {
+      "react-hooks/rules-of-hooks": "off",
+      "react-hooks/exhaustive-deps": "off",
     },
   },
 ];

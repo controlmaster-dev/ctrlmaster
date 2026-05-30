@@ -23,8 +23,18 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { motion } from "framer-motion";
 
+interface UserRow {
+  id: string;
+  name: string;
+  email: string;
+  image?: string;
+  role?: string;
+  scheduleLabel?: string;
+  isAvailable?: boolean;
+}
+
 export default function UsersPage() {
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentTime, setCurrentTime] = useState(new Date());

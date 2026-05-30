@@ -22,8 +22,6 @@ const PUBLIC_API_ROUTES = [
 
   '/api/calendar',
   '/api/health',
-  '/api/cron',
-  '/api/proxy/whatsapp',
 ];
 
 
@@ -70,6 +68,12 @@ function hasSessionCookie(request: NextRequest): boolean {
   return !!request.cookies.get('auth-token')?.value;
 }
 
+function hasCronSecret(request: NextRequest): boolean {
+  const secret = process.env.CRON_SECRET;
+  if (!secret) return false;
+  return request.headers.get('authorization') === `Bearer ${secret}`;
+}
+
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -86,7 +90,10 @@ export async function middleware(request: NextRequest) {
   }
 
 
-  const isPublic = isPublicRoute(pathname) || isPublicApiRoute(pathname);
+  const isPublic =
+    isPublicRoute(pathname) ||
+    isPublicApiRoute(pathname) ||
+    (pathname.startsWith('/api/cron/') && hasCronSecret(request));
 
 
   if (isApiRoute(pathname) && !isPublic) {

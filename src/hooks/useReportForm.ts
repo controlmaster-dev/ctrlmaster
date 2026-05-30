@@ -11,7 +11,7 @@ import { STORAGE_KEYS, UI_CONFIG } from "@/config/constants";
 export interface Attachment {
   url: string;
   type: "IMAGE" | "VIDEO";
-  data: string | ArrayBuffer | null;
+  data?: string | ArrayBuffer | null;
 }
 
 export interface ReportFormData {
@@ -81,7 +81,7 @@ export function useReportForm() {
     }
   }, [router]);
 
-  const handleInputChange = useCallback((field: keyof ReportFormData, value: any) => {
+  const handleInputChange = useCallback((field: keyof ReportFormData, value: unknown) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   }, []);
 
@@ -121,22 +121,27 @@ export function useReportForm() {
       const newAttachments: Attachment[] = [];
 
       for (const file of files) {
-        if (file.size > UI_CONFIG.MAX_FILE_SIZE) {
-          toast.error(`El archivo ${file.name} es muy pesado (>4MB)`);
+        if (file.size > UI_CONFIG.MAX_UPLOAD_SIZE) {
+          toast.error(`El archivo ${file.name} es muy pesado (>10MB)`);
           continue;
         }
 
-        const base64 = await new Promise<string | ArrayBuffer | null>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.readAsDataURL(file);
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = (error) => reject(error);
+        const form = new FormData();
+        form.append("file", file);
+
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: form,
         });
 
+        const uploadData = await uploadRes.json();
+        if (!uploadRes.ok) {
+          throw new Error(uploadData.error || `No se pudo subir ${file.name}`);
+        }
+
         newAttachments.push({
-          url: file.name,
-          type: file.type.startsWith("image/") ? "IMAGE" : "VIDEO",
-          data: base64,
+          url: uploadData.url,
+          type: uploadData.type,
         });
       }
 
@@ -146,7 +151,7 @@ export function useReportForm() {
       }));
       toast.success(`${newAttachments.length} archivo(s) agregado(s)`);
     } catch (error) {
-      toast.error("Error procesando archivos");
+      toast.error(error instanceof Error ? error.message : "Error procesando archivos");
     } finally {
       setUploading(false);
     }
@@ -215,7 +220,7 @@ export function useReportForm() {
             dateResolved: formData.isResolved
               ? new Date(formData.dateResolved).toISOString()
               : null,
-            status: formData.isResolved ? "resolved" : "pending" as any,
+            status: formData.isResolved ? "resolved" : "pending",
             priority: formData.priority.join(", "),
             category: formData.categories.join(", "),
             comments: [],
@@ -247,9 +252,9 @@ export function useReportForm() {
 
 
       router.push("/reportes");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Submission error:", error);
-      toast.error(`Error: ${error.message}`);
+      toast.error(`Error: ${error instanceof Error ? error.message : "No se pudo enviar el reporte"}`);
     } finally {
       setLoading(false);
     }

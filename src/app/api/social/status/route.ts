@@ -1,6 +1,17 @@
 import { NextResponse } from 'next/server';
 import { getBooleanSetting } from '@/lib/appSettings';
 
+interface YouTubeSearchItem {
+  snippet?: {
+    liveBroadcastContent?: string;
+  };
+}
+
+interface YouTubeSearchResponse {
+  error?: { message?: string };
+  items?: YouTubeSearchItem[];
+}
+
 export async function GET() {
   const YT_CHANNEL_ID = 'UC0qFX9cnDZCMSJriRqcN37A';
   const FB_PAGE_URL = 'https://www.facebook.com/enlacetv';
@@ -22,7 +33,7 @@ export async function GET() {
         let ytRes = await fetch(apiUrl);
 
         if (ytRes.ok) {
-          const data = await ytRes.json();
+          const data = await ytRes.json() as YouTubeSearchResponse;
 
           if (data.error) {
             console.error('[YouTube API Error]', data.error.message);
@@ -35,12 +46,12 @@ export async function GET() {
             ytRes = await fetch(apiUrl);
 
             if (ytRes.ok) {
-              const recentData = await ytRes.json();
+              const recentData = await ytRes.json() as YouTubeSearchResponse;
 
               if (recentData.items && recentData.items.length > 0) {
 
                 const liveVideo = recentData.items.find(
-                  (item: any) => item.snippet.liveBroadcastContent === 'live'
+                  (item) => item.snippet?.liveBroadcastContent === 'live'
                 );
 
                 if (liveVideo) {

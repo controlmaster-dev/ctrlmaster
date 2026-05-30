@@ -2,11 +2,12 @@
 
 
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
 import { ApiError, ValidationError } from '@/lib/errors';
 import { validateApiAuth } from '@/lib/apiAuth';
 import { withRateLimit } from '@/lib/rateLimitEnhanced';
+import { generateToken } from '@/lib/crypto';
+import { encryptBuffer, hasEncryptionKey } from '@/lib/encryption';
+import sql from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,7 +42,24 @@ const FILE_SIGNATUREATURES = {
 };
 
 
+async function ensureUploadedFileTable() {
+  await sql`
+    CREATE TABLE IF NOT EXISTS "UploadedFile" (
+      "id" TEXT PRIMARY KEY,
+      "filename" TEXT NOT NULL,
+      "contentType" TEXT NOT NULL,
+      "size" INTEGER NOT NULL,
+      "ciphertext" BYTEA NOT NULL,
+      "iv" TEXT NOT NULL,
+      "authTag" TEXT NOT NULL,
+      "createdById" TEXT,
+      "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+}
+
 function validateFileSignature(buffer: Buffer): boolean {
+  if (buffer.length < 4) return false;
 
   if (FILE_SIGNATUREATURES.JPEG.every((byte, i) => buffer[i] === byte)) {
     return true;
@@ -59,7 +77,7 @@ function validateFileSignature(buffer: Buffer): boolean {
     return true;
   }
 
-  if (FILE_SIGNATUREATURES.MP4.every((byte, i) => buffer[i] === byte)) {
+  if (buffer.subarray(4, 8).toString('ascii') === 'ftyp') {
     return true;
   }
 
@@ -84,6 +102,14 @@ export async function POST(req: NextRequest) {
 
     const authResult = await validateApiAuth(req);
     if (authResult instanceof NextResponse) return authResult;
+    const userId = String(authResult.user.id || '');
+
+    if (!hasEncryptionKey()) {
+      return NextResponse.json(
+        { error: 'El almacenamiento cifrado no esta configurado.' },
+        { status: 503 }
+      );
+    }
 
     const formData = await req.formData();
     const file = formData.get('file') as File;
@@ -111,24 +137,27 @@ export async function POST(req: NextRequest) {
     }
 
 
-    const sanitizedFilename = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
-    const filename = `${Date.now()}_${sanitizedFilename}`;
-    const uploadDir = path.join(process.cwd(), 'public/uploads');
+    const encrypted = encryptBuffer(buffer);
+    const id = generateToken(18);
+    const filename = file.name.replace(/[\r\n]/g, ' ').trim() || 'archivo';
 
-
-    try {
-      await mkdir(uploadDir, { recursive: true });
-    } catch {  }
-
-
-    await writeFile(path.join(uploadDir, filename), buffer);
-
+    await ensureUploadedFileTable();
+    await sql`
+      INSERT INTO "UploadedFile" (
+        "id", "filename", "contentType", "size",
+        "ciphertext", "iv", "authTag", "createdById"
+      )
+      VALUES (
+        ${id}, ${filename}, ${file.type}, ${file.size},
+        ${encrypted.ciphertext}, ${encrypted.iv}, ${encrypted.authTag}, ${userId || null}
+      )
+    `;
 
     const isImage = file.type.startsWith('image/');
 
     return NextResponse.json({
       success: true,
-      url: `/uploads/${filename}`,
+      url: `/api/uploads/${id}`,
       type: isImage ? 'IMAGE' : 'VIDEO',
       name: file.name,
       size: file.size,

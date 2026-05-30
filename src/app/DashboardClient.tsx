@@ -27,6 +27,7 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import type { Report } from "@/types/report";
+import type { ReportDetail } from "@/components/ReportDetailModal";
 
 import Link from "next/link";
 import { ProcessingModal } from "@/components/ProcessingModal";
@@ -220,7 +221,7 @@ export function DashboardClient() {
   const [reminderModalOpen, setReminderModalOpen] = useState(false);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
-  const [cachedDetail, setCachedDetail] = useState<unknown | null>(null);
+  const [cachedDetail, setCachedDetail] = useState<ReportDetail | null>(null);
 
   const currentUser = useCurrentUser();
   const {
@@ -248,11 +249,11 @@ export function DashboardClient() {
   const openReport = useCallback((report: Report) => {
     const cached = getReportDetailCache(report.id);
     setSelectedReport(report);
-    setCachedDetail(cached);
+    setCachedDetail((cached as ReportDetail | null) ?? null);
     setDetailModalOpen(true);
     if (!cached) {
       prefetchReportDetail(report.id).then((data) => {
-        if (data) setCachedDetail(data);
+        if (data) setCachedDetail(data as ReportDetail);
       });
     }
   }, []);
@@ -275,11 +276,11 @@ export function DashboardClient() {
         } as unknown as Report);
 
       setSelectedReport(base);
-      setCachedDetail(cached);
+      setCachedDetail((cached as ReportDetail | null) ?? null);
       setDetailModalOpen(true);
       if (!cached) {
         prefetchReportDetail(reportId).then((data) => {
-          if (data) setCachedDetail(data);
+          if (data) setCachedDetail(data as ReportDetail);
         });
       }
     },

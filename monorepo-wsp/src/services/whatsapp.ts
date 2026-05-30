@@ -1,8 +1,10 @@
 import makeWASocket, {
+  AuthenticationState,
   DisconnectReason,
   fetchLatestBaileysVersion,
   useMultiFileAuthState,
   WASocket,
+  WAMessageContent,
 } from '@whiskeysockets/baileys';
 import qrcode from 'qrcode-terminal';
 import type { HealthStatus } from '../types/index.js';
@@ -13,6 +15,17 @@ import fs from 'fs';
 import path from 'path';
 
 type ConnectionState = 'disconnected' | 'connecting' | 'connected';
+type SaveCreds = () => Promise<void>;
+
+interface BaileysError extends Error {
+  output?: {
+    statusCode?: number;
+  };
+}
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
 
 export class WhatsAppService {
   private socket: WASocket | null = null;
@@ -23,7 +36,7 @@ export class WhatsAppService {
   private messagesSent = 0;
   private messagesFailed = 0;
   private isShuttingDown = false;
-  private messageStore = new Map<string, any>();
+  private messageStore = new Map<string, WAMessageContent>();
   private messageStorePath = `./sessions/${config.sessionName}/sent_messages.json`;
 
   private loadMessageStore() {
@@ -65,7 +78,7 @@ export class WhatsAppService {
     this.connect(state, saveCreds, version);
   }
 
-  private async connect(state: any, saveCreds: any, version: [number, number, number]): Promise<void> {
+  private async connect(state: AuthenticationState, saveCreds: SaveCreds, version: [number, number, number]): Promise<void> {
     if (this.isShuttingDown) return;
 
     // Clean up old socket before creating a new one
@@ -112,7 +125,7 @@ export class WhatsAppService {
 
       if (connection === 'close') {
         this.connectionState = 'disconnected';
-        const reason = (lastDisconnect?.error as any)?.output?.statusCode;
+        const reason = (lastDisconnect?.error as BaileysError | undefined)?.output?.statusCode;
         const shouldReconnect = reason !== DisconnectReason.loggedOut;
 
         logger.warn({ reason, shouldReconnect }, '⚠️ WhatsApp desconectado');
@@ -142,7 +155,7 @@ export class WhatsAppService {
     });
   }
 
-  private async handleReconnect(state: any, saveCreds: any, version: [number, number, number]): Promise<void> {
+  private async handleReconnect(state: AuthenticationState, saveCreds: SaveCreds, version: [number, number, number]): Promise<void> {
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
     }
@@ -175,7 +188,7 @@ export class WhatsAppService {
     try {
       const sentMsg = await this.socket.sendMessage(number, { text: message });
       
-      if (sentMsg) {
+      if (sentMsg && sentMsg.message) {
         const storeKey = `${sentMsg.key.remoteJid}_${sentMsg.key.id}`;
         this.messageStore.set(storeKey, sentMsg.message);
         
@@ -190,9 +203,9 @@ export class WhatsAppService {
 
       this.messagesSent++;
       logger.info({ phone: number }, '📤 Mensaje enviado');
-    } catch (error: any) {
+    } catch (error: unknown) {
       this.messagesFailed++;
-      logger.error({ phone: number, error: error.message }, '❌ Error enviando mensaje');
+      logger.error({ phone: number, error: getErrorMessage(error, 'Error enviando mensaje') }, '❌ Error enviando mensaje');
       throw error;
     }
   }

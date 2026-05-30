@@ -36,15 +36,22 @@ const YAxis = dynamic(
   { ssr: false }
 );
 
+interface StreamChartDatum {
+  name: string;
+  errors: number;
+  blackScreen: number;
+  silence: number;
+}
+
 export function StreamCharts() {
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<StreamChartDatum[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchData = async () => {
     try {
       const response = await fetch("/api/streams/stats");
       if (response.ok) {
-        const result = await response.json();
+        const result = await response.json() as StreamChartDatum[];
 
         if (result.length === 0) {
           const initialData = [

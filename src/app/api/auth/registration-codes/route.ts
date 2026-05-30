@@ -6,6 +6,12 @@ export const dynamic = 'force-dynamic';
 
 const ADMIN_ROLES = ['ADMIN', 'BOSS', 'ENGINEER'];
 
+interface RegistrationCodeRow {
+    usedById?: string | null;
+    expiresAt: string | Date;
+    [key: string]: unknown;
+}
+
 function generateCode(): string {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     const bytes = new Uint8Array(8);
@@ -29,7 +35,7 @@ export async function GET(req: NextRequest) {
             SELECT * FROM "RegistrationCode" ORDER BY "createdAt" DESC
         `;
 
-        const mapped = codes.map((c: any) => {
+        const mapped = (codes as unknown as RegistrationCodeRow[]).map((c) => {
             const now = new Date();
             let status: string = 'available';
             if (c.usedById) status = 'used';

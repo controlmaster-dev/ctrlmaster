@@ -28,7 +28,7 @@ export async function validateApiAuth(req: NextRequest) {
 }
 
 
-export function requireRole(user: { role?: string } | Record<string, any>, allowedRoles: string[]) {
+export function requireRole(user: { role?: string } | Record<string, unknown>, allowedRoles: string[]) {
   const role = typeof user.role === 'string' ? user.role : '';
   if (!allowedRoles.includes(role)) {
     return NextResponse.json(

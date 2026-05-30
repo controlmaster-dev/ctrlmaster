@@ -22,13 +22,39 @@ const EMOJIS = [
 
 interface ReportSocialsProps {
   reportId: string;
-  currentUser: any;
-  initialComments: any[];
-  initialReactions: any[];
-  availableUsers: any[];
+  currentUser: SocialUser | null;
+  initialComments: CommentItem[];
+  initialReactions: ReactionItem[];
+  availableUsers: SocialUser[];
   onUpdate: () => void;
 
   embedded?: boolean;
+}
+
+export interface SocialUser {
+  id: string;
+  name?: string | null;
+  image?: string | null;
+}
+
+export interface ReactionItem {
+  emoji: string;
+  authorId: string;
+  author: SocialUser;
+}
+
+export interface CommentReactionItem {
+  id?: string;
+  emoji?: string;
+}
+
+export interface CommentItem {
+  id: string;
+  parentId?: string | null;
+  author: SocialUser;
+  createdAt: string | Date;
+  content: string;
+  reactions?: CommentReactionItem[];
 }
 
 export function ReportSocials({
@@ -49,7 +75,7 @@ export function ReportSocials({
 
   const filteredUsers = mentionQuery
     ? availableUsers.filter((u) =>
-        u.name.toLowerCase().includes(mentionQuery.toLowerCase())
+        (u.name || "").toLowerCase().includes(mentionQuery.toLowerCase())
       )
     : [];
 
@@ -88,7 +114,7 @@ export function ReportSocials({
     );
     const reactors = initialReactions
       .filter((r) => r.emoji === e.label)
-      .map((r) => r.author.name)
+      .map((r) => r.author.name || "Usuario")
       .join(", ");
     return { ...e, count, hasReacted, reactors };
   });
@@ -101,7 +127,7 @@ export function ReportSocials({
 
     const mentionedIds: string[] = [];
     availableUsers.forEach((u) => {
-      if (comment.includes(`@${u.name}`)) {
+      if (u.name && comment.includes(`@${u.name}`)) {
         mentionedIds.push(u.id);
       }
     });
@@ -158,21 +184,21 @@ export function ReportSocials({
     }
   };
 
-  const renderComment = (c: any) => {
+  const renderComment = (c: CommentItem) => {
     const isReply = !!c.parentId;
     return (
       <div key={c.id} className={`flex gap-3 items-start ${isReply ? "ml-8 mt-2" : "mt-4"}`}>
         <Avatar className="w-8 h-8 rounded-full border border-border">
-          <AvatarImage src={c.author.image} />
+          <AvatarImage src={c.author.image || undefined} />
           <AvatarFallback className="text-xs bg-slate-800">
-            {c.author.name.substring(0, 2).toUpperCase()}
+            {(c.author.name || "US").substring(0, 2).toUpperCase()}
           </AvatarFallback>
         </Avatar>
         <div className="flex-1 min-w-0">
           <div className="bg-slate-50 dark:bg-white/5 p-3 rounded-2xl rounded-tl-sm text-sm border border-slate-100 dark:border-white/5 relative group">
             <div className="flex justify-between items-center mb-1">
               <span className="font-bold text-slate-800 dark:text-slate-200 text-xs">
-                {c.author.name}
+                {c.author.name || "Usuario"}
               </span>
               <span className="text-[10px] text-slate-400">
                 {formatDistanceToNow(new Date(c.createdAt), {
@@ -192,7 +218,7 @@ export function ReportSocials({
                 className="h-6 px-2 text-[10px] text-slate-500 hover:text-brand"
                 onClick={() => {
                   setReplyingTo(c.id);
-                  setComment(`@${c.author.name} `);
+                  setComment(`@${c.author.name || "Usuario"} `);
                 }}
               >
                 Responder
@@ -293,14 +319,14 @@ export function ReportSocials({
               {filteredUsers.map((u) => (
                 <button
                   key={u.id}
-                  onClick={() => insertMention(u.name)}
+                  onClick={() => insertMention(u.name || "Usuario")}
                   className="w-full text-left px-3 py-2 text-sm text-slate-300 hover:bg-white/10 rounded flex items-center gap-2"
                 >
                   <Avatar className="w-5 h-5">
-                    <AvatarImage src={u.image} />
-                    <AvatarFallback>{u.name.substring(0, 1)}</AvatarFallback>
+                    <AvatarImage src={u.image || undefined} />
+                    <AvatarFallback>{(u.name || "U").substring(0, 1)}</AvatarFallback>
                   </Avatar>
-                  {u.name}
+                  {u.name || "Usuario"}
                 </button>
               ))}
             </div>

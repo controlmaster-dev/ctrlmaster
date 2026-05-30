@@ -68,6 +68,7 @@ import {
   setReportesListCache,
   invalidateReportesListCache,
 } from "@/lib/reportesListCache";
+import { useDebounce } from "@/hooks/useDebounce";
 
 interface Report {
   id: string;
@@ -84,6 +85,40 @@ interface Report {
   _count?: { comments: number; reactions: number };
 }
 
+interface CurrentUser {
+  id: string;
+  name?: string;
+  email?: string;
+  role?: string;
+}
+
+interface ReportDetail extends Report {
+  attachments?: Array<{ data?: string; url?: string }>;
+  comments?: unknown[];
+  reactions?: unknown[];
+  views?: unknown[];
+}
+
+interface OperatorStat {
+  name: string;
+  total: number;
+  pending: number;
+  resolved: number;
+  emailSent: number;
+}
+
+interface ReportsResponse {
+  reports?: Report[];
+  total?: number;
+  totalPages?: number;
+}
+
+function isReportsResponse(
+  value: ReportsResponse | Report[]
+): value is ReportsResponse & { reports: Report[] } {
+  return !Array.isArray(value) && Array.isArray(value.reports);
+}
+
 export function ReportesClient() {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,6 +131,7 @@ export function ReportesClient() {
 
 
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 500);
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [operatorFilter, setOperatorFilter] = useState("all");
@@ -120,14 +156,14 @@ export function ReportesClient() {
     type: "email" | "both";
   }>({ isOpen: false, report: null, type: "email" });
 
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
-  const [cachedDetail, setCachedDetail] = useState<any | null>(null);
+  const [cachedDetail, setCachedDetail] = useState<ReportDetail | null>(null);
 
 
   const [showStats, setShowStats] = useState(false);
-  const [operatorStats, setOperatorStats] = useState<any[]>([]);
+  const [operatorStats, setOperatorStats] = useState<OperatorStat[]>([]);
   const [globalStats, setGlobalStats] = useState({
     total: 0,
     pending: 0,
@@ -140,14 +176,14 @@ export function ReportesClient() {
     const params = new URLSearchParams();
     params.set('page', String(page));
     params.set('limit', String(limit));
-    if (search) params.set('search', search);
+    if (debouncedSearch) params.set('search', debouncedSearch);
     if (statusFilter !== 'all') params.set('status', statusFilter);
     if (priorityFilter !== 'all') params.set('priority', priorityFilter);
     if (operatorFilter !== 'all') params.set('operator', operatorFilter);
     if (dateFrom) params.set('dateFrom', dateFrom);
     if (dateTo) params.set('dateTo', dateTo);
     return params.toString();
-  }, [page, search, statusFilter, priorityFilter, operatorFilter, dateFrom, dateTo]);
+  }, [page, debouncedSearch, statusFilter, priorityFilter, operatorFilter, dateFrom, dateTo]);
 
   const fetchGlobalStats = useCallback(async () => {
     const [all, pending, resolved] = await Promise.all([
@@ -162,13 +198,13 @@ export function ReportesClient() {
     };
   }, []);
 
-  const fetchReports = async (opts?: { silent?: boolean }) => {
+  const fetchReports = useCallback(async (opts?: { silent?: boolean }) => {
     const queryKey = buildQuery();
     if (!opts?.silent) setLoading(true);
 
     try {
       const [listRes, stats] = await Promise.all([
-        fetch(`/api/reports?${queryKey}`).then((r) => r.json()),
+        fetch(`/api/reports?${queryKey}`).then((r) => r.json() as Promise<ReportsResponse | Report[]>),
         fetchGlobalStats(),
       ]);
 
@@ -176,7 +212,7 @@ export function ReportesClient() {
       let nextTotal = 0;
       let nextTotalPages = 1;
 
-      if (listRes.reports) {
+      if (isReportsResponse(listRes)) {
         nextReports = listRes.reports;
         nextTotal = listRes.total || 0;
         nextTotalPages = listRes.totalPages || 1;
@@ -207,7 +243,7 @@ export function ReportesClient() {
       setLoading(false);
       setInitialLoad(false);
     }
-  };
+  }, [buildQuery, fetchGlobalStats]);
 
   useEffect(() => {
     const queryKey = buildQuery();
@@ -227,7 +263,7 @@ export function ReportesClient() {
 
     const savedUser = localStorage.getItem("enlace-user");
     if (savedUser) setCurrentUser(JSON.parse(savedUser));
-  }, [page, statusFilter, priorityFilter, operatorFilter, dateFrom, dateTo]);
+  }, [buildQuery, fetchReports]);
 
 
   useEffect(() => {
@@ -238,14 +274,14 @@ export function ReportesClient() {
     const cached = getReportDetailCache(reportId);
     if (cached) {
       setSelectedReport(cached as Report);
-      setCachedDetail(cached);
+      setCachedDetail(cached as ReportDetail);
       setDetailModalOpen(true);
     }
 
     prefetchReportDetail(reportId).then((data) => {
       if (data) {
         setSelectedReport(data as Report);
-        setCachedDetail(data);
+        setCachedDetail(data as ReportDetail);
         setDetailModalOpen(true);
       }
       window.history.replaceState({}, "", window.location.pathname);
@@ -253,21 +289,12 @@ export function ReportesClient() {
   }, []);
 
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setPage(1);
-      fetchReports();
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [search]);
-
-
   const fetchOperatorStats = async () => {
     try {
       const res = await fetch('/api/reports?limit=500');
-      const data = await res.json();
+      const data = await res.json() as ReportsResponse;
       if (data.reports) {
-        const stats: Record<string, any> = {};
+        const stats: Record<string, OperatorStat> = {};
         data.reports.forEach((r: Report) => {
           if (!stats[r.operatorName]) {
             stats[r.operatorName] = {
@@ -283,7 +310,7 @@ export function ReportesClient() {
           if (r.status === 'resolved') stats[r.operatorName].resolved++;
           if (r.emailStatus === 'sent') stats[r.operatorName].emailSent++;
         });
-        setOperatorStats(Object.values(stats).sort((a: any, b: any) => b.total - a.total));
+        setOperatorStats(Object.values(stats).sort((a, b) => b.total - a.total));
       }
     } catch (e) {
       console.error(e);
@@ -319,11 +346,11 @@ export function ReportesClient() {
   const handleRowClick = (report: Report) => {
     const cached = getReportDetailCache(report.id);
     setSelectedReport(report);
-    setCachedDetail(cached);
+    setCachedDetail(cached as ReportDetail | null);
     setDetailModalOpen(true);
     if (!cached) {
       prefetchReportDetail(report.id).then((data) => {
-        if (data) setCachedDetail(data);
+        if (data) setCachedDetail(data as ReportDetail);
       });
     }
   };
@@ -346,7 +373,7 @@ export function ReportesClient() {
     }
   };
 
-  const executeAction = async (report: Report, type: string, recipients: any) => {
+  const executeAction = async (report: Report, type: string, recipients?: string[]) => {
     let title = "";
     let message = "";
     if (type === "download") { title = "Generando PDF"; message = "Preparando descarga..."; }
@@ -359,7 +386,7 @@ export function ReportesClient() {
       const email = type === "email" || type === "both";
       await new Promise((r) => setTimeout(r, 1200));
       const { generateReportPDF } = await import("@/utils/pdfGenerator");
-      const res = await generateReportPDF(report, { download, email, recipients } as any) as any;
+      const res = await generateReportPDF(report, { download, email, recipients });
       setProcessing((prev) => ({ ...prev, isOpen: false }));
       if (res?.success) {
         setModal({ isOpen: true, type: "success", message: "¡Listo!" });
@@ -521,7 +548,10 @@ export function ReportesClient() {
                 placeholder="Buscar por ID, operador o descripción…"
                 className="h-9 rounded-md border-border bg-muted/20 pl-9 text-sm"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setPage(1);
+                  setSearch(e.target.value);
+                }}
               />
             </div>
 
