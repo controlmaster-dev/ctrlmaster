@@ -1,47 +1,30 @@
-
-
-import type { Report } from "@/types/report";
-import type { User } from "@/types/auth";
 import type { Comment } from "@/hooks/useDashboardData";
+import type { User } from "@/types/auth";
+import type { Report } from "@/types/report";
+import { createClientCache } from "@/lib/clientCache";
 
-const KEY = "cm_dashboard_bundle_v1";
 const TTL_MS = 5 * 60 * 1000;
+const store = createClientCache<DashboardBundle>(TTL_MS);
 
 export interface DashboardBundle {
   reports: Report[];
   users: User[];
   comments: Comment[];
-  whatsappHealth: unknown | null;
+  whatsappHealth: unknown;
   fetchedAt: number;
 }
 
 export function getDashboardCache(): DashboardBundle | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = sessionStorage.getItem(KEY);
-    if (!raw) return null;
-    const data = JSON.parse(raw) as DashboardBundle;
-    if (!data?.fetchedAt || Date.now() - data.fetchedAt > TTL_MS) {
-      sessionStorage.removeItem(KEY);
-      return null;
-    }
-    if (!Array.isArray(data.reports) || !Array.isArray(data.users)) return null;
-    return data;
-  } catch {
-    return null;
-  }
+  const data = store.get();
+  if (!data) return null;
+  if (!Array.isArray(data.reports) || !Array.isArray(data.users)) return null;
+  return data;
 }
 
 export function setDashboardCache(bundle: DashboardBundle) {
-  if (typeof window === "undefined") return;
-  try {
-    sessionStorage.setItem(KEY, JSON.stringify(bundle));
-  } catch {
-
-  }
+  store.set(bundle);
 }
 
 export function invalidateDashboardCache() {
-  if (typeof window === "undefined") return;
-  sessionStorage.removeItem(KEY);
+  store.invalidate();
 }

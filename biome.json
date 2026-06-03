@@ -22,7 +22,7 @@
     "rules": {
       "recommended": true,
       "correctness": {
-        "noUnusedVariables": "off"
+        "noUnusedVariables": "warn"
       },
       "nursery": {
         "noImgElement": "off"

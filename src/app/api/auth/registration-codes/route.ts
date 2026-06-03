@@ -1,116 +1,30 @@
-import { NextRequest, NextResponse } from 'next/server';
-import sql from '@/lib/db';
-import { validateApiAuth, requireRole } from '@/lib/apiAuth';
+import { z } from "zod";
+import { apiHandler } from "@/lib/api/handler";
+import {
+  getRegistrationCodes,
+  createRegistrationCode,
+  removeRegistrationCode,
+} from "@/server/services/registrationCodeService";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
-const ADMIN_ROLES = ['ADMIN', 'BOSS', 'ENGINEER'];
+const ADMIN_ROLES = ["ADMIN", "BOSS", "ENGINEER"];
 
-interface RegistrationCodeRow {
-    usedById?: string | null;
-    expiresAt: string | Date;
-    [key: string]: unknown;
-}
+const deleteCodeQuerySchema = z.object({
+  id: z.string().min(1, "Code ID required"),
+});
 
-function generateCode(): string {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    const bytes = new Uint8Array(8);
-    crypto.getRandomValues(bytes);
-    let code = '';
-    for (let i = 0; i < 8; i++) {
-        code += chars.charAt(bytes[i] % chars.length);
-    }
-    return code;
-}
+export const GET = apiHandler(
+  { auth: true, roles: ADMIN_ROLES },
+  async () => getRegistrationCodes()
+);
 
+export const POST = apiHandler({ auth: true, roles: ADMIN_ROLES }, async ({ user }) => {
+  const createdById = String(user?.id ?? "");
+  return createRegistrationCode(createdById);
+});
 
-export async function GET(req: NextRequest) {
-    try {
-        const authResult = await validateApiAuth(req);
-        if (authResult instanceof NextResponse) return authResult;
-        const roleResult = requireRole(authResult.user, ADMIN_ROLES);
-        if (roleResult instanceof NextResponse) return roleResult;
-
-        const codes = await sql`
-            SELECT * FROM "RegistrationCode" ORDER BY "createdAt" DESC
-        `;
-
-        const mapped = (codes as unknown as RegistrationCodeRow[]).map((c) => {
-            const now = new Date();
-            let status: string = 'available';
-            if (c.usedById) status = 'used';
-            else if (new Date(c.expiresAt) < now) status = 'expired';
-
-            return { ...c, status };
-        });
-
-        return NextResponse.json(mapped);
-    } catch (error) {
-        return NextResponse.json(
-            { error: error instanceof Error ? error.message : 'Error fetching codes' },
-            { status: 500 }
-        );
-    }
-}
-
-
-export async function POST(req: NextRequest) {
-    try {
-        const authResult = await validateApiAuth(req);
-        if (authResult instanceof NextResponse) return authResult;
-        const roleResult = requireRole(authResult.user, ADMIN_ROLES);
-        if (roleResult instanceof NextResponse) return roleResult;
-
-        const createdById = authResult.user.id;
-
-        let code = generateCode();
-        let attempts = 0;
-        while (attempts < 10) {
-            const [existing] = await sql`
-                SELECT "id" FROM "RegistrationCode" WHERE "code" = ${code} LIMIT 1
-            `;
-            if (!existing) break;
-            code = generateCode();
-            attempts++;
-        }
-
-        const [registrationCode] = await sql`
-            INSERT INTO "RegistrationCode" ("code", "createdById", "expiresAt")
-            VALUES (${code}, ${createdById}, ${new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()})
-            RETURNING *
-        `;
-
-        return NextResponse.json(registrationCode);
-    } catch (error) {
-        return NextResponse.json(
-            { error: error instanceof Error ? error.message : 'Error creating code' },
-            { status: 500 }
-        );
-    }
-}
-
-
-export async function DELETE(req: NextRequest) {
-    try {
-        const authResult = await validateApiAuth(req);
-        if (authResult instanceof NextResponse) return authResult;
-        const roleResult = requireRole(authResult.user, ADMIN_ROLES);
-        if (roleResult instanceof NextResponse) return roleResult;
-
-        const { searchParams } = new URL(req.url);
-        const id = searchParams.get('id');
-
-        if (!id) {
-            return NextResponse.json({ error: 'Code ID required' }, { status: 400 });
-        }
-
-        await sql`DELETE FROM "RegistrationCode" WHERE "id" = ${id}`;
-
-        return NextResponse.json({ success: true });
-    } catch (error) {
-        return NextResponse.json(
-            { error: error instanceof Error ? error.message : 'Error deleting code' },
-            { status: 500 }
-        );
-    }
-}
+export const DELETE = apiHandler(
+  { auth: true, roles: ADMIN_ROLES, querySchema: deleteCodeQuerySchema },
+  async ({ query }) => removeRegistrationCode(query.id)
+);

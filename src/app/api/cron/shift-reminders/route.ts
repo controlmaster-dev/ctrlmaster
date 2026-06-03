@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { apiErrorResponse } from '@/lib/api/errorResponse';
 import nodemailer from 'nodemailer';
 import sql from '@/lib/db';
 import { addDays, format } from 'date-fns';
@@ -151,6 +152,6 @@ export async function GET(req: NextRequest) {
     }
 
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : 'Unknown error' }, { status: 500 });
+    return apiErrorResponse(err);
   }
 }

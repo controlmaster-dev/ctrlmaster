@@ -9,7 +9,6 @@ let serverUrl = '';
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 const configPath = path.join(app.getPath('userData'), 'config.json');
 
-// Cargar la configuración guardada (URL del servidor)
 function loadConfig() {
   try {
     if (fs.existsSync(configPath)) {
@@ -23,18 +22,15 @@ function loadConfig() {
   }
 }
 
-// Guardar la configuración (URL del servidor)
 function saveConfig(url) {
   try {
-    // Validar e incorporar protocolo si falta
     let formattedUrl = url.trim();
     if (!/^https?:\/\//i.test(formattedUrl)) {
       formattedUrl = `https://${formattedUrl}`;
     }
-    
-    // Validar sintaxis básica de URL
+
     new URL(formattedUrl);
-    
+
     fs.writeFileSync(configPath, JSON.stringify({ serverUrl: formattedUrl }, null, 2), 'utf8');
     serverUrl = formattedUrl;
     return true;
@@ -62,7 +58,7 @@ function createWindow() {
         height: 44
       }
     }),
-    show: false, // Se muestra una vez cargado
+    show: false,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -70,11 +66,9 @@ function createWindow() {
     }
   });
 
-  // Personalizar el User-Agent para identificar la app de escritorio
   const originalUserAgent = mainWindow.webContents.getUserAgent();
   mainWindow.webContents.setUserAgent(`${originalUserAgent} ControlMasterDesktop/1.0`);
 
-  // Inyectar CSS dinámicamente para soporte de barra personalizada sin tocar el código web
   mainWindow.webContents.on('dom-ready', () => {
     let css = `
       header {
@@ -95,7 +89,6 @@ function createWindow() {
       header span {
         -webkit-app-region: no-drag !important;
       }
-      /* Permitir que el logo no sea arrastrado si es cliqueable */
       header a.flex {
         -webkit-app-region: no-drag !important;
       }
@@ -106,7 +99,6 @@ function createWindow() {
         header {
           padding-left: 80px !important;
         }
-        /* Ajuste para evitar que los traffic lights tapen el botón Volver en aside */
         aside {
           padding-top: 48px !important;
           -webkit-app-region: drag !important;
@@ -128,32 +120,25 @@ function createWindow() {
     });
   });
 
-  // Mostrar la ventana solo cuando esté lista para evitar parpadeos blancos
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
   });
 
-  // Manejar fallas de carga (Sin conexión a internet o servidor caído)
   mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
-    // Ignorar redirecciones menores o cancelaciones
-    if (errorCode === -3) return; 
-    
+    if (errorCode === -3) return;
+
     console.log(`Fallo al cargar la URL: ${validatedURL}. Código de error: ${errorCode} (${errorDescription})`);
     mainWindow.loadFile(path.join(__dirname, 'offline.html'));
   });
 
-  // Determinar qué URL cargar
   loadConfig();
 
   if (isDev) {
-    // En desarrollo, cargar el servidor local de Next.js
     mainWindow.loadURL('http://localhost:3000').catch(() => {
       mainWindow.loadFile(path.join(__dirname, 'offline.html'));
     });
-    // Abrir DevTools en desarrollo
     mainWindow.webContents.openDevTools();
   } else {
-    // En producción, cargar por defecto https://enlacecr.dev/ si no hay una personalizada en config.json
     const targetUrl = serverUrl || 'https://enlacecr.dev/';
     mainWindow.loadURL(targetUrl).catch(() => {
       mainWindow.loadFile(path.join(__dirname, 'offline.html'));
@@ -168,18 +153,18 @@ function createWindow() {
       '127.0.0.1',
       'vercel.app',
       'enlace.org',
-      'enlacecr.dev' // Dominio oficial de producción
+      'enlacecr.dev'
     ];
 
     try {
       const parsedUrl = new URL(navigationUrl);
-      const isAllowed = allowedHosts.some(host => 
+      const isAllowed = allowedHosts.some(host =>
         parsedUrl.hostname === host || parsedUrl.hostname.endsWith(`.${host}`)
       );
 
       if (!isAllowed) {
         event.preventDefault();
-        shell.openExternal(navigationUrl); // Abrir enlaces externos en el navegador por defecto
+        shell.openExternal(navigationUrl);
       }
     } catch (e) {
       event.preventDefault();
@@ -197,13 +182,8 @@ function createWindow() {
   });
 }
 
-// Configurar la Bandeja del Sistema (Tray / Menu Bar)
 function createTray() {
-  // Intentar usar un icono plano del sistema. Para simplificar en esta demo, usamos un menú.
-  // Nota: Deberías añadir un archivo icon.png adecuado en tu carpeta assets en producción.
   try {
-    // Si no hay icono, no creará el tray para evitar errores visuales críticos
-    // Pero configuramos el menú de la barra nativa del sistema
     const template = [
       {
         label: 'Control Master',
@@ -211,13 +191,13 @@ function createTray() {
           { label: 'Mostrar Aplicación', click: () => { if (mainWindow) mainWindow.show(); } },
           { label: 'Recargar', click: () => { if (mainWindow) mainWindow.webContents.reload(); } },
           { type: 'separator' },
-          { 
-            label: 'Configurar URL del Servidor', 
+          {
+            label: 'Configurar URL del Servidor',
             click: () => {
               if (mainWindow) {
                 mainWindow.loadFile(path.join(__dirname, 'setup.html'));
               }
-            } 
+            }
           },
           { type: 'separator' },
           { label: 'Salir', click: () => { app.quit(); } }
@@ -258,7 +238,6 @@ function createTray() {
   }
 }
 
-// Canales de IPC seguros para comunicar el Frontend de configuración con Electron
 ipcMain.on('save-server-url', (event, url) => {
   const success = saveConfig(url);
   if (success) {
@@ -293,9 +272,7 @@ ipcMain.on('retry-connection', (event) => {
   }
 });
 
-// Eventos de ciclo de vida de la aplicación
 app.whenReady().then(() => {
-  // Configurar icono del Dock en macOS durante el desarrollo
   if (process.platform === 'darwin') {
     try {
       const image = nativeImage.createFromPath(path.join(__dirname, 'icon.png'));

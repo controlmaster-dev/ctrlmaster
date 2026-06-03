@@ -1,24 +1,21 @@
-import { NextRequest, NextResponse } from 'next/server';
-import sql from '@/lib/db';
-import { validateApiAuth } from '@/lib/apiAuth';
+import { z } from "zod";
+import sql from "@/lib/db";
+import { apiHandler } from "@/lib/api/handler";
 
-export async function POST(req: NextRequest) {
-  try {
-    const authResult = await validateApiAuth(req);
-    if (authResult instanceof NextResponse) return authResult;
+const metricSchema = z.object({
+  channel: z.string().min(1),
+  type: z.string().min(1),
+  value: z.union([z.string(), z.number()]).nullable().optional(),
+});
 
-    const body = await req.json();
-    const { channel, type, value } = body;
-
+export const POST = apiHandler(
+  { auth: true, bodySchema: metricSchema },
+  async ({ body }) => {
     const [metric] = await sql`
       INSERT INTO "StreamMetric" ("channel", "type", "value")
-      VALUES (${channel}, ${type}, ${value || null})
+      VALUES (${body.channel}, ${body.type}, ${body.value ?? null})
       RETURNING *
     `;
-
-    return NextResponse.json(metric);
-  } catch (error) {
-    console.error('Error saving stream metric:', error);
-    return NextResponse.json({ error: 'Failed to save metric' }, { status: 500 });
+    return metric;
   }
-}
+);

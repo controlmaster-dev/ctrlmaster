@@ -1,77 +1,44 @@
-const BUNDLE_KEY = "cm_operadores_bundle_v1";
-const WEEK_KEY = "cm_operadores_week_v1";
+import type { Operator } from "@/lib/types";
+import { createClientCache, createClientCacheMap } from "@/lib/clientCache";
+
 const TTL_MS = 5 * 60 * 1000;
+
+const bundleStore = createClientCache<OperadoresBundle>(TTL_MS);
+const weekStore = createClientCacheMap<OperadoresWeekSlice>(TTL_MS);
 
 export interface OperadoresBundle {
   weekStart: string;
-  operators: unknown[];
-  allUsers: unknown[];
+  operators: Operator[];
+  allUsers: Operator[];
   specialEvents: unknown[];
   fetchedAt: number;
 }
 
 export interface OperadoresWeekSlice {
   weekStart: string;
-  operators: unknown[];
+  operators: Operator[];
   fetchedAt: number;
 }
 
 export function getOperadoresBundle(weekStart: string): OperadoresBundle | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = sessionStorage.getItem(BUNDLE_KEY);
-    if (!raw) return null;
-    const data = JSON.parse(raw) as OperadoresBundle;
-    if (
-      !data?.fetchedAt ||
-      data.weekStart !== weekStart ||
-      Date.now() - data.fetchedAt > TTL_MS
-    ) {
-      return null;
-    }
-    return data;
-  } catch {
-    return null;
-  }
+  const data = bundleStore.get();
+  if (!data || data.weekStart !== weekStart) return null;
+  return data;
 }
 
 export function setOperadoresBundle(bundle: OperadoresBundle) {
-  if (typeof window === "undefined") return;
-  try {
-    sessionStorage.setItem(BUNDLE_KEY, JSON.stringify(bundle));
-  } catch {
-
-  }
+  bundleStore.set(bundle);
 }
 
 export function getOperadoresWeekCache(weekStart: string): OperadoresWeekSlice | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = sessionStorage.getItem(WEEK_KEY);
-    if (!raw) return null;
-    const map = JSON.parse(raw) as Record<string, OperadoresWeekSlice>;
-    const slice = map[weekStart];
-    if (!slice?.fetchedAt || Date.now() - slice.fetchedAt > TTL_MS) return null;
-    return slice;
-  } catch {
-    return null;
-  }
+  return weekStore.get(weekStart);
 }
 
 export function setOperadoresWeekCache(slice: OperadoresWeekSlice) {
-  if (typeof window === "undefined") return;
-  try {
-    const raw = sessionStorage.getItem(WEEK_KEY);
-    const map: Record<string, OperadoresWeekSlice> = raw ? JSON.parse(raw) : {};
-    map[slice.weekStart] = slice;
-    sessionStorage.setItem(WEEK_KEY, JSON.stringify(map));
-  } catch {
-
-  }
+  weekStore.set(slice.weekStart, slice);
 }
 
 export function invalidateOperadoresCache() {
-  if (typeof window === "undefined") return;
-  sessionStorage.removeItem(BUNDLE_KEY);
-  sessionStorage.removeItem(WEEK_KEY);
+  bundleStore.invalidate();
+  weekStore.invalidate();
 }

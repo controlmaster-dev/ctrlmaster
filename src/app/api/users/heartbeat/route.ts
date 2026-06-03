@@ -1,25 +1,20 @@
-import { NextRequest, NextResponse } from 'next/server';
-import sql from '@/lib/db';
-import { validateApiAuth } from '@/lib/apiAuth';
+import { z } from "zod";
+import sql from "@/lib/db";
+import { apiHandler } from "@/lib/api/handler";
 
-export async function POST(req: NextRequest) {
-  try {
-    const authResult = await validateApiAuth(req);
-    if (authResult instanceof NextResponse) return authResult;
+const heartbeatBodySchema = z.object({
+  path: z.string().nullable().optional(),
+});
 
-    const body = await req.json();
-    const { path } = body;
-    const userId = authResult.user.id;
-
+export const POST = apiHandler(
+  { auth: true, bodySchema: heartbeatBodySchema },
+  async ({ user, body }) => {
+    const userId = String(user?.id ?? "");
     await sql`
       UPDATE "User"
-      SET "currentPath" = ${path || null}, "lastActive" = NOW()
+      SET "currentPath" = ${body.path ?? null}, "lastActive" = NOW()
       WHERE "id" = ${userId}
     `;
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Heartbeat update failed:', error);
-    return NextResponse.json({ error: "Error updating heartbeat" }, { status: 500 });
+    return { success: true };
   }
-}
+);

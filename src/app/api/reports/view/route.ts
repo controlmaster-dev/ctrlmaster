@@ -1,33 +1,21 @@
-import { NextRequest, NextResponse } from 'next/server';
-import sql from '@/lib/db';
-import { validateApiAuth } from '@/lib/apiAuth';
+import { z } from "zod";
+import { apiHandler } from "@/lib/api/handler";
+import sql from "@/lib/db";
 
-export async function POST(req: NextRequest) {
-  try {
-    const authResult = await validateApiAuth(req);
-    if (authResult instanceof NextResponse) return authResult;
+const viewBodySchema = z.object({
+  reportId: z.string().min(1),
+});
 
-    const body = await req.json();
-    const { reportId } = body;
-    const userId = authResult.user.id;
-
-    if (!reportId) {
-      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
-    }
-
+export const POST = apiHandler(
+  { auth: true, bodySchema: viewBodySchema },
+  async ({ user, body }) => {
+    const userId = String(user?.id ?? "");
     await sql`
       INSERT INTO "ReportView" ("userId", "reportId")
-      VALUES (${userId}, ${reportId})
+      VALUES (${userId}, ${body.reportId})
       ON CONFLICT ("userId", "reportId")
       DO UPDATE SET "viewedAt" = NOW()
     `;
-
-    return NextResponse.json({ success: true });
-  } catch (error: unknown) {
-    console.error('Error recording report view:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
-      { status: 500 }
-    );
+    return { success: true };
   }
-}
+);

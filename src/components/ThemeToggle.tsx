@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ThemeTransitionOverlay } from "./ThemeTransitionOverlay";
 
 export function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [targetTheme, setTargetTheme] = useState<"dark" | "light">("light");
@@ -18,7 +18,7 @@ export function ThemeToggle() {
 
   if (!mounted) return <div className="w-10 h-10" />;
 
-  const isDark = theme === "dark";
+  const isDark = resolvedTheme === "dark";
 
   const handleThemeChange = () => {
     const nextTheme = isDark ? "light" : "dark";

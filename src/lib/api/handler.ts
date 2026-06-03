@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ZodError, type ZodType } from 'zod';
+import { type ZodType } from 'zod';
 import { validateApiAuth, requireRole } from '@/lib/apiAuth';
-import { ApiError, ValidationError, getErrorMessage } from '@/lib/errors';
+import { apiErrorResponse } from '@/lib/api/errorResponse';
 
 type MaybePromise<T> = T | Promise<T>;
 
@@ -34,43 +34,6 @@ type ApiHandler<TBody, TQuery, TResult> = (
 
 function isNextResponse(value: unknown): value is NextResponse {
   return value instanceof NextResponse;
-}
-
-function normalizeZodError(error: ZodError) {
-  return error.issues.map((issue) => ({
-    path: issue.path.join('.'),
-    message: issue.message,
-    code: issue.code,
-  }));
-}
-
-function errorResponse(error: unknown): NextResponse {
-  if (error instanceof ValidationError) {
-    return NextResponse.json(
-      { error: error.message, details: error.details },
-      { status: error.statusCode }
-    );
-  }
-
-  if (error instanceof ZodError) {
-    return NextResponse.json(
-      { error: 'Datos de entrada invalidos', details: normalizeZodError(error) },
-      { status: 400 }
-    );
-  }
-
-  if (error instanceof ApiError) {
-    return NextResponse.json(
-      { error: error.message, details: error.details },
-      { status: error.statusCode }
-    );
-  }
-
-  console.error('[API] Unexpected error:', error);
-  return NextResponse.json(
-    { error: getErrorMessage(error) || 'Error interno del servidor' },
-    { status: 500 }
-  );
 }
 
 async function readJsonBody(req: NextRequest): Promise<unknown> {
@@ -124,7 +87,7 @@ export function apiHandler<TBody = undefined, TQuery = Record<string, string>, T
       if (isNextResponse(result)) return result;
       return NextResponse.json(result);
     } catch (error) {
-      return errorResponse(error);
+      return apiErrorResponse(error);
     }
   };
 }

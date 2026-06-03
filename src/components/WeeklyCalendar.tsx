@@ -24,7 +24,6 @@ import { cn } from "@/lib/utils";
 
 const DAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
-/** Orden visual: lunes → domingo */
 const WEEK_DISPLAY_ORDER = [1, 2, 3, 4, 5, 6, 0] as const;
 
 function formatShiftTime(hour: number): string {

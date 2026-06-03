@@ -16,6 +16,7 @@ import { prefetchBitcentralNearby } from "@/lib/bitcentralCache";
 import {
   getReportesListCache,
   setReportesListCache,
+  toReportesListItems,
 } from "@/lib/reportesListCache";
 import { sortOperators } from "@/hooks/useOperadoresBundle";
 import type { Report } from "@/types/report";
@@ -100,7 +101,7 @@ export function AppDataPrefetch() {
             const pageReports = allReports.slice(0, 20);
             setReportesListCache({
               queryKey: reportesQuery,
-              reports: pageReports,
+              reports: toReportesListItems(pageReports),
               total: stats.total ?? 0,
               totalPages: Math.max(1, Math.ceil((stats.total ?? 0) / 20)),
               globalStats: {

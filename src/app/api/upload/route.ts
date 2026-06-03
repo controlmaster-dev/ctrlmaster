@@ -2,7 +2,8 @@
 
 
 import { NextRequest, NextResponse } from 'next/server';
-import { ApiError, ValidationError } from '@/lib/errors';
+import { ValidationError } from '@/lib/errors';
+import { apiErrorResponse } from '@/lib/api/errorResponse';
 import { validateApiAuth } from '@/lib/apiAuth';
 import { withRateLimit } from '@/lib/rateLimitEnhanced';
 import { generateToken } from '@/lib/crypto';
@@ -163,13 +164,6 @@ export async function POST(req: NextRequest) {
       size: file.size,
     });
   } catch (error) {
-    if (error instanceof ValidationError) {
-      return NextResponse.json({ error: error.message, details: error.details }, { status: 400 });
-    }
-    if (error instanceof ApiError) {
-      return NextResponse.json({ error: error.message }, { status: error.statusCode });
-    }
-    console.error('[POST /api/upload] Unexpected error:', error);
-    return NextResponse.json({ error: 'Error interno al procesar el archivo' }, { status: 500 });
+    return apiErrorResponse(error);
   }
 }

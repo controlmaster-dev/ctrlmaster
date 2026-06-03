@@ -1,144 +1,30 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
+import { FileText, CheckCircle2, Clock } from "lucide-react";
 import { ReportesSkeleton } from "@/components/skeletons/ReportesSkeleton";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Search,
-  FileText,
-  CheckCircle2,
-  Mail,
-  Send,
-  MessageSquare,
-  ThumbsUp,
-  Clock,
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  Filter,
-  BarChart3,
-  Zap,
-} from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-
 import { ProcessingModal } from "@/components/ProcessingModal";
 import { EmailSendModal } from "@/components/EmailSendModal";
 import { SuccessModal } from "@/components/SuccessModal";
 import { EmailHistoryCard } from "@/components/reportes/EmailHistoryCard";
-
-import Link from "next/link";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { BentoCard } from "@/components/dashboard/BentoCard";
-import dynamic from "next/dynamic";
+import { ReportesFiltersBar } from "@/components/reportes/ReportesFiltersBar";
+import { ReportesOperatorStats } from "@/components/reportes/ReportesOperatorStats";
+import { ReportesTable } from "@/components/reportes/ReportesTable";
+import { pageContainerClass } from "@/lib/page-layout";
+import { invalidateReportDetailCache } from "@/lib/reportDetailCache";
+import { useReportesList } from "@/hooks/useReportesList";
+import type { Report, ReportDetail, CurrentUser } from "@/components/reportes/reportes-types";
+
 const ReportDetailModal = dynamic(
   () => import("@/components/ReportDetailModal").then((m) => m.ReportDetailModal),
   { ssr: false }
 );
-import { pageContainerClass } from "@/lib/page-layout";
-import {
-  getReportDetailCache,
-  prefetchReportDetail,
-  prefetchReportDetails,
-  invalidateReportDetailCache,
-} from "@/lib/reportDetailCache";
-import {
-  getReportesListCache,
-  setReportesListCache,
-  invalidateReportesListCache,
-} from "@/lib/reportesListCache";
-import { useDebounce } from "@/hooks/useDebounce";
-
-interface Report {
-  id: string;
-  problemDescription: string;
-  operatorName: string;
-  operatorEmail: string;
-  category: string;
-  status: string;
-  priority: string;
-  dateStarted: string;
-  dateResolved?: string | null;
-  createdAt: string;
-  emailStatus?: string;
-  _count?: { comments: number; reactions: number };
-}
-
-interface CurrentUser {
-  id: string;
-  name?: string;
-  email?: string;
-  role?: string;
-}
-
-interface ReportDetail extends Report {
-  attachments?: Array<{ data?: string; url?: string }>;
-  comments?: unknown[];
-  reactions?: unknown[];
-  views?: unknown[];
-}
-
-interface OperatorStat {
-  name: string;
-  total: number;
-  pending: number;
-  resolved: number;
-  emailSent: number;
-}
-
-interface ReportsResponse {
-  reports?: Report[];
-  total?: number;
-  totalPages?: number;
-}
-
-function isReportsResponse(
-  value: ReportsResponse | Report[]
-): value is ReportsResponse & { reports: Report[] } {
-  return !Array.isArray(value) && Array.isArray(value.reports);
-}
 
 export function ReportesClient() {
-  const [reports, setReports] = useState<Report[]>([]);
-  const [loading, setLoading] = useState(true);
-
-
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
-  const limit = 20;
-
-
-  const [search, setSearch] = useState("");
-  const debouncedSearch = useDebounce(search, 500);
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [priorityFilter, setPriorityFilter] = useState("all");
-  const [operatorFilter, setOperatorFilter] = useState("all");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
-
+  const list = useReportesList();
 
   const [modal, setModal] = useState({
     isOpen: false,
@@ -161,198 +47,25 @@ export function ReportesClient() {
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [cachedDetail, setCachedDetail] = useState<ReportDetail | null>(null);
 
-
-  const [showStats, setShowStats] = useState(false);
-  const [operatorStats, setOperatorStats] = useState<OperatorStat[]>([]);
-  const [globalStats, setGlobalStats] = useState({
-    total: 0,
-    pending: 0,
-    resolved: 0,
-  });
-  const [initialLoad, setInitialLoad] = useState(true);
-
-
-  const buildQuery = useCallback(() => {
-    const params = new URLSearchParams();
-    params.set('page', String(page));
-    params.set('limit', String(limit));
-    if (debouncedSearch) params.set('search', debouncedSearch);
-    if (statusFilter !== 'all') params.set('status', statusFilter);
-    if (priorityFilter !== 'all') params.set('priority', priorityFilter);
-    if (operatorFilter !== 'all') params.set('operator', operatorFilter);
-    if (dateFrom) params.set('dateFrom', dateFrom);
-    if (dateTo) params.set('dateTo', dateTo);
-    return params.toString();
-  }, [page, debouncedSearch, statusFilter, priorityFilter, operatorFilter, dateFrom, dateTo]);
-
-  const fetchGlobalStats = useCallback(async () => {
-    const [all, pending, resolved] = await Promise.all([
-      fetch("/api/reports?limit=1").then((r) => r.json()),
-      fetch("/api/reports?limit=1&status=pending").then((r) => r.json()),
-      fetch("/api/reports?limit=1&status=resolved").then((r) => r.json()),
-    ]);
-    return {
-      total: all.total ?? 0,
-      pending: pending.total ?? 0,
-      resolved: resolved.total ?? 0,
-    };
-  }, []);
-
-  const fetchReports = useCallback(async (opts?: { silent?: boolean }) => {
-    const queryKey = buildQuery();
-    if (!opts?.silent) setLoading(true);
-
-    try {
-      const [listRes, stats] = await Promise.all([
-        fetch(`/api/reports?${queryKey}`).then((r) => r.json() as Promise<ReportsResponse | Report[]>),
-        fetchGlobalStats(),
-      ]);
-
-      let nextReports: Report[] = [];
-      let nextTotal = 0;
-      let nextTotalPages = 1;
-
-      if (isReportsResponse(listRes)) {
-        nextReports = listRes.reports;
-        nextTotal = listRes.total || 0;
-        nextTotalPages = listRes.totalPages || 1;
-        void prefetchReportDetails(listRes.reports.map((r: Report) => r.id));
-      } else if (Array.isArray(listRes)) {
-        nextReports = listRes;
-        nextTotal = listRes.length;
-        nextTotalPages = 1;
-        void prefetchReportDetails(listRes.map((r: Report) => r.id));
-      }
-
-      setReports(nextReports);
-      setTotal(nextTotal);
-      setTotalPages(nextTotalPages);
-      setGlobalStats(stats);
-
-      setReportesListCache({
-        queryKey,
-        reports: nextReports,
-        total: nextTotal,
-        totalPages: nextTotalPages,
-        globalStats: stats,
-        fetchedAt: Date.now(),
-      });
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-      setInitialLoad(false);
-    }
-  }, [buildQuery, fetchGlobalStats]);
-
   useEffect(() => {
-    const queryKey = buildQuery();
-    const cached = getReportesListCache(queryKey);
-    if (cached) {
-      setReports(cached.reports as Report[]);
-      setTotal(cached.total);
-      setTotalPages(cached.totalPages);
-      setGlobalStats(cached.globalStats);
-      setLoading(false);
-      setInitialLoad(false);
-      void prefetchReportDetails((cached.reports as Report[]).map((r) => r.id));
-      void fetchReports({ silent: true });
-    } else {
-      void fetchReports();
-    }
-
     const savedUser = localStorage.getItem("enlace-user");
     if (savedUser) setCurrentUser(JSON.parse(savedUser));
-  }, [buildQuery, fetchReports]);
-
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const reportId = params.get("reportId");
-    if (!reportId) return;
-
-    const cached = getReportDetailCache(reportId);
-    if (cached) {
-      setSelectedReport(cached as Report);
-      setCachedDetail(cached as ReportDetail);
-      setDetailModalOpen(true);
-    }
-
-    prefetchReportDetail(reportId).then((data) => {
-      if (data) {
-        setSelectedReport(data as Report);
-        setCachedDetail(data as ReportDetail);
-        setDetailModalOpen(true);
-      }
-      window.history.replaceState({}, "", window.location.pathname);
-    });
   }, []);
 
-
-  const fetchOperatorStats = async () => {
-    try {
-      const res = await fetch('/api/reports?limit=500');
-      const data = await res.json() as ReportsResponse;
-      if (data.reports) {
-        const stats: Record<string, OperatorStat> = {};
-        data.reports.forEach((r: Report) => {
-          if (!stats[r.operatorName]) {
-            stats[r.operatorName] = {
-              name: r.operatorName,
-              total: 0,
-              pending: 0,
-              resolved: 0,
-              emailSent: 0,
-            };
-          }
-          stats[r.operatorName].total++;
-          if (r.status === 'pending') stats[r.operatorName].pending++;
-          if (r.status === 'resolved') stats[r.operatorName].resolved++;
-          if (r.emailStatus === 'sent') stats[r.operatorName].emailSent++;
-        });
-        setOperatorStats(Object.values(stats).sort((a, b) => b.total - a.total));
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-
-  const exportToCSV = () => {
-    const headers = ['ID', 'Operador', 'Email', 'Descripción', 'Categoría', 'Prioridad', 'Estado', 'Fecha Inicio', 'Fecha Resolución', 'Email Enviado'];
-    const rows = reports.map(r => [
-      r.id.slice(0, 8),
-      r.operatorName,
-      r.operatorEmail,
-      `"${r.problemDescription.replace(/"/g, '""')}"`,
-      r.category,
-      r.priority,
-      r.status,
-      new Date(r.dateStarted).toLocaleString('es-CR'),
-      r.dateResolved ? new Date(r.dateResolved).toLocaleString('es-CR') : 'Pendiente',
-      r.emailStatus === 'sent' ? 'Sí' : 'No',
-    ]);
-
-    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `reportes-${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
-  };
+  useEffect(() => {
+    list.openReportFromUrl((report, detail) => {
+      if (report) setSelectedReport(report);
+      if (detail) setCachedDetail(detail);
+      setDetailModalOpen(true);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- deep link once on mount
+  }, []);
 
   const handleRowClick = (report: Report) => {
-    const cached = getReportDetailCache(report.id);
+    const cached = list.openReportRow(report, (detail) => setCachedDetail(detail));
     setSelectedReport(report);
-    setCachedDetail(cached as ReportDetail | null);
+    setCachedDetail(cached);
     setDetailModalOpen(true);
-    if (!cached) {
-      prefetchReportDetail(report.id).then((data) => {
-        if (data) setCachedDetail(data as ReportDetail);
-      });
-    }
   };
 
   const handleResolve = async (id: string, e: React.MouseEvent) => {
@@ -365,22 +78,22 @@ export function ReportesClient() {
       });
       if (res.ok) {
         setModal({ isOpen: true, type: "success", message: "Reporte marcado como resuelto." });
-        invalidateReportesListCache();
-        fetchReports({ silent: true });
+        list.refreshList();
       } else throw new Error("Error al actualizar");
-    } catch (error) {
+    } catch {
       setModal({ isOpen: true, type: "error", message: "Error de servidor." });
     }
   };
 
   const executeAction = async (report: Report, type: string, recipients?: string[]) => {
-    let title = "";
-    let message = "";
-    if (type === "download") { title = "Generando PDF"; message = "Preparando descarga..."; }
-    if (type === "email") { title = "Enviando Correo"; message = "Contactando servidor de correo..."; }
-    if (type === "both") { title = "Procesando"; message = "Generando PDF y enviando notificación..."; }
-
+    const titles: Record<string, { title: string; message: string }> = {
+      download: { title: "Generando PDF", message: "Preparando descarga..." },
+      email: { title: "Enviando Correo", message: "Contactando servidor de correo..." },
+      both: { title: "Procesando", message: "Generando PDF y enviando notificación..." },
+    };
+    const { title, message } = titles[type] ?? titles.download;
     setProcessing({ isOpen: true, title, message });
+
     try {
       const download = type === "download" || type === "both";
       const email = type === "email" || type === "both";
@@ -390,7 +103,7 @@ export function ReportesClient() {
       setProcessing((prev) => ({ ...prev, isOpen: false }));
       if (res?.success) {
         setModal({ isOpen: true, type: "success", message: "¡Listo!" });
-        if (email) fetchReports();
+        if (email) list.fetchReports();
       } else {
         setModal({ isOpen: true, type: "error", message: res?.message || "Error" });
       }
@@ -401,63 +114,22 @@ export function ReportesClient() {
   };
 
   const handleAction = async (report: Report, type: "email" | "both" | "download") => {
-    if (type === "download") { executeAction(report, type, undefined); return; }
+    if (type === "download") {
+      void executeAction(report, type, undefined);
+      return;
+    }
     setEmailModal({ isOpen: true, report, type });
   };
 
   const handleEmailConfirm = (recipients: string[]) => {
     if (emailModal.report) {
-      executeAction(emailModal.report, emailModal.type, recipients);
+      void executeAction(emailModal.report, emailModal.type, recipients);
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const base =
-      "inline-flex items-center gap-1 rounded-sm border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide";
-    switch (status) {
-      case "resolved":
-        return (
-          <span className={`${base} border-border/60 bg-muted/30 text-foreground`}>
-            <CheckCircle2 className="h-3 w-3" /> Resuelto
-          </span>
-        );
-      case "pending":
-        return (
-          <span className={`${base} border-border/60 bg-muted/40 text-muted-foreground`}>
-            <Clock className="h-3 w-3" /> Pendiente
-          </span>
-        );
-      default:
-        return (
-          <span className={`${base} border-border text-muted-foreground`}>Desconocido</span>
-        );
-    }
-  };
-
-  const filterChip = (active: boolean) =>
-    active
-      ? "bg-muted text-foreground"
-      : "text-muted-foreground hover:bg-muted/50 hover:text-foreground";
-
-  const clearFilters = () => {
-    setSearch("");
-    setStatusFilter("all");
-    setPriorityFilter("all");
-    setOperatorFilter("all");
-    setDateFrom("");
-    setDateTo("");
-    setPage(1);
-  };
-
-  const hasActiveFilters = search || statusFilter !== 'all' || priorityFilter !== 'all' || operatorFilter !== 'all' || dateFrom || dateTo;
-
-  const uniqueOperators = Array.from(
-    new Set(reports.map((r) => r.operatorName).filter(Boolean))
-  ).sort();
-
-  const queryKey = buildQuery();
-  const hasListCache = typeof window !== "undefined" && !!getReportesListCache(queryKey);
-  if (initialLoad && loading && !hasListCache) return <ReportesSkeleton />;
+  if (list.initialLoad && list.loading && !list.hasListCache) {
+    return <ReportesSkeleton />;
+  }
 
   return (
     <div className="reportes-ui relative min-h-screen overflow-hidden pb-20 text-foreground selection:bg-brand selection:text-white">
@@ -473,8 +145,7 @@ export function ReportesClient() {
         currentUser={currentUser}
         onUpdate={() => {
           if (selectedReport?.id) invalidateReportDetailCache(selectedReport.id);
-          invalidateReportesListCache();
-          fetchReports({ silent: true });
+          list.refreshList();
         }}
       />
       <ProcessingModal
@@ -494,9 +165,7 @@ export function ReportesClient() {
         onClose={() => setEmailModal((prev) => ({ ...prev, isOpen: false }))}
         onConfirm={handleEmailConfirm}
         reportId={emailModal.report?.id || ""}
-        title={
-          emailModal.type === "both" ? "Enviar y Descargar" : "Enviar Reporte"
-        }
+        title={emailModal.type === "both" ? "Enviar y Descargar" : "Enviar Reporte"}
       />
 
       <div className={`${pageContainerClass} space-y-5`}>
@@ -520,449 +189,68 @@ export function ReportesClient() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <StatsCard
             title="Total"
-            value={globalStats.total}
+            value={list.globalStats.total}
             subtitle="En el sistema"
             icon={<FileText className="h-5 w-5" />}
             variant="default"
           />
           <StatsCard
             title="Pendientes"
-            value={globalStats.pending}
+            value={list.globalStats.pending}
             subtitle="Por revisar"
             icon={<Clock className="h-5 w-5" />}
           />
           <StatsCard
             title="Resueltos"
-            value={globalStats.resolved}
+            value={list.globalStats.resolved}
             subtitle="Cerrados"
             icon={<CheckCircle2 className="h-5 w-5" />}
             variant="success"
           />
         </div>
 
-        <BentoCard variant="default" className="p-4">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por ID, operador o descripción…"
-                className="h-9 rounded-md border-border bg-muted/20 pl-9 text-sm"
-                value={search}
-                onChange={(e) => {
-                  setPage(1);
-                  setSearch(e.target.value);
-                }}
-              />
-            </div>
+        <ReportesFiltersBar
+          search={list.search}
+          onSearchChange={list.setSearch}
+          statusFilter={list.statusFilter}
+          onStatusFilterChange={list.setStatusFilter}
+          priorityFilter={list.priorityFilter}
+          onPriorityFilterChange={list.setPriorityFilter}
+          operatorFilter={list.operatorFilter}
+          onOperatorFilterChange={list.setOperatorFilter}
+          dateFrom={list.dateFrom}
+          onDateFromChange={list.setDateFrom}
+          dateTo={list.dateTo}
+          onDateToChange={list.setDateTo}
+          showFilters={list.showFilters}
+          onToggleFilters={() => list.setShowFilters(!list.showFilters)}
+          showStats={list.showStats}
+          onToggleStats={() => {
+            const next = !list.showStats;
+            list.setShowStats(next);
+            if (next) void list.fetchOperatorStats();
+          }}
+          hasActiveFilters={list.hasActiveFilters}
+          uniqueOperators={list.uniqueOperators}
+          filterChip={list.filterChip}
+          onClearFilters={list.clearFilters}
+          onPageReset={() => list.setPage(1)}
+          reports={list.reports}
+        />
 
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="flex border border-border bg-muted/15 rounded-md overflow-hidden">
-                {["all", "Enlace", "EJTV", "Enlace USA"].map((filter, i, arr) => (
-                  <button
-                    key={filter}
-                    type="button"
-                    onClick={() => {
-                      setPriorityFilter(filter);
-                      setPage(1);
-                    }}
-                    className={`px-3 py-1.5 text-xs font-medium transition-colors ${i < arr.length - 1 ? "border-r border-border" : ""} ${filterChip(priorityFilter === filter)}`}
-                  >
-                    {filter === "all" ? "Todos" : filter}
-                  </button>
-                ))}
-              </div>
+        {list.showStats && <ReportesOperatorStats stats={list.operatorStats} />}
 
-              <Select
-                value={statusFilter}
-                onValueChange={(v) => {
-                  setStatusFilter(v);
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="h-9 w-[140px] rounded-md border-border bg-muted/20 text-xs">
-                  <SelectValue placeholder="Estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Cualquier estado</SelectItem>
-                  <SelectItem value="pending">Pendientes</SelectItem>
-                  <SelectItem value="resolved">Resueltos</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Button
-                variant="outline"
-                size="icon"
-                className={`h-9 w-9 rounded-md border-border ${hasActiveFilters ? "bg-muted" : ""}`}
-                onClick={() => setShowFilters(!showFilters)}
-                title="Más filtros"
-              >
-                <Filter className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-9 w-9 rounded-md border-border"
-                onClick={() => {
-                  setShowStats(!showStats);
-                  if (!showStats) fetchOperatorStats();
-                }}
-                title="Estadísticas"
-              >
-                <BarChart3 className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-9 w-9 rounded-md border-border"
-                onClick={exportToCSV}
-                title="Exportar CSV"
-              >
-                <Download className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          {showFilters && (
-            <div className="mt-4 grid grid-cols-1 gap-3 border-t border-border pt-4 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Operador</label>
-                <Select
-                  value={operatorFilter}
-                  onValueChange={(v) => {
-                    setOperatorFilter(v);
-                    setPage(1);
-                  }}
-                >
-                  <SelectTrigger className="h-9 rounded-md border-border bg-muted/20 text-xs">
-                    <SelectValue placeholder="Todos" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    {uniqueOperators.map((name) => (
-                      <SelectItem key={name} value={name}>
-                        {name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Desde</label>
-                <Input
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => {
-                    setDateFrom(e.target.value);
-                    setPage(1);
-                  }}
-                  className="h-9 rounded-md border-border bg-muted/20 text-xs"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Hasta</label>
-                <Input
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => {
-                    setDateTo(e.target.value);
-                    setPage(1);
-                  }}
-                  className="h-9 rounded-md border-border bg-muted/20 text-xs"
-                />
-              </div>
-              <div className="flex items-end">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearFilters}
-                  className="h-10 w-full text-xs text-muted-foreground"
-                >
-                  Limpiar filtros
-                </Button>
-              </div>
-            </div>
-          )}
-        </BentoCard>
-
-        {showStats && operatorStats.length > 0 && (
-          <BentoCard variant="default" className="p-4">
-            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold tracking-tight">
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
-              Por operador
-            </h3>
-            <div className="grid grid-cols-1 gap-px border border-border bg-border/60 sm:grid-cols-2 lg:grid-cols-3 rounded-md overflow-hidden">
-              {operatorStats.map((op: { name: string; total: number; pending: number; resolved: number; emailSent: number }, idx: number) => (
-                <div
-                  key={idx}
-                  className="bg-card p-3"
-                >
-                  <p className="mb-2 truncate text-sm font-medium">{op.name}</p>
-                  <div className="grid grid-cols-4 gap-1 text-center text-[10px]">
-                    <div>
-                      <p className="text-base font-semibold tabular-nums">{op.total}</p>
-                      <p className="text-muted-foreground">Total</p>
-                    </div>
-                    <div>
-                      <p className="text-base font-semibold tabular-nums text-foreground">
-                        {op.pending}
-                      </p>
-                      <p className="text-muted-foreground">Pend.</p>
-                    </div>
-                    <div>
-                      <p className="text-base font-semibold tabular-nums text-foreground">
-                        {op.resolved}
-                      </p>
-                      <p className="text-muted-foreground">Res.</p>
-                    </div>
-                    <div>
-                      <p className="text-base font-semibold tabular-nums">{op.emailSent}</p>
-                      <p className="text-muted-foreground">Mail</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </BentoCard>
-        )}
-
-        <BentoCard variant="default" className="overflow-hidden">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader className="border-b border-border bg-muted/20">
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead className="h-11 pl-4 text-xs font-medium text-muted-foreground">
-                      Incidencia
-                    </TableHead>
-                    <TableHead className="h-11 text-xs font-medium text-muted-foreground">
-                      Categoría
-                    </TableHead>
-                    <TableHead className="h-11 text-xs font-medium text-muted-foreground">
-                      Estado
-                    </TableHead>
-                    <TableHead className="h-11 text-xs font-medium text-muted-foreground">
-                      Actividad
-                    </TableHead>
-                    <TableHead className="h-11 text-xs font-medium text-muted-foreground">
-                      Prioridad
-                    </TableHead>
-                    <TableHead className="h-11 pr-4 text-right text-xs font-medium text-muted-foreground">
-                      Acciones
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {reports.map((report) => (
-                    <TableRow
-                      key={report.id}
-                      className="group cursor-pointer border-border transition-colors hover:bg-muted/20"
-                      onMouseEnter={() => prefetchReportDetail(report.id)}
-                      onClick={() => handleRowClick(report)}
-                    >
-                      <TableCell className="py-3.5 pl-4">
-                        <div className="flex flex-col gap-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-[10px] text-muted-foreground">
-                              #{report.id.slice(0, 6)}
-                            </span>
-                            <span className="line-clamp-1 text-sm font-medium text-foreground group-hover:underline">
-                              {report.problemDescription}
-                            </span>
-                          </div>
-                          <span className="text-xs text-muted-foreground">
-                            {report.operatorName}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="py-3.5 text-sm text-muted-foreground">
-                        {report.category}
-                      </TableCell>
-                      <TableCell className="py-3.5">
-                        <div className="flex flex-col gap-1.5">
-                          {getStatusBadge(report.status)}
-                          {report.emailStatus && report.emailStatus !== "none" && (
-                            <span
-                              className="inline-flex items-center gap-1 text-[11px] text-muted-foreground"
-                            >
-                              <Mail className="h-3 w-3" />
-                              {report.emailStatus === "sent"
-                                ? "Enviado"
-                                : report.emailStatus === "pending"
-                                ? "Pendiente"
-                                : report.emailStatus === "error"
-                                ? "Error"
-                                : "No enviado"}
-                            </span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="py-3.5">
-                        <div className="flex items-center gap-2.5 text-muted-foreground">
-                          {(report._count?.comments || 0) > 0 && (
-                            <span className="inline-flex items-center gap-1 text-xs" title="Comentarios">
-                              <MessageSquare className="h-3.5 w-3.5" />
-                              {report._count?.comments}
-                            </span>
-                          )}
-                          {(report._count?.reactions || 0) > 0 && (
-                            <span className="inline-flex items-center gap-1 text-xs" title="Reacciones">
-                              <ThumbsUp className="h-3.5 w-3.5" />
-                              {report._count?.reactions}
-                            </span>
-                          )}
-                          {!(report._count?.comments || 0) && !(report._count?.reactions || 0) && (
-                            <span className="text-muted-foreground/40">—</span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="py-3.5 text-sm text-muted-foreground">
-                        {report.priority}
-                      </TableCell>
-                      <TableCell
-                        className="py-3.5 pr-4 text-right"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <div className="flex items-center justify-end gap-0.5 border border-border bg-muted/10 p-0.5 opacity-0 transition-opacity group-hover:opacity-100 rounded-md overflow-hidden">
-                          <TooltipProvider>
-                            {report.status !== "resolved" && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    onClick={(e) => handleResolve(report.id, e)}
-                                    className="h-8 w-8 rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground"
-                                  >
-                                    <CheckCircle2 className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Marcar resuelto</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            )}
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleAction(report, "download");
-                                  }}
-                                  className="h-8 w-8 rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground"
-                                >
-                                  <FileText className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Descargar PDF</p>
-                              </TooltipContent>
-                            </Tooltip>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleAction(report, "email");
-                                  }}
-                                  className="h-8 w-8 rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground"
-                                >
-                                  <Mail className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Enviar correo</p>
-                              </TooltipContent>
-                            </Tooltip>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleAction(report, "both");
-                                  }}
-                                  className="h-8 w-8 rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground"
-                                >
-                                  <Send className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Enviar y descargar</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-            {reports.length === 0 && !loading && (
-              <div className="border-t border-border py-16 text-center">
-                <Zap className="mx-auto mb-3 h-8 w-8 text-muted-foreground/40" />
-                <p className="text-sm font-medium text-foreground">Sin resultados</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Prueba con otros filtros o crea un reporte nuevo.
-                </p>
-              </div>
-            )}
-        </BentoCard>
-
-          {totalPages > 1 && (
-            <div className="flex flex-col gap-3 px-1 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-xs text-muted-foreground">
-                Mostrando {reports.length} de {total} reportes (página {page} de {totalPages})
-              </p>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(p => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                  className="h-9 px-3 text-xs"
-                >
-                  <ChevronLeft className="w-4 h-4 mr-1" /> Anterior
-                </Button>
-                {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                  let pageNum: number;
-                  if (totalPages <= 5) {
-                    pageNum = i + 1;
-                  } else if (page <= 3) {
-                    pageNum = i + 1;
-                  } else if (page >= totalPages - 2) {
-                    pageNum = totalPages - 4 + i;
-                  } else {
-                    pageNum = page - 2 + i;
-                  }
-                  return (
-                    <Button
-                      key={pageNum}
-                      variant={page === pageNum ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setPage(pageNum)}
-                      className={`h-8 w-8 text-xs ${page === pageNum ? "bg-foreground text-background hover:bg-foreground/90" : ""}`}
-                    >
-                      {pageNum}
-                    </Button>
-                  );
-                })}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                  disabled={page === totalPages}
-                  className="h-9 px-3 text-xs"
-                >
-                  Siguiente <ChevronRight className="w-4 h-4 ml-1" />
-                </Button>
-              </div>
-            </div>
-          )}
+        <ReportesTable
+          reports={list.reports}
+          loading={list.loading}
+          page={list.page}
+          total={list.total}
+          totalPages={list.totalPages}
+          onPageChange={list.setPage}
+          onRowClick={handleRowClick}
+          onResolve={handleResolve}
+          onAction={handleAction}
+        />
 
         <BentoCard variant="default" className="p-4">
           <h2 className="mb-4 text-sm font-semibold tracking-tight text-foreground">
@@ -974,4 +262,3 @@ export function ReportesClient() {
     </div>
   );
 }
-

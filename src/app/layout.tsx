@@ -45,6 +45,7 @@ export default function RootLayout({
           attribute="class"
           defaultTheme="system"
           enableSystem
+          storageKey="cm-theme"
           disableTransitionOnChange
         >
           <AuthProvider>

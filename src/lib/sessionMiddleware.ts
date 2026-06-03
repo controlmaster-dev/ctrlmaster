@@ -1,9 +1,5 @@
 import type { NextRequest } from 'next/server';
 
-/**
- * Validates auth-token + user-id against the session store via the internal verify route.
- * Used from Edge middleware (no direct DB access).
- */
 export async function isSessionValid(request: NextRequest): Promise<boolean> {
   const token = request.cookies.get('auth-token')?.value;
   const userId = request.cookies.get('user-id')?.value;

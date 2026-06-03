@@ -1,54 +1,41 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { validateApiAuth, requireRole } from '@/lib/apiAuth';
-import { getBooleanSetting, setSetting } from '@/lib/appSettings';
+import { z } from "zod";
+import { apiHandler } from "@/lib/api/handler";
+import { getBooleanSetting, setSetting } from "@/lib/appSettings";
+import { ValidationError } from "@/lib/errors";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 const PLATFORM_KEYS: Record<string, string> = {
-  youtube: 'YOUTUBE_MANUAL_LIVE',
-  facebook: 'FACEBOOK_MANUAL_LIVE',
+  youtube: "YOUTUBE_MANUAL_LIVE",
+  facebook: "FACEBOOK_MANUAL_LIVE",
 };
 
-export async function GET(req: NextRequest) {
-  try {
-    const authResult = await validateApiAuth(req);
-    if (authResult instanceof NextResponse) return authResult;
+const toggleSchema = z.object({
+  platform: z.enum(["youtube", "facebook"]),
+  enabled: z.boolean(),
+});
 
-    const [youtube, facebook] = await Promise.all([
-      getBooleanSetting('YOUTUBE_MANUAL_LIVE'),
-      getBooleanSetting('FACEBOOK_MANUAL_LIVE'),
-    ]);
+const SOCIAL_ADMIN_ROLES = ["ADMIN", "BOSS", "ENGINEER"];
 
-    return NextResponse.json({ youtube, facebook });
-  } catch (error) {
-    console.error('[social/toggle] GET error:', error);
-    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
-  }
-}
+export const GET = apiHandler({ auth: true }, async () => {
+  const [youtube, facebook] = await Promise.all([
+    getBooleanSetting("YOUTUBE_MANUAL_LIVE"),
+    getBooleanSetting("FACEBOOK_MANUAL_LIVE"),
+  ]);
+  return { youtube, facebook };
+});
 
-export async function POST(request: NextRequest) {
-  try {
-    const authResult = await validateApiAuth(request);
-    if (authResult instanceof NextResponse) return authResult;
+export const POST = apiHandler(
+  { auth: true, roles: SOCIAL_ADMIN_ROLES, bodySchema: toggleSchema },
+  async ({ body }) => {
+    const key = PLATFORM_KEYS[body.platform];
+    if (!key) throw new ValidationError("Invalid platform");
 
-    const roleResult = requireRole(authResult.user, ['ADMIN', 'BOSS', 'ENGINEER']);
-    if (roleResult instanceof NextResponse) return roleResult;
+    await setSetting(key, body.enabled ? "true" : "false");
 
-    const { platform, enabled } = await request.json();
-
-    const key = PLATFORM_KEYS[platform];
-    if (!key) {
-      return NextResponse.json({ error: 'Invalid platform' }, { status: 400 });
-    }
-
-    await setSetting(key, enabled ? 'true' : 'false');
-
-    return NextResponse.json({
+    return {
       success: true,
-      message: `${platform} monitor ${enabled ? 'enabled' : 'disabled'}.`,
-    });
-  } catch (error) {
-    console.error('[social/toggle] POST error:', error);
-    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
+      message: `${body.platform} monitor ${body.enabled ? "enabled" : "disabled"}.`,
+    };
   }
-}
+);

@@ -1,8 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
 import sql from '@/lib/db';
 import { sendEmail } from '@/lib/email';
-import { ApiError, ValidationError } from '@/lib/errors';
-import { validateApiAuth } from '@/lib/apiAuth';
+import { apiCreated, apiHandler } from '@/lib/api/handler';
 import { z } from 'zod';
 
 const createCommentSchema = z.object({
@@ -82,20 +80,11 @@ function buildEmailTemplate(
   `;
 }
 
-export async function POST(req: NextRequest) {
-  try {
-    const authResult = await validateApiAuth(req);
-    if (authResult instanceof NextResponse) return authResult;
-
-    const body = await req.json();
-    const result = createCommentSchema.safeParse(body);
-
-    if (!result.success) {
-      throw new ValidationError('Datos de entrada inválidos', result.error.issues);
-    }
-
-    const { reportId, content, parentId, mentionedUserIds } = result.data;
-    const authorId = authResult.user.id;
+export const POST = apiHandler(
+  { auth: true, bodySchema: createCommentSchema },
+  async ({ user, body }) => {
+    const { reportId, content, parentId, mentionedUserIds } = body;
+    const authorId = String(user?.id ?? '');
 
     const [newComment] = await sql`
       INSERT INTO "Comment" ("id", "reportId", "authorId", "content", "parentId", "createdAt")
@@ -103,13 +92,11 @@ export async function POST(req: NextRequest) {
       RETURNING *
     `;
 
-
     const [author] = await sql`
       SELECT * FROM "User" WHERE "id" = ${authorId} LIMIT 1
     `;
 
     const commentWithAuthor = { ...newComment, author };
-
 
     void sendCommentNotifications({
       reportId,
@@ -120,18 +107,9 @@ export async function POST(req: NextRequest) {
       mentionedUserIds: mentionedUserIds ?? undefined,
     });
 
-    return NextResponse.json(commentWithAuthor, { status: 201 });
-  } catch (error) {
-    if (error instanceof ValidationError) {
-      return NextResponse.json({ error: error.message, details: error.details }, { status: 400 });
-    }
-    if (error instanceof ApiError) {
-      return NextResponse.json({ error: error.message }, { status: error.statusCode });
-    }
-    console.error('[POST /api/comments] Unexpected error:', error);
-    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
+    return apiCreated(commentWithAuthor);
   }
-}
+);
 
 interface NotificationPayload {
   reportId: string;

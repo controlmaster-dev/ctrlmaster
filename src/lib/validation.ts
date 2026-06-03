@@ -23,6 +23,19 @@ export const validateRegistrationCodeSchema = z.object({
   code: z.string().min(1, 'El código es requerido'),
 });
 
+export const publicRegisterSchema = z
+  .object({
+    name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
+    email: z.string().email('Email inválido'),
+    password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
+    confirmPassword: z.string().min(8),
+    securityCode: z.string().min(1, 'El código de seguridad es requerido'),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Las contraseñas no coinciden',
+    path: ['confirmPassword'],
+  });
+
 
 export const createReportSchema = z.object({
   operatorId: z.string().min(1, 'ID de operador es requerido'),
@@ -159,6 +172,7 @@ export const calendarEventSchema = z.object({
 
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
+export type PublicRegisterInput = z.infer<typeof publicRegisterSchema>;
 export type CreateReportInput = z.infer<typeof createReportSchema>;
 export type UpdateReportInput = z.infer<typeof updateReportSchema>;
 export type CreateCommentInput = z.infer<typeof createCommentSchema>;

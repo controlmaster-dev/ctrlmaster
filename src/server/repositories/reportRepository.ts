@@ -135,6 +135,107 @@ export async function findReportId(id: string) {
   return report ?? null;
 }
 
+async function settled<T>(label: string, promise: Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await promise;
+  } catch (error) {
+    console.error(`[getReportDetail] ${label} failed:`, error);
+    return fallback;
+  }
+}
+
+export async function getReportDetailById(id: string) {
+  const [reportRows, comments, reactions, views, attachments] = await Promise.all([
+    sql`SELECT * FROM "Report" WHERE "id" = ${id} LIMIT 1`,
+    settled(
+      "comments",
+      sql`
+        SELECT
+          c."id", c."content", c."authorId", c."reportId", c."parentId", c."createdAt",
+          json_build_object('id', a."id", 'name', a."name", 'image', a."image") AS author
+        FROM "Comment" c
+        JOIN "User" a ON a."id" = c."authorId"
+        WHERE c."reportId" = ${id}
+        ORDER BY c."createdAt" ASC
+      `,
+      [] as unknown[]
+    ),
+    settled(
+      "reactions",
+      sql`
+        SELECT
+          re."id", re."emoji", re."authorId", re."reportId", re."createdAt",
+          json_build_object('id', u."id", 'name', u."name", 'image', u."image") AS author
+        FROM "Reaction" re
+        JOIN "User" u ON u."id" = re."authorId"
+        WHERE re."reportId" = ${id}
+      `,
+      [] as unknown[]
+    ),
+    settled(
+      "views",
+      sql`
+        SELECT
+          rv."id", rv."viewedAt",
+          json_build_object('id', u."id", 'name', u."name") AS "user"
+        FROM "ReportView" rv
+        JOIN "User" u ON u."id" = rv."userId"
+        WHERE rv."reportId" = ${id}
+      `,
+      [] as unknown[]
+    ),
+    settled(
+      "attachments",
+      sql`SELECT "id", "url", "type", "data", "reportId", "createdAt" FROM "Attachment" WHERE "reportId" = ${id}`,
+      [] as unknown[]
+    ),
+  ]);
+
+  const report = reportRows[0];
+  if (!report) return null;
+
+  type CommentRow = Record<string, unknown> & { id: string };
+  const commentRows = comments as CommentRow[];
+  const commentIds = commentRows.map((c) => String(c.id));
+  let commentsWithReactions = commentRows.map((c) => ({ ...c, reactions: [] as unknown[] }));
+
+  if (commentIds.length > 0) {
+    const commentReactions = await settled(
+      "commentReactions",
+      sql`
+        SELECT
+          cr."id", cr."emoji", cr."authorId", cr."commentId", cr."createdAt",
+          json_build_object('id', u."id", 'name', u."name", 'image', u."image") AS author
+        FROM "CommentReaction" cr
+        JOIN "User" u ON u."id" = cr."authorId"
+        WHERE cr."commentId" = ANY(${commentIds})
+      `,
+      [] as unknown[]
+    );
+
+    const byComment = new Map<string, unknown[]>();
+    for (const r of commentReactions) {
+      const row = r as { commentId: string };
+      const list = byComment.get(row.commentId) || [];
+      list.push(r);
+      byComment.set(row.commentId, list);
+    }
+
+    commentsWithReactions = commentRows.map((c) => ({
+      ...c,
+      reactions: byComment.get(c.id) || [],
+    }));
+  }
+
+  return {
+    ...report,
+    comments: commentsWithReactions,
+    reactions,
+    views,
+    attachments,
+  };
+}
+
 export async function deleteReport(id: string) {
   await sql`DELETE FROM "Report" WHERE "id" = ${id}`;
 }

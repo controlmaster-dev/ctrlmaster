@@ -1,24 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
-import sql from '@/lib/db';
-import { validateApiAuth } from '@/lib/apiAuth';
+import { NextResponse } from "next/server";
+import { apiHandler } from "@/lib/api/handler";
+import sql from "@/lib/db";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
+export const GET = apiHandler({ auth: true }, async () => {
+  const users = await sql`
+    SELECT "id", "name", "image" FROM "User" ORDER BY "name" ASC
+  `;
 
-export async function GET(req: NextRequest) {
-  try {
-    const authResult = await validateApiAuth(req);
-    if (authResult instanceof NextResponse) return authResult;
-
-    const users = await sql`
-      SELECT "id", "name", "image" FROM "User" ORDER BY "name" ASC
-    `;
-
-    return NextResponse.json(users, {
-      headers: { 'Cache-Control': 'private, max-age=300' },
-    });
-  } catch (error) {
-    console.error('[GET /api/users/mentions] error:', error);
-    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
-  }
-}
+  return NextResponse.json(users, {
+    headers: { "Cache-Control": "private, max-age=300" },
+  });
+});

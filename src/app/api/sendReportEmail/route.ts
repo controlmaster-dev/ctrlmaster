@@ -1,300 +1,47 @@
-import { NextRequest, NextResponse } from 'next/server';
-import nodemailer from 'nodemailer';
-import { emailRateLimiter } from '@/lib/rateLimit';
-import sql from '@/lib/db';
-import { validateApiAuth } from '@/lib/apiAuth';
+import { NextRequest, NextResponse } from "next/server";
+import { apiErrorResponse } from "@/lib/api/errorResponse";
+import { validateApiAuth } from "@/lib/apiAuth";
+import { sendReportEmailFromForm } from "@/server/services/reportEmailService";
+import { ValidationError } from "@/lib/errors";
+import sql from "@/lib/db";
 
 export async function POST(req: NextRequest) {
   let reportId = "";
+
   try {
     const authResult = await validateApiAuth(req);
     if (authResult instanceof NextResponse) return authResult;
 
     const formData = await req.formData();
-    const file = formData.get('file') as File | null;
-    if (!file) throw new Error('No se envió el archivo PDF');
+    reportId = (formData.get("reportId") as string) || "";
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-    reportId = (formData.get('reportId') as string) || "";
-    const operatorName = (formData.get('operatorName') as string) || "Operador";
-    const operatorEmail = (formData.get('operatorEmail') as string) || "";
-    const category = (formData.get('category') as string) || "otros";
-    const priority = (formData.get('priority') as string) || "BAJA";
-    const status = (formData.get('status') as string) || "pending";
+    const result = await sendReportEmailFromForm(formData);
 
-    const limitCheck = emailRateLimiter.tryConsume(operatorEmail);
-    if (!limitCheck.success) {
-      console.warn(`⚠️ Rate limit exceeded for ${operatorEmail}. Retry after ${limitCheck.retryAfter}s`);
+    if (!result.success) {
+      const status = result.statusCode ?? 500;
+      if (reportId && status >= 500) {
+        await sql`UPDATE "Report" SET "emailStatus" = 'failed' WHERE "id" = ${reportId}`;
+      }
       return NextResponse.json(
-        { success: false, error: `Demasiados intentos. Por favor espera ${limitCheck.retryAfter} segundos antes de enviar otro correo.` },
-        { status: 429 }
+        { success: false, error: result.error ?? "Error al enviar correo" },
+        { status }
       );
     }
 
-    console.log('📨 Iniciando envío de reporte por correo (Resend)...');
-
-    const shortReportId = reportId.slice(0, 8).toUpperCase();
-
-    const categoryMap: Record<string, string> = {
-      transmision: "Transmisión",
-      audio: "Audio",
-      video: "Video",
-      equipos: "Equipos",
-      software: "Software",
-      infraestructura: "Infraestructura",
-      otros: "Otros"
-    };
-
-    const statusMap: Record<string, string> = {
-      'resolved': 'Resuelto',
-      'pending': 'Pendiente',
-      'in-progress': 'En Progreso'
-    };
-
-    const categoryList = category.split(',').map((c) => c.trim());
-    const formattedCategories = categoryList.map((c) => {
-      const mapped = categoryMap[c.toLowerCase()] || c;
-      return `<span style="display:inline-block; background:#f3f4f6; color:#4b5563; padding:2px 8px; border-radius:12px; font-size:12px; margin-right:4px; margin-bottom:4px; border:1px solid #e5e7eb;">${mapped}</span>`;
-    }).join("");
-    const formattedStatus = statusMap[status] || status;
-
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Reporte de Incidencia</title>
-        <style>
-          body {
-            font-family: Arial, Helvetica, sans-serif;
-            background-color: #ffffff;
-            margin: 0;
-            padding: 40px 20px;
-            color: #111111;
-            line-height: 1.5;
-          }
-          .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: #ffffff;
-          }
-          .header {
-            padding-bottom: 20px;
-            border-bottom: 2px solid #FF0C60;
-            margin-bottom: 30px;
-          }
-          .brand {
-            font-size: 14px;
-            font-weight: bold;
-            color: #FF0C60;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-          }
-          h1 {
-            font-size: 22px;
-            margin: 10px 0 0 0;
-            color: #111111;
-          }
-          .info-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 30px;
-          }
-          .info-table td {
-            padding: 12px 0;
-            border-bottom: 1px solid #eeeeee;
-            vertical-align: top;
-          }
-          .label {
-            width: 140px;
-            font-size: 12px;
-            color: #666666;
-            font-weight: bold;
-            text-transform: uppercase;
-          }
-          .value {
-            font-size: 14px;
-            color: #111111;
-          }
-          .attachment-box {
-            background-color: #f9f9f9;
-            border: 1px solid #eeeeee;
-            padding: 15px;
-            font-size: 13px;
-            color: #444444;
-            margin-bottom: 30px;
-          }
-          .footer {
-            font-size: 11px;
-            color: #888888;
-            border-top: 1px solid #eeeeee;
-            padding-top: 20px;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <div class="brand">Control Master</div>
-            <h1>Reporte generado</h1>
-          </div>
-
-          <p style="margin-bottom: 30px;">
-            Un operador ha generado un reporte. Detalles a continuación:
-          </p>
-
-          <table class="info-table">
-            <tr>
-              <td class="label">ID del reporte</td>
-              <td class="value">#${shortReportId}</td>
-            </tr>
-            <tr>
-              <td class="label">Operador</td>
-              <td class="value">
-                ${operatorName}<br>
-                <span style="color: #666666; font-size: 12px;">${operatorEmail}</span>
-              </td>
-            </tr>
-            <tr>
-              <td class="label">Categoría</td>
-              <td class="value">${formattedCategories}</td>
-            </tr>
-            <tr>
-              <td class="label">Canal afectado</td>
-              <td class="value" style="text-transform: capitalize;">${priority}</td>
-            </tr>
-            <tr>
-              <td class="label">Estado</td>
-              <td class="value" style="text-transform: capitalize; font-weight: bold;">${formattedStatus}</td>
-            </tr>
-          </table>
-
-          <div class="attachment-box">
-            <strong>Documentación Adjunta:</strong><br>
-            El archivo PDF con el reporte completo se encuentra adjunto a este correo.
-          </div>
-
-          <div class="footer">
-            &copy; ${new Date().getFullYear()} Enlace - Control Master<br>
-            Este mensaje fue generado automáticamente.
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-
-    try {
-      console.log('🚀 Intentando enviar vía Resend...');
-      const { Resend } = await import('resend');
-
-      if (!process.env.RESEND_API_KEY) throw new Error("No RESEND_API_KEY found");
-
-      const resend = new Resend(process.env.RESEND_API_KEY);
-
-      const recipientsJson = formData.get('recipients') as string | null;
-      let toAddresses: string[] = ['rjimenez@enlace.org', 'ingenieria@enlace.org'];
-
-      if (recipientsJson) {
-        try {
-          const parsed = JSON.parse(recipientsJson);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            toAddresses = parsed;
-          }
-        } catch (e) {
-          console.error("Error parsing recipients for Resend", e);
-        }
-      }
-      const data = await resend.emails.send({
-        from: 'Control Master <alertas@enlacecr.dev>',
-        to: toAddresses,
-        subject: `Reporte - #${shortReportId}`,
-        html: htmlContent,
-        attachments: [
-        {
-          filename: `reporte_${reportId}.pdf`,
-          content: buffer
-        }]
-      });
-
-      if (data.error) {
-        throw new Error(data.error.message);
-      }
-
-      console.log('✅ Correo enviado con ÉXITO vía Resend:', data.data?.id);
-
-      await sql`
-        UPDATE "Report" SET "emailStatus" = 'sent' WHERE "id" = ${reportId}
-      `;
-
-      return NextResponse.json({ success: true, messageId: data.data?.id, provider: 'resend' });
-
-    } catch (resendError: unknown) {
-      console.warn('⚠️ Falló el envío con Resend. Detalles:', resendError);
-      console.warn('Iniciando protocolo de respaldo (Nodemailer)...');
-    }
-
-    console.log('🛡️ Usando sistema de respaldo (SMTP Office 365)...');
-
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.office365.com',
-      port: 587,
-      secure: false,
-      auth: {
-        user: process.env.SMTP_EMAIL,
-        pass: process.env.SMTP_PASSWORD
-      },
-      tls: {
-        minVersion: 'TLSv1.2'
-      }
+    return NextResponse.json({
+      success: true,
+      messageId: result.messageId,
+      provider: result.provider,
     });
-
-    const recipientsJson2 = formData.get('recipients') as string | null;
-    let toAddress = 'rjimenez@enlace.org, ingenieria@enlace.org';
-
-    if (recipientsJson2) {
-      try {
-        const recipients = JSON.parse(recipientsJson2);
-        if (Array.isArray(recipients) && recipients.length > 0) {
-          toAddress = recipients.join(', ');
-        }
-      } catch (e) {
-        console.error("Error parsing recipients", e);
-      }
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
     }
-
-    const info = await transporter.sendMail({
-      from: `"Control Master" <${process.env.SMTP_EMAIL}>`,
-      to: toAddress,
-      replyTo: operatorEmail,
-      subject: `Reporte - #${shortReportId}`,
-      html: htmlContent,
-      attachments: [
-      {
-        filename: `reporte_${reportId}.pdf`,
-        content: buffer
-      }]
-    });
-
-    console.log('✅ Correo enviado con éxito vía Nodemailer:', info.messageId);
-
-    await sql`
-      UPDATE "Report" SET "emailStatus" = 'sent' WHERE "id" = ${reportId}
-    `;
-
-    return NextResponse.json({ success: true, messageId: info.messageId });
-  } catch (error: unknown) {
-    console.error('❌ Error enviando correo vía Nodemailer:', error);
 
     if (reportId) {
-      await sql`
-        UPDATE "Report" SET "emailStatus" = 'failed' WHERE "id" = ${reportId}
-      `;
+      await sql`UPDATE "Report" SET "emailStatus" = 'failed' WHERE "id" = ${reportId}`;
     }
 
-    return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    return apiErrorResponse(error);
   }
 }

@@ -1,46 +1,68 @@
+import { createClientCache } from "@/lib/clientCache";
 
-
-const KEY = "cm_reportes_list_v1";
 const TTL_MS = 3 * 60 * 1000;
+const store = createClientCache<ReportesListBundle>(TTL_MS);
+
+export interface ReportesListItem {
+  id: string;
+  problemDescription: string;
+  operatorName: string;
+  operatorEmail: string;
+  category: string;
+  status: string;
+  priority: string;
+  dateStarted: string;
+  dateResolved?: string | null;
+  createdAt: string;
+  emailStatus?: string;
+  _count?: { comments: number; reactions: number };
+}
 
 export interface ReportesListBundle {
   queryKey: string;
-  reports: unknown[];
+  reports: ReportesListItem[];
   total: number;
   totalPages: number;
   globalStats: { total: number; pending: number; resolved: number };
   fetchedAt: number;
 }
 
+function toIso(value: unknown): string {
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === "string") return value;
+  return value != null ? String(value) : "";
+}
+
+export function toReportesListItem(
+  r: ReportesListItem | { id: string; dateStarted: unknown; dateResolved?: unknown; createdAt: unknown } & Omit<
+    ReportesListItem,
+    "dateStarted" | "dateResolved" | "createdAt"
+  >
+): ReportesListItem {
+  return {
+    ...r,
+    dateStarted: toIso(r.dateStarted),
+    dateResolved: r.dateResolved != null ? toIso(r.dateResolved) : null,
+    createdAt: toIso(r.createdAt),
+  };
+}
+
+export function toReportesListItems(
+  reports: Parameters<typeof toReportesListItem>[0][]
+): ReportesListItem[] {
+  return reports.map(toReportesListItem);
+}
+
 export function getReportesListCache(queryKey: string): ReportesListBundle | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = sessionStorage.getItem(KEY);
-    if (!raw) return null;
-    const data = JSON.parse(raw) as ReportesListBundle;
-    if (
-      !data?.fetchedAt ||
-      data.queryKey !== queryKey ||
-      Date.now() - data.fetchedAt > TTL_MS
-    ) {
-      return null;
-    }
-    return data;
-  } catch {
-    return null;
-  }
+  const data = store.get();
+  if (!data || data.queryKey !== queryKey) return null;
+  return data;
 }
 
 export function setReportesListCache(bundle: ReportesListBundle) {
-  if (typeof window === "undefined") return;
-  try {
-    sessionStorage.setItem(KEY, JSON.stringify(bundle));
-  } catch {
-
-  }
+  store.set(bundle);
 }
 
 export function invalidateReportesListCache() {
-  if (typeof window === "undefined") return;
-  sessionStorage.removeItem(KEY);
+  store.invalidate();
 }

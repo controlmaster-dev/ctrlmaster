@@ -81,7 +81,6 @@ export class WhatsAppService {
   private async connect(state: AuthenticationState, saveCreds: SaveCreds, version: [number, number, number]): Promise<void> {
     if (this.isShuttingDown) return;
 
-    // Clean up old socket before creating a new one
     if (this.socket) {
       try { (this.socket.ev as any).removeAllListeners(); } catch {}
       try { this.socket.end(new Error('Reconnecting')); } catch {}
@@ -101,10 +100,8 @@ export class WhatsAppService {
       },
     });
 
-    // Save credentials on auth update
     this.socket.ev.on('creds.update', saveCreds);
 
-    // Connection update
     this.socket.ev.on('connection.update', async (update) => {
       const { connection, lastDisconnect, qr } = update;
 
@@ -119,7 +116,6 @@ export class WhatsAppService {
         this.reconnectAttempts = 0;
         this.startTime = Date.now();
 
-        // Start processing queued messages
         logger.info({ queueSize: messageQueue.size }, 'Procesando mensajes en cola...');
       }
 
@@ -138,7 +134,6 @@ export class WhatsAppService {
       }
     });
 
-    // Handle incoming messages
     this.socket.ev.on('messages.upsert', async ({ messages, type }) => {
       if (type !== 'notify') return;
 
@@ -192,7 +187,6 @@ export class WhatsAppService {
         const storeKey = `${sentMsg.key.remoteJid}_${sentMsg.key.id}`;
         this.messageStore.set(storeKey, sentMsg.message);
         
-        // Prevent memory growth by keeping only the last 1000 messages
         if (this.messageStore.size > 1000) {
           const firstKey = this.messageStore.keys().next().value;
           if (firstKey) this.messageStore.delete(firstKey);
@@ -217,7 +211,6 @@ export class WhatsAppService {
       const queueId = await messageQueue.enqueue(msg.phone, msg.message);
       ids.push(queueId);
 
-      // Small delay between bulk sends
       await this.sleep(1000);
     }
 
@@ -252,10 +245,8 @@ export class WhatsAppService {
   }
 
   private formatNumber(phone: string): string {
-    // Remove all non-numeric characters
     let number = phone.replace(/\D/g, '');
 
-    // Add country code if not present (default: Costa Rica +506)
     if (!number.startsWith('506') && number.length === 8) {
       number = '506' + number;
     }

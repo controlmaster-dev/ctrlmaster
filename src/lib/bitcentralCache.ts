@@ -1,10 +1,11 @@
 
 
 import { addDays, format, startOfWeek } from "date-fns";
+import { createClientCacheMap } from "@/lib/clientCache";
 import { scheduleDateKey } from "@/lib/schedule";
 
-const KEY = "cm_bitcentral_v1";
 const TTL_MS = 5 * 60 * 1000;
+const store = createClientCacheMap<BitcentralBundle>(TTL_MS);
 
 export type BitcentralOverride = { date: string; user: { name: string } };
 export type BitcentralEvent = {
@@ -38,46 +39,21 @@ function weekKeyFromDate(weekStart: Date) {
 
 export function getBitcentralCache(weekStart: Date): BitcentralBundle | null {
   if (typeof window === "undefined") return null;
-  try {
-    const raw = sessionStorage.getItem(KEY);
-    if (!raw) return null;
-    const map = JSON.parse(raw) as Record<string, BitcentralBundle>;
-    const key = weekKeyFromDate(weekStart);
-    const data = map[key];
-    if (!data?.fetchedAt || Date.now() - data.fetchedAt > TTL_MS) return null;
-    return data;
-  } catch {
-    return null;
-  }
+  return store.get(weekKeyFromDate(weekStart));
 }
 
 export function setBitcentralCache(bundle: BitcentralBundle) {
   if (typeof window === "undefined") return;
-  try {
-    const raw = sessionStorage.getItem(KEY);
-    const map: Record<string, BitcentralBundle> = raw ? JSON.parse(raw) : {};
-    map[bundle.weekKey] = bundle;
-    sessionStorage.setItem(KEY, JSON.stringify(map));
-  } catch {
-
-  }
+  store.set(bundle.weekKey, bundle);
 }
 
 export function invalidateBitcentralCache(weekStart?: Date) {
   if (typeof window === "undefined") return;
   if (!weekStart) {
-    sessionStorage.removeItem(KEY);
+    store.invalidate();
     return;
   }
-  try {
-    const raw = sessionStorage.getItem(KEY);
-    if (!raw) return;
-    const map = JSON.parse(raw) as Record<string, BitcentralBundle>;
-    delete map[weekKeyFromDate(weekStart)];
-    sessionStorage.setItem(KEY, JSON.stringify(map));
-  } catch {
-
-  }
+  store.invalidate(weekKeyFromDate(weekStart));
 }
 
 

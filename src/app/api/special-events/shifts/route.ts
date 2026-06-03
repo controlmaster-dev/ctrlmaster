@@ -1,73 +1,36 @@
-import { NextRequest, NextResponse } from 'next/server';
-import sql from '@/lib/db';
-import { validateApiAuth, requireRole } from '@/lib/apiAuth';
+import { z } from "zod";
+import { apiHandler } from "@/lib/api/handler";
+import {
+  getSpecialEventShifts,
+  saveSpecialEventShifts,
+} from "@/server/services/specialEventService";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
-export async function GET(req: NextRequest) {
-  try {
-    const authResult = await validateApiAuth(req);
-    if (authResult instanceof NextResponse) return authResult;
+const EVENT_ADMIN_ROLES = ["ADMIN", "BOSS", "ENGINEER"];
 
-    const { searchParams } = new URL(req.url);
-    const eventId = searchParams.get('eventId');
+const shiftsQuerySchema = z.object({
+  eventId: z.string().min(1, "Event ID required"),
+});
 
-    if (!eventId) return NextResponse.json({ error: "Event ID required" }, { status: 400 });
+const shiftEntrySchema = z.object({
+  date: z.string(),
+  start: z.union([z.string(), z.number()]),
+  end: z.union([z.string(), z.number()]),
+});
 
-    const shifts = await sql`
-      SELECT ses.*,
-             json_build_object('name', u."name", 'image', u."image") AS "user"
-      FROM "SpecialEventShift" ses
-      JOIN "User" u ON u."id" = ses."userId"
-      WHERE ses."eventId" = ${eventId}
-    `;
+const saveShiftsSchema = z.object({
+  eventId: z.string().min(1),
+  userId: z.string().min(1),
+  shifts: z.array(shiftEntrySchema),
+});
 
-    return NextResponse.json(shifts);
+export const GET = apiHandler(
+  { auth: true, querySchema: shiftsQuerySchema },
+  async ({ query }) => getSpecialEventShifts(query.eventId)
+);
 
-  } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : String(error) },
-      { status: 500 }
-    );
-  }
-}
-
-export async function POST(req: NextRequest) {
-  try {
-    const authResult = await validateApiAuth(req);
-    if (authResult instanceof NextResponse) return authResult;
-    const roleResult = requireRole(authResult.user, ['ADMIN', 'BOSS', 'ENGINEER']);
-    if (roleResult instanceof NextResponse) return roleResult;
-
-    const body = await req.json();
-    const { eventId, userId, shifts } = body;
-
-    if (!eventId || !userId || !Array.isArray(shifts)) {
-      return NextResponse.json({ error: "Invalid data" }, { status: 400 });
-    }
-
-    await sql.begin(async (tx) => {
-      await tx`
-        DELETE FROM "SpecialEventShift"
-        WHERE "eventId" = ${eventId} AND "userId" = ${userId}
-      `;
-
-      if (shifts.length > 0) {
-        for (const s of shifts) {
-          await tx`
-            INSERT INTO "SpecialEventShift" ("eventId", "userId", "date", "start", "end")
-            VALUES (${eventId}, ${userId}, ${s.date}, ${s.start}, ${s.end})
-          `;
-        }
-      }
-    });
-
-    return NextResponse.json({ success: true });
-
-  } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : String(error) },
-      { status: 500 }
-    );
-  }
-}
+export const POST = apiHandler(
+  { auth: true, roles: EVENT_ADMIN_ROLES, bodySchema: saveShiftsSchema },
+  async ({ body }) => saveSpecialEventShifts(body.eventId, body.userId, body.shifts)
+);

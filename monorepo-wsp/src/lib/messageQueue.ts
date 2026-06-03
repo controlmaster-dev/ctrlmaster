@@ -27,7 +27,6 @@ export class MessageQueue {
     this.queue.push(item);
     logger.info({ queueId: item.id, phone }, 'Mensaje agregado a la cola');
 
-    // Start processing if not already running
     if (!this.processing) {
       this.process();
     }
@@ -68,7 +67,6 @@ export class MessageQueue {
         }
       }
 
-      // Small delay between messages to avoid rate limiting
       await this.sleep(500);
     }
 
@@ -76,8 +74,6 @@ export class MessageQueue {
   }
 
   private async sendMessage(item: MessageQueueItem): Promise<void> {
-    // This will be called by WhatsAppService with the actual send logic
-    // We'll set this handler during initialization
     if (!MessageQueue.sendHandler) {
       throw new Error('WhatsApp no está conectado');
     }

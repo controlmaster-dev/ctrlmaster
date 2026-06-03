@@ -46,7 +46,7 @@ export function useClavesBundle(enabled: boolean) {
 
     const cached = getClavesCache();
     if (cached) {
-      setCredentials(cached.credentials as Credential[]);
+      setCredentials(cached.credentials);
       setIsReady(true);
       void fetchAll(true);
     } else {

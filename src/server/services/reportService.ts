@@ -5,11 +5,18 @@ import {
   createReport,
   deleteReport,
   findReportId,
+  getReportDetailById,
   listReports,
   updateReport,
   type ReportFilters,
   type ReportListRow,
 } from '@/server/repositories/reportRepository';
+
+function toIso(value: Date | string | null | undefined): string {
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === "string") return value;
+  return value != null ? String(value) : "";
+}
 
 function mapReportListItem(row: ReportListRow) {
   return {
@@ -20,9 +27,9 @@ function mapReportListItem(row: ReportListRow) {
     category: row.category,
     priority: row.priority,
     status: row.status,
-    createdAt: row.createdAt,
-    dateStarted: row.dateStarted,
-    dateResolved: row.dateResolved,
+    createdAt: toIso(row.createdAt),
+    dateStarted: toIso(row.dateStarted),
+    dateResolved: row.dateResolved != null ? toIso(row.dateResolved) : null,
     emailStatus: row.emailStatus,
     emailRecipients: row.emailRecipients,
     _count: {
@@ -75,4 +82,12 @@ export async function updateReportById(data: UpdateReportInput) {
     throw new ApiError('No fields to update', 400);
   }
   return updated;
+}
+
+export async function getReportDetail(id: string) {
+  const detail = await getReportDetailById(id);
+  if (!detail) {
+    throw new NotFoundError('Reporte');
+  }
+  return detail;
 }

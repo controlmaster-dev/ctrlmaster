@@ -4,18 +4,15 @@ import type { Shift } from '@/lib/types';
 export const COSTA_RICA_TZ = 'America/Costa_Rica';
 const TIMEZONE = COSTA_RICA_TZ;
 
-/** Fecha calendario `yyyy-MM-dd` en Costa Rica. */
 export function getCostaRicaDateString(date = new Date()): string {
   return formatInTimeZone(date, TIMEZONE, 'yyyy-MM-dd');
 }
 
-/** 0 = Domingo … 6 = Sábado para una fecha en Costa Rica. */
 export function getCostaRicaDayIndex(date = new Date()): number {
   const iso = parseInt(formatInTimeZone(date, TIMEZONE, 'i'), 10);
   return iso === 7 ? 0 : iso;
 }
 
-/** Columnas visuales Lunes → Domingo (`dayIdx` sigue 0=Dom … 6=Sáb en `Shift.days`). */
 export const WEEK_COLUMNS_MONDAY_FIRST = [
   { label: 'L', dayIdx: 1, name: 'Lunes' },
   { label: 'Ma', dayIdx: 2, name: 'Martes' },
@@ -26,7 +23,6 @@ export const WEEK_COLUMNS_MONDAY_FIRST = [
   { label: 'D', dayIdx: 0, name: 'Domingo' },
 ] as const;
 
-/** 0 = Domingo … 6 = Sábado (misma convención que `Shift.days`) */
 export function getCurrentDayIndex(): number {
   const iso = parseInt(formatInTimeZone(new Date(), TIMEZONE, 'i'), 10);
   return iso === 7 ? 0 : iso;
@@ -58,7 +54,6 @@ export type TodayShiftCellStatus =
   | 'ended'
   | 'upcoming';
 
-/** Estado de la celda de hoy según hora actual (Costa Rica). */
 export function getTodayShiftCellStatus(
   shifts: Shift[] | undefined,
   dayIdx: number,
@@ -95,7 +90,6 @@ export function formatShiftRange(
   return `${formatTime(shift.start)}–${formatTime(endHour)}`;
 }
 
-/** Horario recurrente para la grilla semanal (no turnos temporales de la semana). */
 export function getWeeklySchemeShifts(
   operator: { shifts?: Shift[]; defaultShifts?: Shift[] }
 ): Shift[] | undefined {
@@ -105,7 +99,6 @@ export function getWeeklySchemeShifts(
   return operator.shifts;
 }
 
-/** Horas hasta el próximo inicio de turno; 0 si está en turno ahora; null sin horario. */
 export function getHoursUntilNextShift(
   shifts: Shift[] | undefined,
   todayIdx: number,
@@ -171,7 +164,6 @@ function shiftEndForMatch(shift: Shift): number {
   return shift.end === 0 ? 24 : shift.end;
 }
 
-/** Horas hasta el inicio de un turno en un día concreto; null si ya pasó hoy. */
 export function getHoursUntilShiftOnDay(
   shift: Shift,
   dayIdx: number,
@@ -194,7 +186,6 @@ export function getHoursUntilShiftOnDay(
   return hoursUntilDay + shift.start;
 }
 
-/** Único próximo turno en cola (el más cercano en el tiempo). */
 export function getNextShiftSlot(
   operators: Array<{ id: string; shifts?: Shift[] }>,
   todayIdx: number,
@@ -239,7 +230,6 @@ function isSameShiftSlot(
   );
 }
 
-/** Estado visual de un turno en la grilla semanal (semana actual, hora CR). */
 export function getShiftCardWeekStatus(
   shift: Shift,
   columnDayIdx: number,
@@ -275,7 +265,6 @@ export interface ShiftProgressStats {
   label: string;
 }
 
-/** Progreso del turno activo hoy (Costa Rica). */
 export function getActiveShiftProgress(
   shifts: Shift[] | undefined,
   formatTime: (hour: number) => string,
@@ -346,7 +335,6 @@ export function getNextOperatorId(
   return nextId;
 }
 
-/** En turno primero, luego por orden de llegada (más cercano al siguiente turno). */
 export function sortOperatorsByShiftQueue<T extends { id: string; name?: string; shifts?: Shift[]; defaultShifts?: Shift[] }>(
   operators: T[],
   todayIdx: number = getCurrentDayIndex(),

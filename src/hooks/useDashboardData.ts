@@ -412,6 +412,8 @@ export function useRecentComments() {
 }
 
 
+let lastBirthdayToastDate: string | null = null;
+
 export function useBirthdayNotifications(users: User[], isLoadingUsers: boolean) {
   useEffect(() => {
     if (isLoadingUsers || users.length === 0) return;
@@ -429,9 +431,7 @@ export function useBirthdayNotifications(users: User[], isLoadingUsers: boolean)
     if (birthdayUsers.length === 0) return;
 
     const todayStr = today.toDateString();
-    const lastShown = sessionStorage.getItem(STORAGE_KEYS.BIRTHDAY_TOAST_DATE);
-
-    if (lastShown === todayStr) return;
+    if (lastBirthdayToastDate === todayStr) return;
 
 
     birthdayUsers.forEach((u) => {
@@ -446,10 +446,9 @@ export function useBirthdayNotifications(users: User[], isLoadingUsers: boolean)
       });
     });
 
-    sessionStorage.setItem(STORAGE_KEYS.BIRTHDAY_TOAST_DATE, todayStr);
+    lastBirthdayToastDate = todayStr;
   }, [users, isLoadingUsers]);
 }
-
 
 export function useCurrentUser(): User | null {
   const [currentUser, setCurrentUser] = useState<User | null>(null);

@@ -14,8 +14,6 @@ function getErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback;
 }
 
-// ─── Health (no auth required) ──────────────────────────────────────────────
-
 router.get('/health', (req, res) => {
   const health = whatsappService.getHealth();
   const statusCode = health.status === 'connected' ? 200 : 503;
@@ -25,8 +23,6 @@ router.get('/health', (req, res) => {
     data: health,
   });
 });
-
-// ─── Send Message ────────────────────────────────────────────────────────────
 
 router.post('/send-message', authMiddleware, async (req, res) => {
   const { phone, message } = req.body;
@@ -63,8 +59,6 @@ router.post('/send-message', authMiddleware, async (req, res) => {
     });
   }
 });
-
-// ─── Send Bulk Messages ──────────────────────────────────────────────────────
 
 router.post('/send-bulk', authMiddleware, async (req, res) => {
   const { messages } = req.body;
@@ -106,8 +100,6 @@ router.post('/send-bulk', authMiddleware, async (req, res) => {
   }
 });
 
-// ─── Queue Status ────────────────────────────────────────────────────────────
-
 router.get('/queue', authMiddleware, (req, res) => {
   res.json({
     success: true,
@@ -118,8 +110,6 @@ router.get('/queue', authMiddleware, (req, res) => {
   });
 });
 
-// ─── Clear Queue ─────────────────────────────────────────────────────────────
-
 router.post('/queue/clear', authMiddleware, (req, res) => {
   messageQueue.clear();
 
@@ -128,7 +118,5 @@ router.post('/queue/clear', authMiddleware, (req, res) => {
     data: { message: 'Cola limpiada' },
   });
 });
-
-// ─── Export router ───────────────────────────────────────────────────────────
 
 export default router;

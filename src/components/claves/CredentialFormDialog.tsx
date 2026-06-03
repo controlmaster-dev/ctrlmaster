@@ -76,7 +76,6 @@ export function CredentialFormDialog({
         }}
         className="space-y-4"
       >
-        {/* Evita que el gestor del teléfono rellene credenciales de login */}
         <input
           type="text"
           name="cm-decoy-user"

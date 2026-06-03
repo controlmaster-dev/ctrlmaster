@@ -13,13 +13,10 @@ import { config } from './config/index.js';
 
 const app = express();
 
-// ─── Middleware ──────────────────────────────────────────────────────────────
-
 app.use(helmet());
 app.use(cors());
 app.use(express.json({ limit: '1mb' }));
 
-// Rate limiting
 const limiter = rateLimit({
   windowMs: config.rateLimitWindowMs,
   max: config.rateLimitMaxRequests,
@@ -33,14 +30,10 @@ const limiter = rateLimit({
 
 app.use('/api', limiter);
 
-// ─── Routes ──────────────────────────────────────────────────────────────────
-
 app.use('/api', routes);
 
-// Favicon route - just return 204
 app.get('/favicon.ico', (req, res) => res.status(204).end());
 
-// 404 handler
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -48,7 +41,6 @@ app.use((req, res) => {
   });
 });
 
-// Error handler
 app.use((err: Error, req: express.Request, res: express.Response, _next: express.NextFunction) => {
   logger.error({ error: err.message, stack: err.stack }, 'Unhandled error');
   res.status(500).json({
@@ -57,15 +49,9 @@ app.use((err: Error, req: express.Request, res: express.Response, _next: express
   });
 });
 
-// ─── Initialize WhatsApp ─────────────────────────────────────────────────────
-
-// Set the send handler for the message queue
 MessageQueue.sendHandler = (phone, message) => whatsappService.sendMessage(phone, message);
 
-// Start WhatsApp
 whatsappService.initialize();
-
-// ─── Start Server ────────────────────────────────────────────────────────────
 
 const gracefulShutdown = async (signal: string) => {
   logger.info({ signal }, `Señal recibida, cerrando...`);

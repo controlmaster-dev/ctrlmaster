@@ -36,7 +36,6 @@ interface OperatorCardProps {
   activeEvent: SpecialEvent | null;
   currentWeekStart: string;
   formatTime: (hour: number) => string;
-  /** Próximo en entrar según cola de turnos */
   isNextInQueue?: boolean;
   hoursUntilNext?: number | null;
 }

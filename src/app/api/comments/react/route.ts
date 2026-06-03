@@ -1,19 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server';
-import sql from '@/lib/db';
-import { validateApiAuth } from '@/lib/apiAuth';
+import { z } from "zod";
+import { apiHandler } from "@/lib/api/handler";
+import sql from "@/lib/db";
 
-export async function POST(req: NextRequest) {
-  try {
-    const authResult = await validateApiAuth(req);
-    if (authResult instanceof NextResponse) return authResult;
+const reactSchema = z.object({
+  commentId: z.string().min(1),
+  emoji: z.string().min(1),
+});
 
-    const body = await req.json();
+export const POST = apiHandler(
+  { auth: true, bodySchema: reactSchema },
+  async ({ user, body }) => {
+    const authorId = String(user?.id ?? "");
     const { commentId, emoji } = body;
-    const authorId = authResult.user.id;
-
-    if (!commentId || !emoji) {
-      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
-    }
 
     const [existing] = await sql`
       SELECT * FROM "CommentReaction"
@@ -25,20 +23,13 @@ export async function POST(req: NextRequest) {
 
     if (existing) {
       await sql`DELETE FROM "CommentReaction" WHERE "id" = ${existing.id}`;
-      return NextResponse.json({ action: 'removed' });
-    } else {
-      await sql`
-        INSERT INTO "CommentReaction" ("commentId", "authorId", "emoji")
-        VALUES (${commentId}, ${authorId}, ${emoji})
-      `;
-      return NextResponse.json({ action: 'added' });
+      return { action: "removed" };
     }
 
-  } catch (error: unknown) {
-    console.error('Error in comment reaction:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    await sql`
+      INSERT INTO "CommentReaction" ("commentId", "authorId", "emoji")
+      VALUES (${commentId}, ${authorId}, ${emoji})
+    `;
+    return { action: "added" };
   }
-}
+);
