@@ -10,8 +10,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { apiGet } from "@/lib/api/client";
-
 type ResendEmail = {
   id: string;
   subject?: string;
@@ -29,11 +27,12 @@ export function EmailHistoryCard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    apiGet<ResendHistoryResponse>("/api/resend/history")
-      .then((data) => {
+    fetch("/api/resend/history", { credentials: "include" })
+      .then((res) => (res.ok ? res.json() : { data: [] }))
+      .then((data: ResendHistoryResponse) => {
         if (Array.isArray(data.data)) setEmails(data.data.slice(0, 5));
       })
-      .catch((err) => console.error(err))
+      .catch(() => setEmails([]))
       .finally(() => setLoading(false));
   }, []);
 

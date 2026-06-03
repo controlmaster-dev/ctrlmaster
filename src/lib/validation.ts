@@ -2,6 +2,7 @@
 
 
 import { z } from 'zod';
+import { REPORT_DESCRIPTION_MAX_CHARS } from '@/lib/reportPdfLimits';
 
 
 export const loginSchema = z.object({
@@ -41,7 +42,13 @@ export const createReportSchema = z.object({
   operatorId: z.string().min(1, 'ID de operador es requerido'),
   operatorName: z.string().min(1, 'Nombre de operador es requerido'),
   operatorEmail: z.string().email('Email inválido').or(z.literal('')).optional(),
-  problemDescription: z.string().min(1, 'La descripción es requerida'),
+  problemDescription: z
+    .string()
+    .min(1, 'La descripción es requerida')
+    .max(
+      REPORT_DESCRIPTION_MAX_CHARS,
+      `La descripción no puede superar ${REPORT_DESCRIPTION_MAX_CHARS} caracteres (límite del PDF)`
+    ),
   category: z.string().min(1, 'Categoría es requerida'),
   priority: z.string().min(1, 'Prioridad es requerida'),
   status: z.enum(['pending', 'in-progress', 'resolved']),
@@ -93,7 +100,7 @@ export const createCommentSchema = z.object({
 export const createReactionSchema = z.object({
   reportId: z.string().min(1, 'ID de reporte es requerido'),
   userId: z.string().min(1, 'ID de usuario es requerido'),
-  emoji: z.string().min(1, 'El emoji es requerido'),
+  emoji: z.string().min(1, 'La reacción es requerida'),
 });
 
 
@@ -169,6 +176,39 @@ export const calendarEventSchema = z.object({
   description: z.string().optional(),
 });
 
+
+export const createOperatorDutySchema = z.object({
+  title: z.string().min(1, 'El título es requerido').max(120),
+  description: z.string().max(500).optional().nullable(),
+  assignToAll: z.boolean().optional(),
+  operatorIds: z.array(z.string().min(1)).optional(),
+});
+
+export const updateOperatorDutySchema = z.object({
+  title: z.string().min(1).max(120).optional(),
+  description: z.string().max(500).optional().nullable(),
+  assignToAll: z.boolean().optional(),
+  operatorIds: z.array(z.string().min(1)).optional(),
+});
+
+export const deleteOperatorDutySchema = z.object({
+  id: z.string().min(1, 'ID requerido'),
+});
+
+export const assignOperatorDutySchema = z.object({
+  dutyId: z.string().min(1),
+  userId: z.string().nullable(),
+  fromUserId: z.string().min(1).optional().nullable(),
+});
+
+export const bulkUnassignOperatorDutiesSchema = z.object({
+  userId: z.string().min(1),
+});
+
+export const bulkTransferOperatorDutiesSchema = z.object({
+  fromUserId: z.string().min(1),
+  toUserId: z.string().min(1),
+});
 
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;

@@ -19,6 +19,19 @@ export function invalidateReportDetailCache(id: string) {
   inflight.delete(id);
 }
 
+export function patchReportDetailSocials(
+  id: string,
+  patch: { comments?: unknown[]; reactions?: unknown[] }
+) {
+  const cached = getReportDetailCache(id);
+  if (!cached || typeof cached !== "object") return;
+  setReportDetailCache(id, {
+    ...(cached as Record<string, unknown>),
+    ...(patch.comments !== undefined ? { comments: patch.comments } : {}),
+    ...(patch.reactions !== undefined ? { reactions: patch.reactions } : {}),
+  });
+}
+
 export function prefetchReportDetail(id: string): Promise<unknown | null> {
   const hit = getReportDetailCache(id);
   if (hit) return Promise.resolve(hit);

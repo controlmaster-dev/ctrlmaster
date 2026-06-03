@@ -13,14 +13,19 @@ const poolMax = process.env.DB_POOL_MAX
     ? 5
     : 10;
 
-const sql: ReturnType<typeof postgres> =
-  globalForPostgres.__sql ??
-  postgres(dbUrl, {
+function createSql() {
+  return postgres(dbUrl, {
     max: poolMax,
     idle_timeout: 30,
-    connect_timeout: 10,
+    connect_timeout: 20,
     ssl: 'require',
+    /** Evita planes preparados rotos tras ALTER TABLE (p. ej. columna code). */
+    prepare: false,
   });
+}
+
+const existing = globalForPostgres.__sql;
+const sql: ReturnType<typeof postgres> = existing ?? createSql();
 
 if (process.env.NODE_ENV !== 'production') {
   globalForPostgres.__sql = sql;

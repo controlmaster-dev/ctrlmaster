@@ -26,9 +26,14 @@ import {
   Clock,
   AlertCircle,
 } from "lucide-react";
-import { getReportDetailCache, prefetchReportDetail } from "@/lib/reportDetailCache";
+import {
+  getReportDetailCache,
+  patchReportDetailSocials,
+  prefetchReportDetail,
+} from "@/lib/reportDetailCache";
 import { fetchMentionUsers, getCachedMentionUsers } from "@/lib/mentionUsersCache";
 import { cn } from "@/lib/utils";
+import { formatReportDisplayId } from "@/lib/reportCode";
 
 interface ReportDetailModalProps {
   isOpen: boolean;
@@ -169,10 +174,6 @@ export function ReportDetailModal({
     }
   }, []);
 
-  const refreshDetail = React.useCallback(() => {
-    if (report?.id) loadDetail(report.id);
-  }, [report?.id, loadDetail]);
-
   React.useEffect(() => {
     if (!isOpen || !report?.id) {
       setFullReport(null);
@@ -214,16 +215,39 @@ export function ReportDetailModal({
     }
   }, [isOpen, initialDetail, report?.id]);
 
-  const handleSocialUpdate = React.useCallback(() => {
-    refreshDetail();
+  const handleSocialChange = React.useCallback(
+    (nextComments: CommentItem[], nextReactions: ReactionItem[]) => {
+      setFullReport((prev) =>
+        prev?.id
+          ? {
+              ...prev,
+              comments: nextComments,
+              reactions: nextReactions,
+            }
+          : prev
+      );
+      if (report?.id) {
+        patchReportDetailSocials(report.id, {
+          comments: nextComments,
+          reactions: nextReactions,
+        });
+      }
+    },
+    [report?.id]
+  );
+
+  const handleSocialActivity = React.useCallback(() => {
     onUpdate();
-  }, [refreshDetail, onUpdate]);
+  }, [onUpdate]);
 
   const displayReport = fullReport?.id ? fullReport : report;
 
   if (!displayReport?.id) return null;
 
-  const shortId = String(displayReport.id).slice(0, 6);
+  const shortId = formatReportDisplayId(
+    String(displayReport.id),
+    (displayReport as { code?: string | null }).code
+  );
   const createdAt = new Date(displayReport.createdAt || Date.now());
   const attachments = displayReport.attachments || [];
   const views = toViews(displayReport.views);
@@ -254,12 +278,12 @@ export function ReportDetailModal({
           "!left-0 !top-0 !right-0 !bottom-0 !w-[100vw] !h-[100dvh] !max-w-none !rounded-none !border-0",
           "!translate-x-0 !translate-y-0 bg-background shadow-none",
           "md:!left-1/2 md:!top-1/2 md:!-translate-x-1/2 md:!-translate-y-1/2",
-          "md:!w-[min(96vw,72rem)] md:!h-[min(92dvh,900px)] md:!max-h-[92dvh]",
+          "md:!w-[min(98vw,110rem)] md:!h-[min(96dvh,1020px)] md:!max-h-[96dvh]",
           "md:rounded-2xl md:border md:border-border md:shadow-2xl md:ring-1 md:ring-border/50"
         )}
       >
 
-        <header className="shrink-0 border-b border-border bg-muted/30 px-4 py-4 md:px-8 md:py-5">
+        <header className="shrink-0 border-b border-border bg-muted/30 px-4 py-4 md:px-10 md:py-6">
           <div className="flex items-start gap-3">
             <button
               type="button"
@@ -273,7 +297,7 @@ export function ReportDetailModal({
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2 md:gap-3">
                 <DialogTitle className="text-xl font-bold tracking-tight md:text-2xl">
-                  Reporte #{shortId}
+                  Reporte {shortId}
                 </DialogTitle>
                 <StatusBadge status={displayReport.status || "pending"} />
               </div>
@@ -333,16 +357,16 @@ export function ReportDetailModal({
 
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden md:flex-row">
 
-          <section className="flex min-h-0 flex-col border-b border-border md:w-[44%] md:border-b-0 md:border-r">
-            <div className="flex shrink-0 items-center gap-2 border-b border-border/60 px-4 py-3 md:px-6">
+          <section className="flex min-h-0 min-w-0 flex-col border-b border-border md:w-[46%] md:shrink-0 md:border-b-0 md:border-r lg:w-[44%]">
+            <div className="flex shrink-0 items-center gap-2 border-b border-border/60 px-4 py-3 md:px-8">
               <Paperclip className="h-4 w-4 text-muted-foreground" />
               <h3 className="text-sm font-semibold text-foreground">
                 Descripción del problema
               </h3>
             </div>
 
-            <ScrollArea className="flex-1 px-4 py-4 md:px-6 md:py-5">
-              <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-foreground/95">
+            <ScrollArea className="flex-1 px-4 py-4 md:px-8 md:py-6">
+              <p className="whitespace-pre-wrap text-base leading-relaxed text-foreground/95">
                 {displayReport.problemDescription || ""}
               </p>
 
@@ -374,7 +398,7 @@ export function ReportDetailModal({
           </section>
 
 
-          <section className="flex min-h-0 flex-1 flex-col bg-muted/10">
+          <section className="flex min-h-0 min-w-0 flex-1 flex-col bg-muted/10 md:min-w-[22rem]">
             <div className="flex shrink-0 items-center gap-2 border-b border-border/60 px-4 py-3 md:px-6">
               <MessageSquare className="h-4 w-4 text-primary" />
               <h3 className="text-sm font-semibold text-foreground">
@@ -406,7 +430,8 @@ export function ReportDetailModal({
                   initialComments={comments}
                   initialReactions={reactions}
                   availableUsers={toSocialUsers(displayReport.mentionUsers, mentionUsers)}
-                  onUpdate={handleSocialUpdate}
+                  onSocialChange={handleSocialChange}
+                  onUpdate={handleSocialActivity}
                 />
               )}
             </div>

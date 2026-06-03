@@ -1,6 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import {
+  registerRefetch,
+  unregisterRefetch,
+} from "@/hooks/useDashboardData";
 import { useDebounce } from "@/hooks/useDebounce";
 import {
   getReportesListCache,
@@ -19,6 +23,11 @@ import type {
   ReportsResponse,
   OperatorStat,
 } from "@/components/reportes/reportes-types";
+import {
+  fetchReportStats,
+  normalizeReportStats,
+  type ReportStatsCounts,
+} from "@/lib/reportStats";
 const LIMIT = 20;
 
 export function useReportesList() {
@@ -37,7 +46,9 @@ export function useReportesList() {
   const [showFilters, setShowFilters] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [operatorStats, setOperatorStats] = useState<OperatorStat[]>([]);
-  const [globalStats, setGlobalStats] = useState({ total: 0, pending: 0, resolved: 0 });
+  const [globalStats, setGlobalStats] = useState<ReportStatsCounts>(() =>
+    normalizeReportStats(null)
+  );
   const [initialLoad, setInitialLoad] = useState(true);
 
   const buildQuery = useCallback(() => {
@@ -53,18 +64,7 @@ export function useReportesList() {
     return params.toString();
   }, [page, debouncedSearch, statusFilter, priorityFilter, operatorFilter, dateFrom, dateTo]);
 
-  const fetchGlobalStats = useCallback(async () => {
-    const [all, pending, resolved] = await Promise.all([
-      fetch("/api/reports?limit=1").then((r) => r.json()),
-      fetch("/api/reports?limit=1&status=pending").then((r) => r.json()),
-      fetch("/api/reports?limit=1&status=resolved").then((r) => r.json()),
-    ]);
-    return {
-      total: all.total ?? 0,
-      pending: pending.total ?? 0,
-      resolved: resolved.total ?? 0,
-    };
-  }, []);
+  const fetchGlobalStats = useCallback(() => fetchReportStats(), []);
 
   const parseListResponse = useCallback(
     async (res: Response): Promise<{
@@ -173,6 +173,12 @@ export function useReportesList() {
       void fetchReports();
     }
   }, [buildQuery, fetchReports]);
+
+  useEffect(() => {
+    const refetch = () => void fetchReports({ silent: true });
+    registerRefetch("reports", refetch);
+    return () => unregisterRefetch("reports", refetch);
+  }, [fetchReports]);
 
   const fetchOperatorStats = useCallback(async () => {
     try {

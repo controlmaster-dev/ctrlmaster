@@ -242,7 +242,7 @@ export function DashboardClient() {
               <StatsCard
                 title="Pendientes"
                 value={stats.pendingReports}
-                subtitle="Por revisar"
+                subtitle="Por revisar o en curso"
                 icon={<Clock className="h-5 w-5" />}
                 variant="danger"
               />

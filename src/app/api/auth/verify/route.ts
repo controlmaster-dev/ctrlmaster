@@ -4,7 +4,8 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { apiHandler } from '@/lib/api/handler';
-import { getUserFromToken, validateToken } from '@/lib/auth';
+import { getUserFromToken, touchSession, validateToken } from '@/lib/auth';
+import { isTransientDbError } from '@/lib/dbErrors';
 
 const verifyBodySchema = z.object({
   userId: z.string().min(1),
@@ -18,12 +19,21 @@ export const POST = apiHandler({ bodySchema: verifyBodySchema }, async ({ req, b
     return NextResponse.json({ error: 'Token invalido' }, { status: 401 });
   }
 
-  const isValid = await validateToken(body.userId, token);
-  if (!isValid) {
-    return NextResponse.json({ error: 'Token expirado o invalido' }, { status: 401 });
+  try {
+    const isValid = await validateToken(body.userId, token);
+    if (!isValid) {
+      return NextResponse.json({ error: 'Token expirado o invalido' }, { status: 401 });
+    }
+    return { valid: true };
+  } catch (error) {
+    if (isTransientDbError(error)) {
+      return NextResponse.json(
+        { error: 'No se pudo validar la sesión. Reintenta.' },
+        { status: 503 }
+      );
+    }
+    throw error;
   }
-
-  return { valid: true };
 });
 
 
@@ -35,11 +45,19 @@ export const GET = apiHandler({}, async ({ req }) => {
     return NextResponse.json({ authenticated: false }, { status: 401 });
   }
 
-  const isValid = await validateToken(userId, token);
-  if (!isValid) {
-    return NextResponse.json({ authenticated: false }, { status: 401 });
-  }
+  try {
+    const isValid = await validateToken(userId, token);
+    if (!isValid) {
+      return NextResponse.json({ authenticated: false }, { status: 401 });
+    }
 
-  const user = await getUserFromToken(token);
-  return { authenticated: true, user };
+    await touchSession(token);
+    const user = await getUserFromToken(token);
+    return { authenticated: true, user };
+  } catch (error) {
+    if (isTransientDbError(error)) {
+      return { authenticated: true, degraded: true };
+    }
+    throw error;
+  }
 });

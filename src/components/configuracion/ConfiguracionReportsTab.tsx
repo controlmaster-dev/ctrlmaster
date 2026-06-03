@@ -1,15 +1,11 @@
 "use client";
 
-import { Loader2, Search, Trash2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Loader2, Search, Trash2, FileText } from "lucide-react";
+import { formatReportDisplayId } from "@/lib/reportCode";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { BentoCard } from "@/components/dashboard/BentoCard";
 import {
   Table,
   TableBody,
@@ -18,9 +14,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 
 export type ReportCleanupRow = {
   id: string;
+  code?: string | null;
   createdAt: string | Date;
   operatorName: string;
   problemDescription: string;
@@ -32,100 +30,147 @@ type ConfiguracionReportsTabProps = {
   onDeleteReport: (id: string) => void;
 };
 
+function matchesSearch(report: ReportCleanupRow, query: string) {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  const code = formatReportDisplayId(report.id, report.code).toLowerCase();
+  return (
+    code.includes(q) ||
+    report.operatorName.toLowerCase().includes(q) ||
+    report.problemDescription.toLowerCase().includes(q)
+  );
+}
+
 export function ConfiguracionReportsTab({
   reportsReady,
   reports,
   onDeleteReport,
 }: ConfiguracionReportsTabProps) {
+  const [search, setSearch] = useState("");
+
+  const filtered = useMemo(
+    () => reports.filter((r) => matchesSearch(r, search)),
+    [reports, search]
+  );
+
   if (!reportsReady) {
     return (
-      <div className="flex min-h-[200px] flex-col items-center justify-center gap-3 rounded-lg border border-border bg-card shadow-none">
+      <BentoCard className="flex min-h-[220px] flex-col items-center justify-center gap-3 p-8">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        <p className="text-xs text-muted-foreground">Cargando base de datos de reportes…</p>
-      </div>
+        <p className="text-sm text-muted-foreground">Cargando reportes…</p>
+      </BentoCard>
     );
   }
 
   return (
-    <Card className="rounded-lg border border-border bg-card shadow-none">
-      <CardHeader className="border-b border-border bg-muted/10 p-6">
-        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-          <div className="space-y-1">
-            <CardTitle className="text-lg font-semibold tracking-tight text-foreground">
-              Depuración de Reportes
-            </CardTitle>
-            <CardDescription className="text-xs text-muted-foreground opacity-80">
-              Filtre e inspeccione el registro de incidencias del sistema para su depuración o
-              auditoría.
-            </CardDescription>
+    <BentoCard className="overflow-hidden">
+      <div className="flex flex-col gap-4 border-b border-border/80 p-4 md:flex-row md:items-end md:justify-between md:p-5">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <Trash2 className="h-4 w-4 text-muted-foreground" />
+            Depuración de reportes
           </div>
-          <div className="relative w-full sm:w-[260px]">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por ID o descripción..."
-              className="h-10 w-full rounded-lg border border-input bg-background pl-9 text-xs font-medium tracking-tight text-foreground focus-visible:ring-1 focus-visible:ring-brand/30"
-            />
-          </div>
+          <p className="max-w-lg text-sm text-muted-foreground">
+            Elimine incidencias de prueba o duplicadas. Los cambios se reflejan de inmediato en
+            reportes y el panel principal.
+          </p>
+          <p className="text-xs text-muted-foreground/80">
+            {reports.length} en el registro
+            {search.trim() ? ` · ${filtered.length} coincidencias` : ""}
+          </p>
         </div>
-      </CardHeader>
-      <CardContent className="p-0">
-        <Table className="text-xs">
-          <TableHeader className="border-b border-border bg-muted/30">
-            <TableRow className="border-none hover:bg-transparent">
-              <TableHead className="h-10 pl-6 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
-                ID Interno
-              </TableHead>
-              <TableHead className="h-10 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Fecha
-              </TableHead>
-              <TableHead className="h-10 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Operador
-              </TableHead>
-              <TableHead className="h-10 w-[40%] text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Descripción del Reporte
-              </TableHead>
-              <TableHead className="h-10 pr-6 text-right text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Acción
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody className="divide-y divide-border/60">
-            {reports.map((report) => (
-              <TableRow
-                key={report.id}
-                className="group border-none transition-all duration-150 hover:bg-muted/10"
-              >
-                <TableCell className="pl-6 font-mono text-[10px] font-semibold tracking-tight text-primary">
-                  #{report.id.slice(0, 8)}
-                </TableCell>
-                <TableCell className="font-medium tracking-tight text-foreground">
-                  {new Date(report.createdAt).toLocaleDateString("es-CR", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                  })}
-                </TableCell>
-                <TableCell className="font-medium tracking-tight text-foreground">
-                  {report.operatorName}
-                </TableCell>
-                <TableCell className="max-w-md truncate font-medium text-muted-foreground">
-                  {report.problemDescription}
-                </TableCell>
-                <TableCell className="pr-6 text-right">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => onDeleteReport(report.id)}
-                    className="h-8 w-8 rounded-[2px] text-destructive transition-all hover:bg-destructive/10 hover:text-destructive-foreground"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </TableCell>
+        <div className="relative w-full md:max-w-xs">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Código, operador o descripción…"
+            className="h-9 border-border/80 bg-background pl-9 text-sm"
+          />
+        </div>
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center gap-2 px-6 py-16 text-center">
+          <FileText className="h-8 w-8 text-muted-foreground/50" />
+          <p className="text-sm font-medium text-foreground">
+            {search.trim() ? "Sin resultados para esa búsqueda" : "No hay reportes"}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {search.trim()
+              ? "Pruebe otro término o limpie el filtro."
+              : "El registro está vacío."}
+          </p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-border/80 hover:bg-transparent">
+                <TableHead className="w-[120px] pl-5 text-xs font-medium text-muted-foreground">
+                  Código
+                </TableHead>
+                <TableHead className="w-[110px] text-xs font-medium text-muted-foreground">
+                  Fecha
+                </TableHead>
+                <TableHead className="w-[140px] text-xs font-medium text-muted-foreground">
+                  Operador
+                </TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">
+                  Descripción
+                </TableHead>
+                <TableHead className="w-[72px] pr-5 text-right text-xs font-medium text-muted-foreground">
+                  Acción
+                </TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((report) => (
+                <TableRow
+                  key={report.id}
+                  className="border-border/60 hover:bg-muted/30"
+                >
+                  <TableCell className="pl-5 font-mono text-xs font-medium text-foreground">
+                    {formatReportDisplayId(report.id, report.code)}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {new Date(report.createdAt).toLocaleDateString("es-CR", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </TableCell>
+                  <TableCell className="text-sm text-foreground">
+                    {report.operatorName}
+                  </TableCell>
+                  <TableCell>
+                    <p
+                      className={cn(
+                        "line-clamp-2 max-w-xl text-sm leading-snug text-muted-foreground"
+                      )}
+                      title={report.problemDescription}
+                    >
+                      {report.problemDescription}
+                    </p>
+                  </TableCell>
+                  <TableCell className="pr-5 text-right">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Eliminar reporte"
+                      onClick={() => onDeleteReport(report.id)}
+                      className="h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </BentoCard>
   );
 }

@@ -8,6 +8,8 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { AlertTriangle, HelpCircle, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface ConfirmModalProps {
   isOpen: boolean;
@@ -50,49 +52,40 @@ export function ConfirmModal({
     }
   };
 
-  const getConfirmButtonColor = () => {
-    switch (type) {
-      case "danger":
-        return "text-red-500";
-      case "warning":
-        return "text-amber-500";
-      case "info":
-      default:
-        return "text-blue-500";
-    }
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onCancel()}>
-      <DialogContent className="sm:max-w-[400px] bg-background border-border text-foreground p-0 gap-0 overflow-hidden">
-        <div className="p-6 text-center">
+      <DialogContent className="gap-0 overflow-hidden border-border bg-card p-0 sm:max-w-[400px]">
+        <div className="px-6 pb-2 pt-6 text-center">
           <div
-            className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${getColors()}`}
+            className={cn(
+              "mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full",
+              getColors()
+            )}
           >
             {getIcon()}
           </div>
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-center text-foreground">
-              {title}
-            </DialogTitle>
-            <DialogDescription className="text-center text-muted-foreground mt-2">
+          <DialogHeader className="space-y-2">
+            <DialogTitle className="text-center text-lg font-semibold">{title}</DialogTitle>
+            <DialogDescription className="text-center text-sm leading-relaxed">
               {message}
             </DialogDescription>
           </DialogHeader>
         </div>
-        <div className="flex divide-x divide-border border-t border-border bg-muted/20">
-          <button
-            onClick={onCancel}
-            className="flex-1 py-4 text-sm font-semibold text-muted-foreground hover:bg-muted/50 transition-colors"
-          >
+        <div className="flex gap-2 border-t border-border/80 p-4">
+          <Button type="button" variant="outline" className="flex-1" onClick={onCancel}>
             Cancelar
-          </button>
-          <button
+          </Button>
+          <Button
+            type="button"
+            variant={type === "danger" ? "destructive" : "default"}
+            className={cn(
+              "flex-1",
+              type === "warning" && "bg-amber-600 text-white hover:bg-amber-600/90"
+            )}
             onClick={onConfirm}
-            className={`flex-1 py-4 text-sm font-bold hover:bg-muted/50 transition-colors ${getConfirmButtonColor()}`}
           >
             Confirmar
-          </button>
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

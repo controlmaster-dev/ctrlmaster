@@ -25,13 +25,17 @@ export function useConfiguracionBundle(weekStart: string, enabled: boolean) {
   const [isReady, setIsReady] = useState(false);
   const [reportsReady, setReportsReady] = useState(false);
   const mountedRef = useRef(true);
+  const usersRef = useRef<unknown[]>([]);
+  const codesRef = useRef<SecurityCode[]>([]);
   const reportsRef = useRef<unknown[]>([]);
   const reportsReadyRef = useRef(false);
 
   useEffect(() => {
+    usersRef.current = users;
+    codesRef.current = securityCodes;
     reportsRef.current = reports;
     reportsReadyRef.current = reportsReady;
-  }, [reports, reportsReady]);
+  }, [users, securityCodes, reports, reportsReady]);
 
   const apply = useCallback(
     (bundle: {
@@ -185,6 +189,23 @@ export function useConfiguracionBundle(weekStart: string, enabled: boolean) {
     return fetchAll(true);
   }, [fetchAll]);
 
+  const removeReport = useCallback(
+    (id: string) => {
+      const nextReports = reportsRef.current.filter(
+        (r) => (r as { id?: string }).id !== id
+      );
+      reportsRef.current = nextReports;
+      setReports(nextReports);
+      persist({
+        users: usersRef.current,
+        reports: nextReports,
+        securityCodes: codesRef.current,
+        reportsReady: reportsReadyRef.current,
+      });
+    },
+    [persist]
+  );
+
   return {
     users,
     reports,
@@ -192,6 +213,7 @@ export function useConfiguracionBundle(weekStart: string, enabled: boolean) {
     isReady,
     reportsReady,
     refresh,
+    removeReport,
   };
 }
 

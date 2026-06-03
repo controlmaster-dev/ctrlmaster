@@ -1,5 +1,18 @@
 import sql from '@/lib/db';
 import type { CreateReportInput, UpdateReportInput } from '@/lib/validation';
+import {
+  formatReportCode,
+  parseReportCodeSequence,
+  resolveReportCodePrefix,
+} from "@/lib/reportCode";
+import { REPORT_COLUMNS } from "@/lib/reportColumns";
+import { ensureReportCodeColumn } from "@/lib/ensureReportCodeColumn";
+import { withDbRetry } from "@/lib/dbRetry";
+import {
+  EXCLUDE_AUTOMATED_OPERATOR,
+  normalizeReportStats,
+  type ReportStatsCounts,
+} from "@/lib/reportStats";
 
 export type ReportFilters = {
   page: number;
@@ -15,6 +28,7 @@ export type ReportFilters = {
 
 export type ReportListRow = {
   id: string;
+  code: string | null;
   operatorName: string;
   operatorEmail: string;
   problemDescription: string;
@@ -31,12 +45,14 @@ export type ReportListRow = {
 };
 
 export async function listReports(filters: ReportFilters) {
+  await ensureReportCodeColumn();
   const skip = (filters.page - 1) * filters.limit;
 
   const [reports, totalResult] = await Promise.all([
     sql<ReportListRow[]>`
       SELECT
         r."id",
+        r."code",
         r."operatorName",
         r."operatorEmail",
         r."problemDescription",
@@ -62,7 +78,7 @@ export async function listReports(filters: ReportFilters) {
       ${filters.priority && filters.priority !== 'all' ? sql`AND r."priority" = ${filters.priority}` : sql``}
       ${filters.category && filters.category !== 'all' ? sql`AND r."category" = ${filters.category}` : sql``}
       ${filters.operator ? sql`AND (r."operatorName" ILIKE ${'%' + filters.operator + '%'} OR r."operatorEmail" ILIKE ${'%' + filters.operator + '%'})` : sql``}
-      ${filters.search ? sql`AND (r."problemDescription" ILIKE ${'%' + filters.search + '%'} OR r."operatorName" ILIKE ${'%' + filters.search + '%'} OR r."id"::text ILIKE ${'%' + filters.search + '%'})` : sql``}
+      ${filters.search ? sql`AND (r."problemDescription" ILIKE ${'%' + filters.search + '%'} OR r."operatorName" ILIKE ${'%' + filters.search + '%'} OR r."id"::text ILIKE ${'%' + filters.search + '%'} OR r."code" ILIKE ${'%' + filters.search + '%'})` : sql``}
       ${filters.dateFrom ? sql`AND r."createdAt" >= ${new Date(filters.dateFrom).toISOString()}` : sql``}
       ${filters.dateTo ? sql`AND r."createdAt" <= ${new Date(filters.dateTo).toISOString()}` : sql``}
       ORDER BY r."createdAt" DESC
@@ -75,7 +91,7 @@ export async function listReports(filters: ReportFilters) {
       ${filters.priority && filters.priority !== 'all' ? sql`AND r."priority" = ${filters.priority}` : sql``}
       ${filters.category && filters.category !== 'all' ? sql`AND r."category" = ${filters.category}` : sql``}
       ${filters.operator ? sql`AND (r."operatorName" ILIKE ${'%' + filters.operator + '%'} OR r."operatorEmail" ILIKE ${'%' + filters.operator + '%'})` : sql``}
-      ${filters.search ? sql`AND (r."problemDescription" ILIKE ${'%' + filters.search + '%'} OR r."operatorName" ILIKE ${'%' + filters.search + '%'} OR r."id"::text ILIKE ${'%' + filters.search + '%'})` : sql``}
+      ${filters.search ? sql`AND (r."problemDescription" ILIKE ${'%' + filters.search + '%'} OR r."operatorName" ILIKE ${'%' + filters.search + '%'} OR r."id"::text ILIKE ${'%' + filters.search + '%'} OR r."code" ILIKE ${'%' + filters.search + '%'})` : sql``}
       ${filters.dateFrom ? sql`AND r."createdAt" >= ${new Date(filters.dateFrom).toISOString()}` : sql``}
       ${filters.dateTo ? sql`AND r."createdAt" <= ${new Date(filters.dateTo).toISOString()}` : sql``}
     `,
@@ -88,22 +104,54 @@ export async function listReports(filters: ReportFilters) {
 }
 
 export async function createReport(data: CreateReportInput) {
-  return sql.begin(async (tx) => {
+  await ensureReportCodeColumn();
+  return withDbRetry(() =>
+    sql.begin(async (tx) => {
+    const prefix = resolveReportCodePrefix(data.category, data.priority);
+    const existingCodes = await tx<{ code: string }[]>`
+      SELECT "code" FROM "Report"
+      WHERE "code" IS NOT NULL AND "code" LIKE ${prefix + "-%"}
+    `;
+    let maxSeq = 0;
+    for (const row of existingCodes) {
+      const seq = parseReportCodeSequence(row.code, prefix);
+      if (seq !== null && seq > maxSeq) maxSeq = seq;
+    }
+    let reportCode = "";
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const candidate = formatReportCode(prefix, maxSeq + 1 + attempt);
+      const [existing] = await tx`SELECT "id" FROM "Report" WHERE "code" = ${candidate} LIMIT 1`;
+      if (!existing) {
+        reportCode = candidate;
+        break;
+      }
+    }
+    if (!reportCode) throw new Error("No se pudo generar un código de reporte único");
+    const startedAt = new Date(data.dateStarted).toISOString();
+    const resolvedAt =
+      data.status === 'resolved'
+        ? new Date(data.dateResolved ?? data.dateStarted).toISOString()
+        : data.dateResolved
+          ? new Date(data.dateResolved).toISOString()
+          : null;
+
     const [newReport] = await tx`
       INSERT INTO "Report" (
+        "code",
         "operatorId", "operatorName", "operatorEmail",
         "problemDescription", "category", "priority",
         "status", "emailStatus", "emailRecipients",
         "dateStarted", "dateResolved"
       )
       VALUES (
+        ${reportCode},
         ${data.operatorId}, ${data.operatorName}, ${data.operatorEmail || ''},
         ${data.problemDescription}, ${data.category}, ${data.priority},
         ${data.status}, ${data.emailStatus || 'none'}, ${data.emailRecipients || null},
-        ${new Date(data.dateStarted).toISOString()},
-        ${data.dateResolved ? new Date(data.dateResolved).toISOString() : null}
+        ${startedAt},
+        ${resolvedAt}
       )
-      RETURNING *
+      RETURNING ${sql(REPORT_COLUMNS)}
     `;
 
     const attachments = data.attachments?.length
@@ -125,7 +173,8 @@ export async function createReport(data: CreateReportInput) {
       : [];
 
     return { ...newReport, attachments };
-  });
+    })
+  );
 }
 
 export async function findReportId(id: string) {
@@ -146,7 +195,7 @@ async function settled<T>(label: string, promise: Promise<T>, fallback: T): Prom
 
 export async function getReportDetailById(id: string) {
   const [reportRows, comments, reactions, views, attachments] = await Promise.all([
-    sql`SELECT * FROM "Report" WHERE "id" = ${id} LIMIT 1`,
+    sql`SELECT ${sql(REPORT_COLUMNS)} FROM "Report" WHERE "id" = ${id} LIMIT 1`,
     settled(
       "comments",
       sql`
@@ -261,8 +310,31 @@ export async function updateReport(data: UpdateReportInput) {
     UPDATE "Report"
     SET ${sql(updateData)}
     WHERE "id" = ${data.id}
-    RETURNING *
+    RETURNING ${sql(REPORT_COLUMNS)}
   `;
 
   return updatedReport ?? null;
+}
+
+export async function getReportStats(): Promise<ReportStatsCounts> {
+  await ensureReportCodeColumn();
+  const [row] = await sql<
+    {
+      total: number;
+      pending: number;
+      inProgress: number;
+      resolved: number;
+      today: number;
+    }[]
+  >`
+    SELECT
+      COUNT(*)::int AS "total",
+      COUNT(*) FILTER (WHERE "status" = 'pending')::int AS "pending",
+      COUNT(*) FILTER (WHERE "status" = 'in-progress')::int AS "inProgress",
+      COUNT(*) FILTER (WHERE "status" = 'resolved')::int AS "resolved",
+      COUNT(*) FILTER (WHERE "createdAt" >= CURRENT_DATE)::int AS "today"
+    FROM "Report"
+    WHERE "operatorName" IS DISTINCT FROM ${EXCLUDE_AUTOMATED_OPERATOR}
+  `;
+  return normalizeReportStats(row);
 }

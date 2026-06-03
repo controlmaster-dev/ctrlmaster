@@ -4,6 +4,7 @@ import { verifyPassword, needsRehash, hashPassword } from "@/lib/crypto";
 import { createToken } from "@/lib/auth";
 import { fetchWithTimeout } from "@/lib/fetch";
 import { EMAIL_CONFIG } from "@/config/constants";
+import { renderSecurityAlertEmail } from "@/lib/emailTemplates";
 import { AuthenticationError, ConflictError } from "@/lib/errors";
 import type { LoginInput, PublicRegisterInput } from "@/lib/validation";
 import {
@@ -52,20 +53,14 @@ async function sendSecurityAlert(
   try {
     await sendEmail({
       to: EMAIL_CONFIG.SECURITY_ALERT_RECIPIENT,
-      subject: "🔒 Seguridad: Inicio de Sesión Inusual Detectado",
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #FF0C60;">⚠️ Alerta de Seguridad</h2>
-          <p>Se ha detectado un inicio de sesión inusual en la cuenta de <strong>${user.name}</strong>.</p>
-          <div style="background: #fff3cd; padding: 15px; border-radius: 5px; margin: 15px 0;">
-            <p><strong>Usuario:</strong> ${user.email}</p>
-            <p><strong>País:</strong> ${country}</p>
-            <p><strong>IP:</strong> ${ip}</p>
-            <p><strong>Fecha:</strong> ${new Date().toLocaleString("es-CR")}</p>
-          </div>
-          <p>Si no reconoces esta actividad, por favor cambia tu contraseña inmediatamente.</p>
-        </div>
-      `,
+      subject: "Alerta de seguridad — inicio de sesión inusual",
+      html: renderSecurityAlertEmail({
+        userName: user.name,
+        userEmail: user.email,
+        country,
+        ip,
+        timestamp: new Date().toLocaleString("es-CR"),
+      }),
     });
   } catch (error) {
     console.error("Failed to send security alert email:", error);

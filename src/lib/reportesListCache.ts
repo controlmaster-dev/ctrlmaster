@@ -1,10 +1,12 @@
 import { createClientCache } from "@/lib/clientCache";
+import type { ReportStatsCounts } from "@/lib/reportStats";
 
 const TTL_MS = 3 * 60 * 1000;
 const store = createClientCache<ReportesListBundle>(TTL_MS);
 
 export interface ReportesListItem {
   id: string;
+  code?: string | null;
   problemDescription: string;
   operatorName: string;
   operatorEmail: string;
@@ -23,7 +25,7 @@ export interface ReportesListBundle {
   reports: ReportesListItem[];
   total: number;
   totalPages: number;
-  globalStats: { total: number; pending: number; resolved: number };
+  globalStats: ReportStatsCounts;
   fetchedAt: number;
 }
 

@@ -1,11 +1,11 @@
 
-
-
 import { generateToken } from '@/lib/crypto';
+import { SESSION_MAX_AGE_MS } from '@/lib/authConfig';
+import { isTransientDbError } from '@/lib/dbErrors';
+import { withDbRetry } from '@/lib/dbRetry';
 import sql from '@/lib/db';
 
-
-const TOKEN_EXPIRY = 24 * 60 * 60 * 1000;
+const TOKEN_EXPIRY = SESSION_MAX_AGE_MS;
 
 
 export async function createToken(userId: string): Promise<string> {
@@ -26,9 +26,9 @@ export async function validateToken(
   token: string
 ): Promise<boolean> {
   try {
-    const [sessionToken] = await sql`
+    const [sessionToken] = await withDbRetry(() => sql`
       SELECT * FROM "SessionToken" WHERE "token" = ${token}
-    `;
+    `);
 
     if (!sessionToken) {
       return false;
@@ -44,9 +44,19 @@ export async function validateToken(
     }
 
     return true;
-  } catch {
+  } catch (error) {
+    if (isTransientDbError(error)) throw error;
     return false;
   }
+}
+
+export async function touchSession(token: string): Promise<void> {
+  const expiresAt = new Date(Date.now() + TOKEN_EXPIRY);
+  await sql`
+    UPDATE "SessionToken"
+    SET "expiresAt" = ${expiresAt.toISOString()}
+    WHERE "token" = ${token}
+  `;
 }
 
 
@@ -78,7 +88,7 @@ export async function getUserFromToken(token: string | undefined) {
   }
 
   try {
-    const rows = await sql`
+    const rows = await withDbRetry(() => sql`
       SELECT u."id", u."name", u."email", u."username", u."role",
              u."image", u."phone", u."lastLogin", u."lastLoginIP",
              u."lastLoginCountry", u."currentPath", u."lastActive",
@@ -87,7 +97,7 @@ export async function getUserFromToken(token: string | undefined) {
       FROM "SessionToken" st
       JOIN "User" u ON u."id" = st."userId"
       WHERE st."token" = ${token}
-    `;
+    `);
 
     if (rows.length === 0) {
       return null;
@@ -103,7 +113,8 @@ export async function getUserFromToken(token: string | undefined) {
 
     const { tokenExpiresAt, ...user } = row;
     return user;
-  } catch {
+  } catch (error) {
+    if (isTransientDbError(error)) throw error;
     return null;
   }
 }

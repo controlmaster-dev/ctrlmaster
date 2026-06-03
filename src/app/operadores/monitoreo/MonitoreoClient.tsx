@@ -1,6 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import {
+  detectStreamPlaybackIssue,
+  streamPlaybackErrorMessage,
+} from "@/lib/streamPlaybackSupport";
 import dynamic from "next/dynamic";
 import { StreamGridTile } from "@/components/StreamGridTile";
 import { Activity, ArrowLeft } from "lucide-react";
@@ -64,6 +68,22 @@ const STREAMS = [
 const clampStreamIndex = (idx: number) =>
   Math.min(Math.max(0, idx), STREAMS.length - 1);
 
+const STREAM_SOUND_STORAGE_KEY = "enlace_stream_sound";
+
+type StreamSoundMap = Record<string, boolean>;
+
+function loadStreamSoundMap(): StreamSoundMap {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(STREAM_SOUND_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as unknown;
+    return parsed && typeof parsed === "object" ? (parsed as StreamSoundMap) : {};
+  } catch {
+    return {};
+  }
+}
+
 function PlayerSkeleton() {
   return (
     <Skeleton className="aspect-video h-full w-full rounded-lg bg-zinc-800" />
@@ -120,11 +140,13 @@ function MonitoringStatsSkeleton() {
 }
 
 export function MonitoreoClient() {
+  const playbackIssue = useMemo(() => detectStreamPlaybackIssue(), []);
   const [currentTime, setCurrentTime] = useState("");
   const [pvwIndex, setPvwIndex] = useState(0);
   const [prgIndex, setPrgIndex] = useState(1);
   const [statsOpen, setStatsOpen] = useState(false);
   const [playersReady, setPlayersReady] = useState(false);
+  const [soundByTitle, setSoundByTitle] = useState<StreamSoundMap>({});
 
   const pvwStream = useMemo(() => STREAMS[pvwIndex], [pvwIndex]);
   const prgStream = useMemo(() => STREAMS[prgIndex], [prgIndex]);
@@ -134,6 +156,7 @@ export function MonitoreoClient() {
     const savedPrg = localStorage.getItem("enlace_prg_index");
     if (savedPvw !== null) setPvwIndex(clampStreamIndex(parseInt(savedPvw, 10)));
     if (savedPrg !== null) setPrgIndex(clampStreamIndex(parseInt(savedPrg, 10)));
+    setSoundByTitle(loadStreamSoundMap());
   }, []);
 
   useEffect(() => {
@@ -180,6 +203,14 @@ export function MonitoreoClient() {
     },
     [prgIndex]
   );
+
+  const setStreamSound = useCallback((title: string, enabled: boolean) => {
+    setSoundByTitle((prev) => {
+      const next = { ...prev, [title]: enabled };
+      localStorage.setItem(STREAM_SOUND_STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -266,6 +297,15 @@ export function MonitoreoClient() {
         </div>
       </header>
 
+      {playbackIssue !== "none" && (
+        <div
+          role="alert"
+          className="mx-4 mt-3 rounded-[6px] border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-950 dark:text-amber-100"
+        >
+          {streamPlaybackErrorMessage(playbackIssue)}
+        </div>
+      )}
+
       <div className="grid shrink-0 grid-cols-1 gap-4 p-4 md:grid-cols-2">
         <div
           className="group/master relative aspect-video cursor-pointer overflow-hidden rounded-[6px] border border-emerald-500/30 bg-black hover:border-emerald-500/50 transition-all duration-200"
@@ -278,6 +318,10 @@ export function MonitoreoClient() {
               url={pvwStream.url}
               variant="preview"
               active
+              soundEnabled={!!soundByTitle[pvwStream.title]}
+              onSoundEnabledChange={(enabled) =>
+                setStreamSound(pvwStream.title, enabled)
+              }
             />
           ) : (
             <PlayerSkeleton />
@@ -296,6 +340,10 @@ export function MonitoreoClient() {
               url={prgStream.url}
               variant="program"
               active
+              soundEnabled={!!soundByTitle[prgStream.title]}
+              onSoundEnabledChange={(enabled) =>
+                setStreamSound(prgStream.title, enabled)
+              }
             />
           ) : (
             <PlayerSkeleton />

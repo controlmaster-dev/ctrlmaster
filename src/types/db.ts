@@ -24,6 +24,7 @@ export interface User {
 
 export interface Report {
   id: string;
+  code?: string | null;
   operatorId: string;
   operatorName: string;
   operatorEmail: string;

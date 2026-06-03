@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LogOut, Settings } from "lucide-react";
+import { ClipboardList, LogOut, Settings } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -73,6 +73,17 @@ export function UserAccountMenu({ user, logout, mobile = false }: UserAccountMen
           </div>
         )}
         <div className="p-0.5 space-y-0.5">
+          <Link href="/diarios">
+            <DropdownMenuItem className="cursor-pointer flex items-center gap-3 px-2.5 py-2 text-left rounded-[2px] border-l-[3px] border-l-transparent hover:border-l-brand hover:bg-brand/8 focus:bg-brand/10 focus:text-foreground focus:border-l-brand transition-all duration-150 group">
+              <ClipboardList className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-brand group-focus:text-brand transition-colors" />
+              <div className="flex flex-col min-w-0">
+                <span className="text-xs font-semibold text-foreground/90">Diarios</span>
+                <span className="text-[10px] text-muted-foreground mt-0.5 leading-none">
+                  Funciones del operador
+                </span>
+              </div>
+            </DropdownMenuItem>
+          </Link>
           {canOpenSettings && (
             <Link href="/configuracion">
               <DropdownMenuItem className="cursor-pointer flex items-center gap-3 px-2.5 py-2 text-left rounded-[2px] border-l-[3px] border-l-transparent hover:border-l-brand hover:bg-brand/8 focus:bg-brand/10 focus:text-foreground focus:border-l-brand transition-all duration-150 group">

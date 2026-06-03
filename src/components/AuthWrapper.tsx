@@ -25,8 +25,9 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
       fetch('/api/users/heartbeat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id })
-      }).catch((err) => console.error(err));
+        credentials: 'include',
+        body: JSON.stringify({ path: pathname }),
+      }).catch(() => {});
     }
   }, [isLoading, user, pathname, router]);
 

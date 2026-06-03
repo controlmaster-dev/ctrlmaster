@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { apiErrorResponse } from '@/lib/api/errorResponse';
-import nodemailer from 'nodemailer';
 import sql from '@/lib/db';
+import { sendTransactionalEmail } from '@/lib/emailDelivery';
 import { addDays, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { getBitcentralUser } from '@/lib/schedule';
 import { sendWhatsApp } from '@/lib/whatsapp';
 import { validateApiAuth } from '@/lib/apiAuth';
+import { renderShiftReminderEmail } from '@/lib/emailTemplates';
 
 interface ScheduleUser {
   id: string;
@@ -89,35 +90,23 @@ export async function POST(req: NextRequest) {
     }
 
     if (method === 'email' || method === 'both') {
-      const emailHtml = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;border:1px solid #e2e8f0;border-radius:6px;background:#fff;color:#333;"><div style="background:#0f172a;padding:20px;border-radius:6px 6px 0 0;"><h1 style="color:#fff;margin:0;font-size:18px;">Control Master</h1></div><div style="padding:30px;"><h2 style="color:#111;font-size:18px;">Recordatorio de Pauta Bitcentral</h2><p>Estimado/a <strong>${user.name.split(' ')[0]}</strong>,</p><p><strong>${senderName}</strong> te envía este recordatorio para indicarte que te encuentras asignado(a) a la programación de la Pauta Bitcentral.</p><table style="width:100%;border-collapse:collapse;margin:25px 0;background:#f8fafc;border:1px solid #e2e8f0;"><tr><td style="padding:12px 15px;border-bottom:1px solid #e2e8f0;font-size:14px;color:#64748b;">Fecha asignada:</td><td style="padding:12px 15px;font-size:14px;font-weight:bold;color:#0f172a;">${formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1)}</td></tr><tr><td style="padding:12px 15px;font-size:14px;color:#64748b;">Modalidad de turno:</td><td style="padding:12px 15px;font-size:14px;font-weight:bold;color:#0f172a;">${tipoDeTurno}</td></tr></table><p>Por favor, asegúrese de segmentar los programas con tiempo.</p></div><div style="border-top:1px solid #e2e8f0;padding:15px 30px;font-size:12px;color:#94a3b8;background:#f8fafc;border-radius:0 0 6px 6px;">Este es un mensaje automático generado por el sistema de Gestión de Turnos de Enlace.</div></div>`;
+      const dateTitle =
+        formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
+      const emailHtml = renderShiftReminderEmail({
+        firstName: user.name.split(" ")[0] || user.name,
+        formattedDate: dateTitle,
+        shiftType: tipoDeTurno,
+        senderLine: senderName,
+      });
 
-      try {
-        const { Resend } = await import('resend');
-        const resend = new Resend(process.env.RESEND_API_KEY);
-        await resend.emails.send({
-          from: 'Control Master <alertas@enlacecr.dev>',
-          to: [user.email],
-          subject: `Recordatorio: Turno de Pauta Bitcentral (${formattedDate})`,
-          html: emailHtml,
-        });
-        results.email = 'sent';
-      } catch (resendError) {
-        try {
-          const transporter = nodemailer.createTransport({
-            host: 'smtp.office365.com', port: 587, secure: false,
-            auth: { user: process.env.SMTP_EMAIL, pass: process.env.SMTP_PASSWORD },
-            tls: { minVersion: 'TLSv1.2' }
-          });
-          await transporter.sendMail({
-            from: `"Control Master" <${process.env.SMTP_EMAIL}>`,
-            to: user.email,
-            subject: `Recordatorio: Turno de Pauta Bitcentral (${formattedDate})`,
-            html: emailHtml,
-          });
-          results.email = 'sent';
-        } catch (nodemailerError) {
-          results.email = 'error';
-        }
+      const sent = await sendTransactionalEmail({
+        to: user.email,
+        subject: `Recordatorio de pauta — ${dateTitle}`,
+        html: emailHtml,
+      });
+      results.email = sent.success ? 'sent' : 'error';
+      if (!sent.success) {
+        console.warn('[manual-reminder] Email failed:', sent.error);
       }
     }
 

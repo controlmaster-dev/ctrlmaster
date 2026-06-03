@@ -16,6 +16,7 @@ import {
   invalidateDashboardCache,
   type DashboardBundle,
 } from "@/lib/dashboardCache";
+import { normalizeReportStats, type ReportStatsCounts } from "@/lib/reportStats";
 
 
 type RefetchCallback = () => void;
@@ -78,19 +79,19 @@ function prefetchReportDetailsFromReports(allReports: Report[]) {
   void prefetchReportDetails([...new Set([...recentIds, ...pendingIds])]);
 }
 
-function deriveStats(reports: Report[]): DashboardStats {
-  const today = new Date().toDateString();
+function buildDashboardStats(
+  reportStats: ReportStatsCounts,
+  reports: Report[]
+): DashboardStats {
   return {
-    totalReports: reports.length,
-    pendingReports: reports.filter((r) => r.status === "pending").length,
-    resolvedReports: reports.filter((r) => r.status === "resolved").length,
+    totalReports: reportStats.total,
+    pendingReports: reportStats.active,
+    resolvedReports: reportStats.resolved,
     criticalReports: reports.filter(
       (r) =>
         (r.priority === "Enlace" || r.priority === "Todos") && r.status !== "resolved"
     ).length,
-    reportsToday: reports.filter(
-      (r) => new Date(r.createdAt).toDateString() === today
-    ).length,
+    reportsToday: reportStats.today,
     averageResolutionTime: 0,
   };
 }
@@ -123,6 +124,9 @@ export function useDashboardBundle() {
   const [users, setUsers] = useState<User[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
   const [whatsappHealth, setWhatsappHealth] = useState<unknown | null>(null);
+  const [reportStats, setReportStats] = useState<ReportStatsCounts>(() =>
+    normalizeReportStats(null)
+  );
   const [isReady, setIsReady] = useState(false);
   const mountedRef = useRef(true);
 
@@ -131,17 +135,19 @@ export function useDashboardBundle() {
     setUsers(bundle.users);
     setComments(bundle.comments ?? []);
     setWhatsappHealth(bundle.whatsappHealth ?? null);
+    setReportStats(normalizeReportStats(bundle.reportStats));
   }, []);
 
   const fetchAll = useCallback(async (silent = false) => {
     if (!silent) setIsReady(false);
 
     try {
-      const [reportsRes, usersRes, commentsRes, waRes] = await Promise.all([
+      const [reportsRes, usersRes, commentsRes, waRes, statsRes] = await Promise.all([
         fetch("/api/reports?limit=50"),
         fetch("/api/users"),
         fetch("/api/comments/recent"),
         fetch("/api/proxy/whatsapp"),
+        fetch("/api/reports/stats", { credentials: "include" }),
       ]);
 
       const reportsData = await reportsRes.json();
@@ -152,6 +158,15 @@ export function useDashboardBundle() {
         waData = await waRes.json();
       } catch {
         waData = null;
+      }
+
+      let statsData: ReportStatsCounts = normalizeReportStats(null);
+      try {
+        if (statsRes.ok) {
+          statsData = normalizeReportStats(await statsRes.json());
+        }
+      } catch {
+        statsData = normalizeReportStats(null);
       }
 
       const reportsList: Report[] = Array.isArray(reportsData)
@@ -174,6 +189,7 @@ export function useDashboardBundle() {
         users: usersList,
         comments: commentsList,
         whatsappHealth: wa,
+        reportStats: statsData,
         fetchedAt: Date.now(),
       };
 
@@ -235,7 +251,10 @@ export function useDashboardBundle() {
     };
   }, [applyBundle, fetchAll]);
 
-  const stats = useMemo(() => deriveStats(reports), [reports]);
+  const stats = useMemo(
+    () => buildDashboardStats(reportStats, reports),
+    [reportStats, reports]
+  );
   const recentReports = useMemo(() => deriveRecentReports(reports), [reports]);
   const chartData = useMemo(() => deriveChartData(reports), [reports]);
 
@@ -252,17 +271,25 @@ export function useDashboardBundle() {
 
 export function useDashboardStats() {
   const [reports, setReports] = useState<Report[]>([]);
+  const [reportStats, setReportStats] = useState<ReportStatsCounts>(() =>
+    normalizeReportStats(null)
+  );
   const [isLoading, setIsLoading] = useState(true);
   const fetchRef = useRef<AbortController | null>(null);
 
   const doFetch = useCallback(() => {
     if (fetchRef.current) fetchRef.current.abort();
     fetchRef.current = new AbortController();
+    const signal = fetchRef.current.signal;
 
     setIsLoading(true);
-    fetch("/api/reports?limit=50", { signal: fetchRef.current.signal })
-      .then((res) => res.json())
-      .then((data) => {
+    Promise.all([
+      fetch("/api/reports?limit=50", { signal }).then((res) => res.json()),
+      fetch("/api/reports/stats", { credentials: "include", signal }).then((res) =>
+        res.ok ? res.json() : null
+      ),
+    ])
+      .then(([data, statsRaw]) => {
         const reportsList: Report[] = Array.isArray(data)
           ? data
           : (data.reports || []);
@@ -270,6 +297,7 @@ export function useDashboardStats() {
           (r: Report) => r.operatorName !== "Monitoreo Automático"
         );
         setReports(allReports);
+        setReportStats(normalizeReportStats(statsRaw));
 
         const sorted = [...allReports].sort(
           (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -306,23 +334,10 @@ export function useDashboardStats() {
   }, [doFetch]);
 
 
-  const stats = useMemo<DashboardStats>(() => {
-    const today = new Date().toDateString();
-    return {
-      totalReports: reports.length,
-      pendingReports: reports.filter((r) => r.status === "pending").length,
-      resolvedReports: reports.filter((r) => r.status === "resolved").length,
-      criticalReports: reports.filter(
-        (r) =>
-          (r.priority === "Enlace" || r.priority === "Todos") &&
-          r.status !== "resolved"
-      ).length,
-      reportsToday: reports.filter(
-        (r) => new Date(r.createdAt).toDateString() === today
-      ).length,
-      averageResolutionTime: 0,
-    };
-  }, [reports]);
+  const stats = useMemo<DashboardStats>(
+    () => buildDashboardStats(reportStats, reports),
+    [reportStats, reports]
+  );
 
 
   const recentReports = useMemo<Report[]>(

@@ -11,6 +11,8 @@
     "electron:build": "electron-builder",
     "lint": "npx tsc --noEmit && npx eslint .",
     "test": "node --import tsx --import ./tests/setup.ts --test tests/**/*.test.ts",
+    "migrate:report-codes": "tsx scripts/migrate-report-codes.ts",
+    "migrate:report-codes:dry": "tsx scripts/migrate-report-codes.ts --dry-run",
     "format": "npx biome format --write",
     "all": "next build && next start"
   },

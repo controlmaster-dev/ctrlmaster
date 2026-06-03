@@ -1,10 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ThumbsUp, Send, CheckCircle, Eye } from "lucide-react";
+import { ThumbsUp, Send, Loader2, X, Reply } from "lucide-react";
+import {
+  COMMENT_LIKE_REACTION_ID,
+  getReportReactionLabel,
+  normalizeReactionId,
+} from "@/lib/reportReactions";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import {
@@ -13,12 +18,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-
-const EMOJIS = [
-  { label: "👍", icon: ThumbsUp },
-  { label: "👀", icon: Eye },
-  { label: "✅", icon: CheckCircle },
-];
+import { cn } from "@/lib/utils";
+import { buildCommentTree, splitMentionParts, type CommentNode } from "@/lib/reportSocialUtils";
+import { useReportSocials } from "@/hooks/useReportSocials";
 
 interface ReportSocialsProps {
   reportId: string;
@@ -26,8 +28,8 @@ interface ReportSocialsProps {
   initialComments: CommentItem[];
   initialReactions: ReactionItem[];
   availableUsers: SocialUser[];
-  onUpdate: () => void;
-
+  onUpdate?: () => void;
+  onSocialChange?: (comments: CommentItem[], reactions: ReactionItem[]) => void;
   embedded?: boolean;
 }
 
@@ -45,7 +47,9 @@ export interface ReactionItem {
 
 export interface CommentReactionItem {
   id?: string;
-  emoji?: string;
+  emoji: string;
+  authorId: string;
+  author?: SocialUser;
 }
 
 export interface CommentItem {
@@ -55,6 +59,162 @@ export interface CommentItem {
   createdAt: string | Date;
   content: string;
   reactions?: CommentReactionItem[];
+  pending?: boolean;
+}
+
+function CommentContent({ content }: { content: string }) {
+  return (
+    <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground/90">
+      {splitMentionParts(content).map((part, i) =>
+        part.mention ? (
+          <span key={i} className="font-semibold text-primary">
+            {part.text}
+          </span>
+        ) : (
+          <span key={i}>{part.text}</span>
+        )
+      )}
+    </p>
+  );
+}
+
+function CommentBubble({
+  node,
+  depth,
+  currentUserId,
+  onReply,
+  onReact,
+  pendingReaction,
+  compact,
+}: {
+  node: CommentNode;
+  depth: number;
+  currentUserId?: string;
+  onReply: (id: string, name: string) => void;
+  onReact: (commentId: string, emoji: string) => void;
+  pendingReaction: string | null;
+  compact?: boolean;
+}) {
+  const authorName = node.author.name || "Usuario";
+  const reactionKey = `${node.id}:${COMMENT_LIKE_REACTION_ID}`;
+  const myReaction = node.reactions?.some(
+    (r) =>
+      normalizeReactionId(r.emoji) === COMMENT_LIKE_REACTION_ID &&
+      r.authorId === currentUserId
+  );
+
+  return (
+    <article
+      className={cn(
+        "group flex",
+        compact ? "gap-2" : "gap-3",
+        depth > 0 && (compact ? "ml-4 border-l-2 border-primary/20 pl-3" : "ml-6 border-l-2 border-primary/20 pl-4"),
+        node.pending && "opacity-60"
+      )}
+    >
+      <Avatar
+        className={cn(
+          "shrink-0 border border-border",
+          compact ? "h-8 w-8" : "h-9 w-9"
+        )}
+      >
+        <AvatarImage src={node.author.image || undefined} />
+        <AvatarFallback className="bg-primary/15 text-xs text-primary">
+          {authorName.substring(0, 2).toUpperCase()}
+        </AvatarFallback>
+      </Avatar>
+
+      <div className="min-w-0 flex-1">
+        <div
+          className={cn(
+            "rounded-2xl rounded-tl-md border border-border/70 bg-card shadow-sm transition-shadow group-hover:border-border",
+            compact ? "px-3 py-2" : "px-3.5 py-2.5"
+          )}
+        >
+          <div className="mb-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+            <span className="text-xs font-semibold text-foreground">{authorName}</span>
+            <time className="text-[10px] text-muted-foreground">
+              {formatDistanceToNow(new Date(node.createdAt), {
+                addSuffix: true,
+                locale: es,
+              })}
+            </time>
+            {node.pending && (
+              <span className="text-[10px] text-muted-foreground">Enviando…</span>
+            )}
+          </div>
+          <CommentContent content={node.content} />
+
+          {(node.reactions?.length ?? 0) > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {Object.entries(
+                (node.reactions ?? []).reduce<Record<string, number>>((acc, r) => {
+                  const key = normalizeReactionId(r.emoji);
+                  acc[key] = (acc[key] ?? 0) + 1;
+                  return acc;
+                }, {})
+              ).map(([stored, count]) => (
+                <span
+                  key={stored}
+                  className="inline-flex items-center gap-0.5 rounded-full border border-border bg-muted/50 px-1.5 py-0.5 text-[10px] text-muted-foreground"
+                >
+                  {getReportReactionLabel(stored)} {count}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="mt-1 flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100 transition-opacity">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 gap-1 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+            onClick={() => onReply(node.id, authorName)}
+          >
+            <Reply className="h-3 w-3" />
+            Responder
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={pendingReaction === reactionKey}
+            className={cn(
+              "h-7 gap-1 px-2 text-[11px]",
+              myReaction ? "text-primary" : "text-muted-foreground hover:text-primary"
+            )}
+            onClick={() => onReact(node.id, COMMENT_LIKE_REACTION_ID)}
+          >
+            {pendingReaction === reactionKey ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <ThumbsUp className="h-3 w-3" />
+            )}
+            Me gusta
+          </Button>
+        </div>
+
+        {node.replies.length > 0 && (
+          <div className={cn(compact ? "mt-2 space-y-2" : "mt-3 space-y-3")}>
+            {node.replies.map((reply) => (
+              <CommentBubble
+                key={reply.id}
+                node={reply}
+                depth={depth + 1}
+                currentUserId={currentUserId}
+                onReply={onReply}
+                onReact={onReact}
+                pendingReaction={pendingReaction}
+                compact={compact}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </article>
+  );
 }
 
 export function ReportSocials({
@@ -64,289 +224,192 @@ export function ReportSocials({
   initialReactions,
   availableUsers,
   onUpdate,
+  onSocialChange,
   embedded = false,
 }: ReportSocialsProps) {
-  const [comment, setComment] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [replyingTo, setReplyingTo] = useState<string | null>(null);
-
-  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
-  const [showMentions, setShowMentions] = useState(false);
-
-  const filteredUsers = mentionQuery
-    ? availableUsers.filter((u) =>
-        (u.name || "").toLowerCase().includes(mentionQuery.toLowerCase())
-      )
-    : [];
-
-  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setComment(val);
-
-    const lastAt = val.lastIndexOf("@");
-    if (lastAt !== -1 && lastAt >= val.length - 20) {
-      const query = val.slice(lastAt + 1);
-
-      if (!query.includes(" ")) {
-        setMentionQuery(query);
-        setShowMentions(true);
-        return;
-      }
-    }
-    setShowMentions(false);
-  };
-
-  const insertMention = (userName: string) => {
-    if (!mentionQuery) return;
-    const lastAt = comment.lastIndexOf("@");
-    const newText =
-      comment.substring(0, lastAt) +
-      `@${userName} ` +
-      comment.substring(lastAt + mentionQuery.length + 1);
-    setComment(newText);
-    setShowMentions(false);
-  };
-
-  const reactionCounts = EMOJIS.map((e) => {
-    const count = initialReactions.filter((r) => r.emoji === e.label).length;
-    const hasReacted = initialReactions.some(
-      (r) => r.emoji === e.label && r.authorId === currentUser?.id
-    );
-    const reactors = initialReactions
-      .filter((r) => r.emoji === e.label)
-      .map((r) => r.author.name || "Usuario")
-      .join(", ");
-    return { ...e, count, hasReacted, reactors };
+  const social = useReportSocials({
+    reportId,
+    currentUser,
+    initialComments,
+    initialReactions,
+    availableUsers,
+    onSocialChange,
+    onActivity: onUpdate,
   });
 
-  const handleSendComment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!comment.trim() || !currentUser) return;
-
-    setSubmitting(true);
-
-    const mentionedIds: string[] = [];
-    availableUsers.forEach((u) => {
-      if (u.name && comment.includes(`@${u.name}`)) {
-        mentionedIds.push(u.id);
-      }
-    });
-
-    try {
-      const body: Record<string, unknown> = {
-        reportId,
-        authorId: currentUser.id,
-        content: comment,
-      };
-      if (replyingTo) body.parentId = replyingTo;
-      if (mentionedIds.length > 0) body.mentionedUserIds = mentionedIds;
-
-      await fetch("/api/comments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      setComment("");
-      setReplyingTo(null);
-      onUpdate();
-    } catch (err) {
-      console.error("Error sending comment", err);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleReaction = async (emoji: string) => {
-    if (!currentUser) return;
-    try {
-      await fetch("/api/reactions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reportId, authorId: currentUser.id, emoji }),
-      });
-      onUpdate();
-    } catch (err) {
-      console.error("Error reacting", err);
-    }
-  };
-
-  const handleCommentReaction = async (commentId: string, emoji: string) => {
-    if (!currentUser) return;
-    try {
-      await fetch("/api/comments/react", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ commentId, authorId: currentUser.id, emoji }),
-      });
-      onUpdate();
-    } catch (err) {
-      console.error("Error reacting to comment", err);
-    }
-  };
-
-  const renderComment = (c: CommentItem) => {
-    const isReply = !!c.parentId;
-    return (
-      <div key={c.id} className={`flex gap-3 items-start ${isReply ? "ml-8 mt-2" : "mt-4"}`}>
-        <Avatar className="w-8 h-8 rounded-full border border-border">
-          <AvatarImage src={c.author.image || undefined} />
-          <AvatarFallback className="text-xs bg-slate-800">
-            {(c.author.name || "US").substring(0, 2).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
-        <div className="flex-1 min-w-0">
-          <div className="bg-slate-50 dark:bg-white/5 p-3 rounded-2xl rounded-tl-sm text-sm border border-slate-100 dark:border-white/5 relative group">
-            <div className="flex justify-between items-center mb-1">
-              <span className="font-bold text-slate-800 dark:text-slate-200 text-xs">
-                {c.author.name || "Usuario"}
-              </span>
-              <span className="text-[10px] text-slate-400">
-                {formatDistanceToNow(new Date(c.createdAt), {
-                  addSuffix: true,
-                  locale: es,
-                })}
-              </span>
-            </div>
-            <p className="text-slate-600 dark:text-slate-300 break-words">
-              {c.content}
-            </p>
-
-            <div className="absolute -bottom-5 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 px-2 text-[10px] text-slate-500 hover:text-brand"
-                onClick={() => {
-                  setReplyingTo(c.id);
-                  setComment(`@${c.author.name || "Usuario"} `);
-                }}
-              >
-                Responder
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 px-2 text-[10px] text-slate-500 hover:text-blue-500"
-                onClick={() => handleCommentReaction(c.id, "👍")}
-              >
-                <ThumbsUp className="w-3 h-3" />
-              </Button>
-            </div>
-
-            {c.reactions && c.reactions.length > 0 && (
-              <div className="absolute -bottom-3 left-2 bg-white dark:bg-[#18181b] border border-slate-200 dark:border-white/10 rounded-full px-1.5 py-0.5 flex items-center gap-1 shadow-sm">
-                <ThumbsUp className="w-2 h-2 text-blue-500" />
-                <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400">
-                  {c.reactions.length}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
+  const commentTree = buildCommentTree(social.comments);
 
   return (
     <div
       className={
         embedded
-          ? "flex min-h-0 flex-1 flex-col gap-5"
-          : "mt-4 space-y-6 border-t border-slate-100 pt-4 dark:border-white/5"
+          ? "flex min-h-0 flex-1 flex-col gap-2"
+          : "mt-4 space-y-6 border-t border-border pt-4"
       }
     >
-      <TooltipProvider>
-        <div className="flex shrink-0 flex-wrap gap-2">
-          {reactionCounts.map((r) => (
-            <Tooltip key={r.label}>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleReaction(r.label)}
-                  className={`h-8 gap-2 rounded-full border transition-all ${
-                    r.hasReacted
-                      ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800"
-                      : "bg-slate-100 dark:bg-white/10 border-slate-300 dark:border-white/20 hover:bg-slate-200 dark:hover:bg-white/20 text-slate-600 dark:text-slate-300"
-                  }`}
-                >
-                  <span className="text-sm">{r.label}</span>
-                  {r.count > 0 && <span className="text-xs font-bold">{r.count}</span>}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="z-[50005] bg-black text-white text-xs border-white/10 max-w-[200px] break-words text-center">
-                {r.count > 0 ? r.reactors : "Reaccionar"}
-              </TooltipContent>
-            </Tooltip>
-          ))}
+      <TooltipProvider delayDuration={200}>
+        <div className={cn("flex shrink-0 flex-wrap", embedded ? "gap-1.5" : "gap-2")}>
+          {social.reactionCounts.map((r) => {
+            const busy = social.pendingReaction === r.id;
+            const Icon = r.Icon;
+            return (
+              <Tooltip key={r.id}>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={!!social.pendingReaction && !busy}
+                    onClick={() => social.toggleReportReaction(r.id)}
+                    aria-label={r.label}
+                    className={cn(
+                      embedded ? "h-8 gap-1 rounded-md border px-2" : "h-9 gap-1.5 rounded-md border px-2.5",
+                      "transition-all active:scale-95",
+                      r.hasReacted
+                        ? "border-primary/40 bg-primary/15 text-primary shadow-sm"
+                        : "border-border bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                  >
+                    {busy ? (
+                      <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+                    ) : (
+                      <Icon className="h-4 w-4 shrink-0" aria-hidden />
+                    )}
+                    <span className="text-xs font-medium">{r.label}</span>
+                    {r.count > 0 && (
+                      <span className="text-xs font-bold tabular-nums">
+                        {r.count}
+                      </span>
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="z-[50005] max-w-[220px] text-center text-xs">
+                  {r.count > 0 ? r.reactors : r.label}
+                </TooltipContent>
+              </Tooltip>
+            );
+          })}
         </div>
       </TooltipProvider>
 
       <div
-        className={
-          embedded
-            ? "min-h-0 flex-1 space-y-4 overflow-y-auto pr-1 custom-scrollbar"
-            : "max-h-[400px] space-y-4 overflow-y-auto p-2 pr-2 custom-scrollbar"
-        }
+        ref={social.scrollRef}
+        className={cn(
+          embedded ? "space-y-2.5" : "space-y-4",
+          "min-h-0 flex-1 overflow-y-auto pr-1 custom-scrollbar",
+          !embedded && "max-h-[400px]"
+        )}
       >
-        {initialComments.length === 0 ? (
-          <p className="text-sm text-slate-400 italic text-center py-4">
-            Sin comentarios aún.
-          </p>
+        {commentTree.length === 0 ? (
+          <div
+            className={cn(
+              "flex flex-col items-center justify-center text-center",
+              embedded ? "py-6" : "py-10"
+            )}
+          >
+            <p className="text-sm font-medium text-muted-foreground">Sin comentarios aún</p>
+            <p className="mt-1 text-xs text-muted-foreground/80">
+              Sé el primero en dejar una nota en este reporte
+            </p>
+          </div>
         ) : (
-          initialComments.map(renderComment)
+          commentTree.map((node) => (
+            <CommentBubble
+              key={node.id}
+              node={node}
+              depth={0}
+              currentUserId={currentUser?.id}
+              onReply={social.startReply}
+              onReact={social.toggleCommentReaction}
+              pendingReaction={social.pendingReaction}
+              compact={embedded}
+            />
+          ))
         )}
       </div>
 
-      <div className="relative shrink-0">
-        {replyingTo && (
-          <div className="text-xs text-slate-400 mb-2 flex justify-between">
-            <span>Respondiendo...</span>
+      <div
+        className={cn(
+          "relative shrink-0 border-t border-border/60",
+          embedded ? "pt-2" : "pt-3"
+        )}
+      >
+        {social.replyingTo && (
+          <div className="mb-2 flex items-center justify-between rounded-lg bg-primary/10 px-3 py-2 text-xs text-foreground">
+            <span>
+              Respondiendo a <strong>{social.replyingTo.authorName}</strong>
+            </span>
             <button
-              onClick={() => {
-                setReplyingTo(null);
-                setComment("");
-              }}
+              type="button"
+              onClick={social.cancelReply}
+              className="rounded p-0.5 hover:bg-primary/20"
+              aria-label="Cancelar respuesta"
             >
-              Cancelar
+              <X className="h-3.5 w-3.5" />
             </button>
           </div>
         )}
 
-        {showMentions && filteredUsers.length > 0 && (
-          <div className="absolute bottom-12 left-0 bg-[#18181b] border border-white/10 rounded-md shadow-lg z-50 w-64 overflow-hidden">
-            <div className="p-1 max-h-40 overflow-y-auto">
-              {filteredUsers.map((u) => (
-                <button
-                  key={u.id}
-                  onClick={() => insertMention(u.name || "Usuario")}
-                  className="w-full text-left px-3 py-2 text-sm text-slate-300 hover:bg-white/10 rounded flex items-center gap-2"
-                >
-                  <Avatar className="w-5 h-5">
-                    <AvatarImage src={u.image || undefined} />
-                    <AvatarFallback>{(u.name || "U").substring(0, 1)}</AvatarFallback>
-                  </Avatar>
-                  {u.name || "Usuario"}
-                </button>
+        {social.showMentions && social.filteredUsers.length > 0 && (
+          <div className="absolute bottom-full left-0 z-50 mb-2 w-full max-w-xs overflow-hidden rounded-lg border border-border bg-popover shadow-lg">
+            <p className="border-b border-border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Mencionar
+            </p>
+            <ul className="max-h-40 overflow-y-auto p-1">
+              {social.filteredUsers.map((u) => (
+                <li key={u.id}>
+                  <button
+                    type="button"
+                    onClick={() => social.insertMention(u.name || "Usuario")}
+                    className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-muted"
+                  >
+                    <Avatar className="h-6 w-6">
+                      <AvatarImage src={u.image || undefined} />
+                      <AvatarFallback className="text-[10px]">
+                        {(u.name || "U").substring(0, 1)}
+                      </AvatarFallback>
+                    </Avatar>
+                    {u.name || "Usuario"}
+                  </button>
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
         )}
 
-        <form onSubmit={handleSendComment} className="flex gap-2 items-center">
-          <Input
-            value={comment}
-            onChange={handleInput}
-            placeholder="Escribe un comentario..."
-            className="bg-transparent border-slate-200 dark:border-white/10"
+        <form
+          onSubmit={social.sendComment}
+          className="flex gap-2 items-end"
+        >
+          <Textarea
+            value={social.comment}
+            onChange={(e) => social.handleInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                void social.sendComment();
+              }
+            }}
+            placeholder={
+              currentUser
+                ? "Escribe un comentario… (Ctrl+Enter para enviar)"
+                : "Inicia sesión para comentar"
+            }
+            disabled={!currentUser || social.submitting}
+            rows={2}
+            className="min-h-[44px] max-h-32 resize-none border-border bg-background text-sm"
           />
           <Button
             type="submit"
             size="icon"
-            disabled={submitting || !comment.trim()}
-            className="shrink-0 bg-brand hover:bg-brand-hover text-white"
+            disabled={!currentUser || social.submitting || !social.comment.trim()}
+            className="h-11 w-11 shrink-0 bg-brand hover:bg-brand-hover text-white"
           >
-            <Send className="w-4 h-4 ml-0.5" />
+            {social.submitting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
           </Button>
         </form>
       </div>

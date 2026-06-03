@@ -16,6 +16,7 @@ import {
   Headset,
   History,
   X,
+  ClipboardList,
 } from "lucide-react";
 
 import type { LucideIcon } from "lucide-react";
@@ -70,6 +71,7 @@ export function CommandPalette({
 
   const quickActions = [
     { label: "Recientes", icon: History, path: "/reportes" },
+    { label: "Diarios", icon: ClipboardList, path: "/diarios" },
     { label: "Monitoreo", icon: MonitorPlay, path: "/operadores/monitoreo" },
     { label: "Operadores", icon: Headset, path: "/operadores" },
     { label: "Usuarios", icon: Users, path: "/usuarios" },
@@ -106,6 +108,13 @@ export function CommandPalette({
             desc: "Ver y filtrar el historial.",
             icon: FileText,
             action: () => router.push("/reportes"),
+          },
+          {
+            id: "nav-diarios",
+            label: "Diarios",
+            desc: "Funciones obligatorias por operador.",
+            icon: ClipboardList,
+            action: () => router.push("/diarios"),
           },
           {
             id: "nav-monitor",

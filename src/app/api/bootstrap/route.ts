@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { apiHandler } from "@/lib/api/handler";
 import sql from "@/lib/db";
+import { withDbRetry } from "@/lib/dbRetry";
+import { ensureReportCodeColumn } from "@/lib/ensureReportCodeColumn";
+import { getReportStats } from "@/server/services/reportService";
 
 export const dynamic = "force-dynamic";
 
@@ -11,10 +14,12 @@ interface BootstrapReportRow {
 }
 
 export const GET = apiHandler({ auth: true }, async () => {
-  const [reportsRaw, recentComments, statsRows] = await Promise.all([
+  await withDbRetry(() => ensureReportCodeColumn());
+  const [reportsRaw, recentComments, stats] = await withDbRetry(() =>
+    Promise.all([
     sql`
       SELECT
-        r."id", r."operatorName", r."operatorEmail", r."problemDescription",
+        r."id", r."code", r."operatorName", r."operatorEmail", r."problemDescription",
         r."category", r."priority", r."status", r."createdAt",
         r."dateStarted", r."dateResolved", r."emailStatus", r."emailRecipients",
         COALESCE(cc."commentCount", 0)::int AS "commentCount",
@@ -39,21 +44,14 @@ export const GET = apiHandler({ auth: true }, async () => {
       ORDER BY c."createdAt" DESC
       LIMIT 10
     `,
-    sql`
-      SELECT
-        COUNT(*)::int AS "total",
-        COUNT(*) FILTER (WHERE "status" = 'pending')::int AS "pending",
-        COUNT(*) FILTER (WHERE "status" = 'resolved')::int AS "resolved"
-      FROM "Report"
-    `,
-  ]);
+    getReportStats(),
+    ])
+  );
 
   const reports = (reportsRaw as unknown as BootstrapReportRow[]).map((r) => ({
     ...r,
     _count: { comments: r.commentCount, reactions: r.reactionCount },
   }));
-
-  const stats = statsRows[0] ?? { total: 0, pending: 0, resolved: 0 };
 
   return NextResponse.json(
     { reports, recentComments, stats },

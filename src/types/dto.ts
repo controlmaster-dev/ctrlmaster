@@ -11,6 +11,7 @@ export type PaginationDto = {
 
 export type ReportListItemDto = {
   id: string;
+  code?: string | null;
   operatorName: string;
   operatorEmail: string;
   problemDescription: string;

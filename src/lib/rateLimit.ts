@@ -47,6 +47,12 @@ export class RateLimiter {
       return { success: false, retryAfter: retryAfterSeconds };
     }
   }
+
+  /** Devuelve un intento si el envío falló por red (no por abuso). */
+  refund(key: string) {
+    const bucket = this.refill(key);
+    bucket.tokens = Math.min(this.maxTokens, bucket.tokens + 1);
+  }
 }
 
 export const emailRateLimiter = new RateLimiter(1, 60);

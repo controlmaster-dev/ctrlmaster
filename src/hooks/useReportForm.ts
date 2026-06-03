@@ -1,12 +1,15 @@
-
-
-
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { STORAGE_KEYS, UI_CONFIG } from "@/config/constants";
+import { toDatetimeLocalValue, parseDatetimeLocal } from "@/lib/datetimeLocal";
+import { formatReportDisplayId } from "@/lib/reportCode";
+import {
+  REPORT_DESCRIPTION_MAX_CHARS,
+  sanitizeReportDescription,
+} from "@/lib/reportPdfLimits";
 
 export interface Attachment {
   url: string;
@@ -25,7 +28,8 @@ export interface ReportFormData {
   priority: string[];
   categories: string[];
   attachments: Attachment[];
-  isManualDate: boolean;
+  useManualStartDate: boolean;
+  useManualResolveDate: boolean;
   sendEmail: boolean;
   emailRecipients: string;
 }
@@ -43,15 +47,24 @@ export function useReportForm() {
     problemDescription: "",
     dateStarted: "",
     dateResolved: "",
-    isResolved: true,
+    isResolved: false,
     priority: [],
     categories: [],
     attachments: [],
-    isManualDate: false,
+    useManualStartDate: false,
+    useManualResolveDate: false,
     sendEmail: true,
     emailRecipients: "ingenieria@enlace.org, rjimenez@enlace.org",
   });
 
+  const refreshNowDates = useCallback(() => {
+    const now = toDatetimeLocalValue();
+    setFormData((prev) => ({
+      ...prev,
+      dateStarted: now,
+      dateResolved: now,
+    }));
+  }, []);
 
   useEffect(() => {
     try {
@@ -61,20 +74,15 @@ export function useReportForm() {
         return;
       }
       const user = JSON.parse(savedUserStr);
-
-      const now = new Date();
-
-      const localIso = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
-        .toISOString()
-        .slice(0, 16);
+      const now = toDatetimeLocalValue();
 
       setFormData((prev) => ({
         ...prev,
         operatorId: user.id || "unknown",
         operatorName: user.name,
         operatorEmail: user.email,
-        dateStarted: localIso,
-        dateResolved: localIso,
+        dateStarted: now,
+        dateResolved: now,
       }));
     } catch (err) {
       console.error("Error initializing report form:", err);
@@ -88,10 +96,12 @@ export function useReportForm() {
   const toggleCategory = useCallback((cat: string) => {
     setFormData((prev) => {
       const exists = prev.categories.includes(cat);
-      const newCats = exists
-        ? prev.categories.filter((c) => c !== cat)
-        : [...prev.categories, cat];
-      return { ...prev, categories: newCats };
+      return {
+        ...prev,
+        categories: exists
+          ? prev.categories.filter((c) => c !== cat)
+          : [...prev.categories, cat],
+      };
     });
   }, []);
 
@@ -103,13 +113,13 @@ export function useReportForm() {
           priority: prev.priority.includes("Todos") ? [] : ["Todos"],
         };
       }
-      let newPriority = prev.priority.filter((p) => p !== "Todos");
-      if (newPriority.includes(sys)) {
-        newPriority = newPriority.filter((p) => p !== sys);
+      let next = prev.priority.filter((p) => p !== "Todos");
+      if (next.includes(sys)) {
+        next = next.filter((p) => p !== sys);
       } else {
-        newPriority.push(sys);
+        next = [...next, sys];
       }
-      return { ...prev, priority: newPriority };
+      return { ...prev, priority: next };
     });
   }, []);
 
@@ -154,11 +164,18 @@ export function useReportForm() {
       toast.error(error instanceof Error ? error.message : "Error procesando archivos");
     } finally {
       setUploading(false);
+      e.target.value = "";
     }
   }, []);
 
-  const submitReport = useCallback(async () => {
+  const removeAttachment = useCallback((index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      attachments: prev.attachments.filter((_, i) => i !== index),
+    }));
+  }, []);
 
+  const submitReport = useCallback(async () => {
     if (formData.priority.length === 0) {
       toast.error("Selecciona al menos un sistema");
       return;
@@ -167,59 +184,95 @@ export function useReportForm() {
       toast.error("Selecciona al menos una categoría");
       return;
     }
-    if (!formData.problemDescription) {
+    if (!formData.problemDescription.trim()) {
       toast.error("Describe el problema");
       return;
     }
+    if (formData.problemDescription.length > REPORT_DESCRIPTION_MAX_CHARS) {
+      toast.error(
+        `La descripción supera el máximo de ${REPORT_DESCRIPTION_MAX_CHARS} caracteres para el PDF`
+      );
+      return;
+    }
+
+    const problemDescription = sanitizeReportDescription(formData.problemDescription);
 
     setLoading(true);
     try {
+      const now = new Date();
+      const dateStarted = formData.useManualStartDate
+        ? parseDatetimeLocal(formData.dateStarted)
+        : now;
+
+      let dateResolved: Date | null = null;
+      if (formData.isResolved) {
+        dateResolved = formData.useManualResolveDate
+          ? parseDatetimeLocal(formData.dateResolved)
+          : now;
+        if (dateResolved.getTime() < dateStarted.getTime()) {
+          dateResolved = now;
+        }
+      }
+
       const payload = {
-        ...formData,
+        operatorId: formData.operatorId,
+        operatorName: formData.operatorName,
+        operatorEmail: formData.operatorEmail,
+        problemDescription,
         category: formData.categories.join(", "),
         priority: formData.priority.join(", "),
-        dateStarted: new Date(formData.dateStarted).toISOString(),
+        dateStarted: dateStarted.toISOString(),
         status: formData.isResolved ? "resolved" : "pending",
         emailStatus: formData.sendEmail ? "pending" : "none",
         emailRecipients: formData.sendEmail ? formData.emailRecipients : null,
-        dateResolved: formData.isResolved
-          ? new Date(formData.dateResolved).toISOString()
-          : null,
+        dateResolved: dateResolved?.toISOString() ?? null,
+        attachments: formData.attachments,
       };
 
-      const res = await fetch("/api/reports", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      let res: Response | null = null;
+      let resData: Record<string, unknown> = {};
 
-      const resData = await res.json();
-
-      if (!res.ok) {
-        throw new Error(resData.error || "Error al guardar el reporte");
+      for (let attempt = 0; attempt < 3; attempt++) {
+        res = await fetch("/api/reports", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(payload),
+        });
+        resData = (await res.json()) as Record<string, unknown>;
+        if (res.ok || res.status !== 503) break;
+        await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
       }
 
-      toast.success("¡Reporte creado con éxito!");
+      if (!res?.ok) {
+        throw new Error(
+          (typeof resData.error === "string" && resData.error) ||
+            "Error al guardar el reporte"
+        );
+      }
 
+      const reportCode = formatReportDisplayId(
+        String(resData.id ?? ""),
+        resData.code as string | null | undefined
+      );
+      toast.success(`Reporte ${reportCode} creado correctamente`);
 
       try {
-        const { triggerRefetch } = await import('./useDashboardData');
-        triggerRefetch('reports');
+        const { triggerRefetch } = await import("./useDashboardData");
+        triggerRefetch("reports");
       } catch {}
-
 
       if (formData.sendEmail) {
         toast.loading("Generando PDF y enviando correo...", { id: "sending-email" });
         try {
           const reportForPdf = {
-            id: resData.id || "NEW",
+            id: String(resData.id ?? ""),
+            code: resData.code as string | null | undefined,
             operatorName: formData.operatorName,
             operatorEmail: formData.operatorEmail,
-            problemDescription: formData.problemDescription,
-            dateStarted: new Date(formData.dateStarted).toISOString(),
-            dateResolved: formData.isResolved
-              ? new Date(formData.dateResolved).toISOString()
-              : null,
+            problemDescription,
+            dateStarted: dateStarted.toISOString(),
+            dateResolved: dateResolved?.toISOString() ?? null,
             status: formData.isResolved ? "resolved" : "pending",
             priority: formData.priority.join(", "),
             category: formData.categories.join(", "),
@@ -230,7 +283,7 @@ export function useReportForm() {
           const recipientsList = formData.emailRecipients
             .split(",")
             .map((e) => e.trim())
-            .filter((e) => e);
+            .filter(Boolean);
 
           const { generateReportPDF } = await import("@/utils/pdfGenerator");
           const emailRes = await generateReportPDF(reportForPdf, {
@@ -250,11 +303,12 @@ export function useReportForm() {
         }
       }
 
-
       router.push("/reportes");
     } catch (error: unknown) {
       console.error("Submission error:", error);
-      toast.error(`Error: ${error instanceof Error ? error.message : "No se pudo enviar el reporte"}`);
+      toast.error(
+        error instanceof Error ? error.message : "No se pudo enviar el reporte"
+      );
     } finally {
       setLoading(false);
     }
@@ -262,15 +316,24 @@ export function useReportForm() {
 
   const nextStep = useCallback(() => {
     if (step === 0 && (formData.priority.length === 0 || formData.categories.length === 0)) {
-      toast.error("Completa los campos requeridos");
+      toast.error("Selecciona sistema y categoría");
       return;
     }
-    if (step === 1 && !formData.problemDescription) {
+    if (step === 1 && !formData.problemDescription.trim()) {
       toast.error("Añade una descripción");
       return;
     }
+    if (step === 1 && formData.problemDescription.length > REPORT_DESCRIPTION_MAX_CHARS) {
+      toast.error(
+        `Máximo ${REPORT_DESCRIPTION_MAX_CHARS} caracteres en la descripción (límite del PDF)`
+      );
+      return;
+    }
+    if (step === 1 && !formData.useManualStartDate) {
+      refreshNowDates();
+    }
     setStep((s) => s + 1);
-  }, [step, formData]);
+  }, [step, formData, refreshNowDates]);
 
   const prevStep = useCallback(() => setStep((s) => s - 1), []);
 
@@ -286,6 +349,8 @@ export function useReportForm() {
     toggleCategory,
     toggleSystem,
     handleFileUpload,
+    removeAttachment,
+    refreshNowDates,
     submitReport,
   };
 }

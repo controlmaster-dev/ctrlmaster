@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 const reactionSchema = z.object({
   reportId: z.string().min(1, "ID de reporte es requerido"),
-  emoji: z.string().min(1, "Emoji es requerido"),
+  emoji: z.string().min(1, "Reacción requerida"),
 });
 
 export const POST = apiHandler(

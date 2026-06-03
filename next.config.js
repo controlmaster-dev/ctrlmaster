@@ -56,6 +56,7 @@ const nextConfig = {
 
       "style-src 'self' 'unsafe-inline' https://p.typekit.net https://use.typekit.net",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "worker-src 'self' blob:",
       connectSrc,
       "frame-src 'self' https:",
       "media-src 'self' https: blob:",

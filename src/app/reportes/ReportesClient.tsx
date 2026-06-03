@@ -196,8 +196,12 @@ export function ReportesClient() {
           />
           <StatsCard
             title="Pendientes"
-            value={list.globalStats.pending}
-            subtitle="Por revisar"
+            value={list.globalStats.active}
+            subtitle={
+              list.globalStats.inProgress > 0
+                ? `${list.globalStats.pending} pendientes · ${list.globalStats.inProgress} en curso`
+                : "Por revisar"
+            }
             icon={<Clock className="h-5 w-5" />}
           />
           <StatsCard

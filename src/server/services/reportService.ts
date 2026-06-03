@@ -6,6 +6,7 @@ import {
   deleteReport,
   findReportId,
   getReportDetailById,
+  getReportStats as getReportStatsFromDb,
   listReports,
   updateReport,
   type ReportFilters,
@@ -21,6 +22,7 @@ function toIso(value: Date | string | null | undefined): string {
 function mapReportListItem(row: ReportListRow) {
   return {
     id: row.id,
+    code: row.code,
     operatorName: row.operatorName,
     operatorEmail: row.operatorEmail,
     problemDescription: row.problemDescription,
@@ -82,6 +84,10 @@ export async function updateReportById(data: UpdateReportInput) {
     throw new ApiError('No fields to update', 400);
   }
   return updated;
+}
+
+export async function getReportStats() {
+  return getReportStatsFromDb();
 }
 
 export async function getReportDetail(id: string) {

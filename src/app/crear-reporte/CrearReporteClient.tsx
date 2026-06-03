@@ -33,6 +33,8 @@ export function CrearReporteClient() {
     toggleCategory,
     toggleSystem,
     handleFileUpload,
+    removeAttachment,
+    refreshNowDates,
     submitReport,
   } = useReportForm();
 
@@ -92,6 +94,7 @@ export function CrearReporteClient() {
                   key="step1"
                   formData={formData}
                   handleInputChange={handleInputChange}
+                  onUseNow={refreshNowDates}
                 />
               )}
               {step === 2 && (
@@ -100,6 +103,8 @@ export function CrearReporteClient() {
                   formData={formData}
                   handleInputChange={handleInputChange}
                   handleFileUpload={handleFileUpload}
+                  removeAttachment={removeAttachment}
+                  onUseNow={refreshNowDates}
                   uploading={uploading}
                 />
               )}

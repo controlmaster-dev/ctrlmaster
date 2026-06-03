@@ -23,6 +23,7 @@ import type { Report } from "@/types/report";
 import type { Operator } from "@/lib/types";
 import type { User as AuthUser } from "@/types/auth";
 import { UI_CONFIG } from "@/config/constants";
+import { normalizeReportStats } from "@/lib/reportStats";
 
 function parseReports(data: unknown): unknown[] {
   if (Array.isArray(data)) return data;
@@ -70,7 +71,7 @@ export function AppDataPrefetch() {
         .then(([boot, waData, usersData]) => {
           if (!boot) return;
           const allReports: Report[] = Array.isArray(boot.reports) ? boot.reports : [];
-          const stats = boot.stats ?? { total: 0, pending: 0, resolved: 0 };
+          const stats = normalizeReportStats(boot.stats);
 
           if (needDashboard) {
             const reports = allReports.filter(
@@ -81,6 +82,7 @@ export function AppDataPrefetch() {
               users: usersData,
               comments: Array.isArray(boot.recentComments) ? boot.recentComments : [],
               whatsappHealth: waData,
+              reportStats: stats,
               fetchedAt: Date.now(),
             });
 
@@ -104,11 +106,7 @@ export function AppDataPrefetch() {
               reports: toReportesListItems(pageReports),
               total: stats.total ?? 0,
               totalPages: Math.max(1, Math.ceil((stats.total ?? 0) / 20)),
-              globalStats: {
-                total: stats.total ?? 0,
-                pending: stats.pending ?? 0,
-                resolved: stats.resolved ?? 0,
-              },
+              globalStats: stats,
               fetchedAt: Date.now(),
             });
             void prefetchReportDetails(pageReports.map((r) => r.id));

@@ -1,4 +1,5 @@
 import type { ReportesListItem } from "@/lib/reportesListCache";
+import { formatReportDisplayId } from "@/lib/reportCode";
 
 export type Report = ReportesListItem;
 
@@ -50,7 +51,7 @@ export function exportReportsToCSV(reports: Report[]) {
     "Email Enviado",
   ];
   const rows = reports.map((r) => [
-    r.id.slice(0, 8),
+    formatReportDisplayId(r.id, r.code),
     r.operatorName,
     r.operatorEmail,
     `"${r.problemDescription.replace(/"/g, '""')}"`,

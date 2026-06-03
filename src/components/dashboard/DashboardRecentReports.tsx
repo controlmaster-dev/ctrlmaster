@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { BentoCard } from "@/components/dashboard/BentoCard";
 import { STATUS_COLORS, STATUS_LABELS } from "@/config/constants";
 import { prefetchReportDetail } from "@/lib/reportDetailCache";
+import { formatReportDisplayId } from "@/lib/reportCode";
 import type { Report } from "@/types/report";
 
 function reportInitials(name: string) {
@@ -84,7 +85,9 @@ const ReportListItem = React.memo(function ReportListItem({
             </Badge>
           </div>
           <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] text-muted-foreground">
-            <span className="font-mono">#{report.id.slice(0, 6)}</span>
+            <span className="font-mono">
+              #{formatReportDisplayId(report.id, (report as { code?: string | null }).code)}
+            </span>
             <span aria-hidden>·</span>
             <span>{report.operatorName.split(" ")[0]}</span>
             <span aria-hidden>·</span>
@@ -178,7 +181,9 @@ export function DashboardRecentReports({
                 onMouseEnter={() => prefetchReportDetail(r.id)}
                 className="hidden shrink-0 items-center gap-1.5 rounded-lg border border-border/40 bg-muted/30 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:flex"
               >
-                <span className="font-mono text-[10px]">#{r.id.slice(0, 6)}</span>
+                <span className="font-mono text-[10px]">
+                  #{formatReportDisplayId(r.id, (r as { code?: string | null }).code)}
+                </span>
                 <ArrowUpRight className="h-3 w-3" />
               </button>
             ))}

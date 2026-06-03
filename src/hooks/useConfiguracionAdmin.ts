@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import type { UserFormState } from "@/components/configuracion/UserFormDialog";
 import type { ConfiguracionUserCard } from "@/components/configuracion/UserRoleGridSection";
 import type { Shift } from "@/lib/types";
+import { notifyReportDataChanged } from "@/lib/reportCacheSync";
 
 type EditableUser = ConfiguracionUserCard & {
   birthday?: string;
@@ -33,7 +34,12 @@ const emptyUser = (): UserFormState => ({
   birthday: "",
 });
 
-export function useConfiguracionAdmin(refresh: () => Promise<void>) {
+type ConfiguracionAdminDeps = {
+  refresh: () => Promise<void>;
+  removeReport: (id: string) => void;
+};
+
+export function useConfiguracionAdmin({ refresh, removeReport }: ConfiguracionAdminDeps) {
   const [modal, setModal] = useState<ConfirmModalState>({
     isOpen: false,
     title: "",
@@ -183,25 +189,28 @@ export function useConfiguracionAdmin(refresh: () => Promise<void>) {
         message: "¿Estás seguro de eliminar este reporte permanentemente?",
         type: "danger",
         action: async () => {
+          setModal((prev) => ({ ...prev, isOpen: false }));
+          removeReport(id);
           try {
             const res = await fetch(`/api/reports?id=${id}`, {
               method: "DELETE",
               credentials: "include",
             });
             if (res.ok) {
-              await refresh();
+              notifyReportDataChanged(id);
               toast.success("Reporte eliminado");
             } else {
+              await refresh();
               toast.error("Error al eliminar el reporte");
             }
           } catch {
+            await refresh();
             toast.error("Error de conexión");
           }
-          setModal((prev) => ({ ...prev, isOpen: false }));
         },
       });
     },
-    [refresh]
+    [refresh, removeReport]
   );
 
   const handleScheduleUpdate = useCallback(

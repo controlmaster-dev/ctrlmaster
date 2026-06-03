@@ -34,18 +34,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(parsed);
 
 
-          apiGet<{ authenticated: boolean }>('/api/auth/verify').then((session) => {
-            if (!session.authenticated) {
-              setUser(null);
-              localStorage.removeItem(STORAGE_KEYS.USER);
-            }
-          }).catch((error) => {
-            if (error instanceof ApiClientError && error.status === 401) {
-              setUser(null);
-              localStorage.removeItem(STORAGE_KEYS.USER);
-            }
-
-          });
+          apiGet<{ authenticated: boolean; user?: User }>('/api/auth/verify')
+            .then((session) => {
+              if (!session.authenticated) {
+                setUser(null);
+                localStorage.removeItem(STORAGE_KEYS.USER);
+                return;
+              }
+              if (session.user) {
+                const verifiedUser = session.user;
+                if (verifiedUser.image && !verifiedUser.avatar) {
+                  verifiedUser.avatar = verifiedUser.image;
+                }
+                setUser(verifiedUser);
+                localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(verifiedUser));
+              }
+            })
+            .catch((error) => {
+              if (error instanceof ApiClientError && error.status === 401) {
+                setUser(null);
+                localStorage.removeItem(STORAGE_KEYS.USER);
+              }
+            });
         } catch (error) {
           console.error('Error parsing saved user:', error);
           localStorage.removeItem(STORAGE_KEYS.USER);
@@ -63,9 +73,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
     } catch (error) {
-      console.error('Error loading session:', error);
+      if (error instanceof ApiClientError && error.status === 401) {
+        setUser(null);
+        localStorage.removeItem(STORAGE_KEYS.USER);
+      } else {
+        console.error('Error loading session:', error);
+      }
     } finally {
-
       setIsLoading(false);
     }
   }, []);
@@ -73,6 +87,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     loadUserFromSession();
   }, [loadUserFromSession]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const refreshSession = () => {
+      apiGet<{ authenticated: boolean; user?: User }>('/api/auth/verify')
+        .then((session) => {
+          if (!session.authenticated) {
+            setUser(null);
+            localStorage.removeItem(STORAGE_KEYS.USER);
+            return;
+          }
+          if (session.user) {
+            const verifiedUser = session.user;
+            if (verifiedUser.image && !verifiedUser.avatar) {
+              verifiedUser.avatar = verifiedUser.image;
+            }
+            setUser(verifiedUser);
+            localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(verifiedUser));
+          }
+        })
+        .catch((error) => {
+          if (error instanceof ApiClientError && error.status === 401) {
+            setUser(null);
+            localStorage.removeItem(STORAGE_KEYS.USER);
+          }
+        });
+    };
+
+    const interval = window.setInterval(refreshSession, 15 * 60 * 1000);
+    return () => window.clearInterval(interval);
+  }, [user?.id]);
 
 
   const login = async (userData: User, _token?: string) => {

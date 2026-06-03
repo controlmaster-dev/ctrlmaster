@@ -1,24 +1,26 @@
-import { CheckCircle2, Clock } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+const STATUS_LABELS: Record<string, string> = {
+  resolved: "Resuelto",
+  pending: "Pendiente",
+  "in-progress": "En progreso",
+};
 
 export function ReportesStatusBadge({ status }: { status: string }) {
-  const base =
-    "inline-flex items-center gap-1 rounded-sm border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide";
-  switch (status) {
-    case "resolved":
-      return (
-        <span className={`${base} border-border/60 bg-muted/30 text-foreground`}>
-          <CheckCircle2 className="h-3 w-3" /> Resuelto
-        </span>
-      );
-    case "pending":
-      return (
-        <span className={`${base} border-border/60 bg-muted/40 text-muted-foreground`}>
-          <Clock className="h-3 w-3" /> Pendiente
-        </span>
-      );
-    default:
-      return (
-        <span className={`${base} border-border text-muted-foreground`}>Desconocido</span>
-      );
-  }
+  const label = STATUS_LABELS[status] ?? status;
+  const dotClass =
+    status === "resolved"
+      ? "bg-emerald-500"
+      : status === "pending"
+        ? "bg-amber-500"
+        : status === "in-progress"
+          ? "bg-sky-500"
+          : "bg-muted-foreground/50";
+
+  return (
+    <span className="inline-flex items-center gap-2 text-xs text-foreground/90">
+      <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", dotClass)} aria-hidden />
+      {label}
+    </span>
+  );
 }

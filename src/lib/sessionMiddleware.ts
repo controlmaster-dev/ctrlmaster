@@ -1,31 +1,17 @@
-import type { NextRequest } from 'next/server';
+import type { NextRequest } from "next/server";
 
+/** Comprueba que existan cookies de sesión (sin ir a la BD). */
+export function hasAuthCookies(request: NextRequest): boolean {
+  const token = request.cookies.get("auth-token")?.value;
+  const userId = request.cookies.get("user-id")?.value;
+  return Boolean(token && userId);
+}
+
+/**
+ * El middleware no debe llamar a /api/auth/verify en cada navegación:
+ * un timeout de Neon se interpretaba como "sesión inválida" y mandaba al login.
+ * La validación real ocurre en cada ruta API con validateApiAuth.
+ */
 export async function isSessionValid(request: NextRequest): Promise<boolean> {
-  const token = request.cookies.get('auth-token')?.value;
-  const userId = request.cookies.get('user-id')?.value;
-
-  if (!token || !userId) {
-    return false;
-  }
-
-  const verifyUrl = new URL('/api/auth/verify', request.nextUrl.origin);
-
-  try {
-    const res = await fetch(verifyUrl, {
-      method: 'GET',
-      headers: {
-        cookie: request.headers.get('cookie') ?? `auth-token=${token}; user-id=${userId}`,
-      },
-      cache: 'no-store',
-    });
-
-    if (!res.ok) {
-      return false;
-    }
-
-    const data = (await res.json()) as { authenticated?: boolean };
-    return data.authenticated === true;
-  } catch {
-    return false;
-  }
+  return hasAuthCookies(request);
 }

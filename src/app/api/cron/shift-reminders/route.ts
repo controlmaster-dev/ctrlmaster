@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { apiErrorResponse } from '@/lib/api/errorResponse';
-import nodemailer from 'nodemailer';
 import sql from '@/lib/db';
+import { sendTransactionalEmail } from '@/lib/emailDelivery';
 import { addDays, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { getBitcentralUser } from '@/lib/schedule';
 import { validateApiAuth, requireRole, requireCronAuth } from '@/lib/apiAuth';
+import { renderShiftReminderEmail } from '@/lib/emailTemplates';
 
 export const dynamic = 'force-dynamic';
 
@@ -121,35 +122,37 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: true, operator: info.name, whatsappParams: { sent: whatsappStatus, phone: user.phone } });
     }
 
-    const emailHtml = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;border:1px solid #e2e8f0;border-radius:6px;background:#fff;color:#333;"><div style="background:#0f172a;padding:20px;border-radius:6px 6px 0 0;"><h1 style="color:#fff;margin:0;font-size:18px;">Control Master</h1></div><div style="padding:30px;"><h2 style="color:#111;font-size:18px;">Recordatorio de Pauta Bitcentral</h2><p>Estimado/a <strong>${info.name.split(' ')[0]}</strong>,</p><p>Este correo es una notificación automática del sistema para recordarle que se encuentra asignado(a) a la programación de la Pauta Bitcentral dentro de 2 días.</p><table style="width:100%;border-collapse:collapse;margin:25px 0;background:#f8fafc;border:1px solid #e2e8f0;"><tr><td style="padding:12px 15px;border-bottom:1px solid #e2e8f0;font-size:14px;color:#64748b;">Fecha asignada:</td><td style="padding:12px 15px;font-size:14px;font-weight:bold;color:#0f172a;">${formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1)}</td></tr><tr><td style="padding:12px 15px;font-size:14px;color:#64748b;">Modalidad:</td><td style="padding:12px 15px;font-size:14px;font-weight:bold;color:#0f172a;">${tipoDeTurno}</td></tr></table><p>Por favor, asegúrese de segmentar los programas con tiempo.</p></div><div style="border-top:1px solid #e2e8f0;padding:15px 30px;font-size:12px;color:#94a3b8;background:#f8fafc;border-radius:0 0 6px 6px;">Este es un mensaje automático generado por el sistema de Gestión de Turnos de Enlace.</div></div>`;
+    const dateTitle =
+      formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
+    const emailHtml = renderShiftReminderEmail({
+      firstName: info.name.split(" ")[0] || info.name,
+      formattedDate: dateTitle,
+      shiftType: tipoDeTurno,
+    });
 
-    const subject = `Recordatorio: Turno de Pauta Mañana (${formattedDate})`;
+    const subject = `Recordatorio de pauta — ${dateTitle}`;
 
-    try {
-      const { Resend } = await import('resend');
-      const resend = new Resend(process.env.RESEND_API_KEY);
-      const data = await resend.emails.send({
-        from: 'Control Master <alertas@enlacecr.dev>',
-        to: [recipient],
-        subject,
-        html: emailHtml,
-      });
-      if (data.error) throw new Error(data.error.message);
-      return NextResponse.json({ success: true, provider: 'resend', operator: info.name, sentTo: recipient, date: formattedDate });
-    } catch (resendError) {
-      const transporter = nodemailer.createTransport({
-        host: 'smtp.office365.com', port: 587, secure: false,
-        auth: { user: process.env.SMTP_EMAIL, pass: process.env.SMTP_PASSWORD },
-        tls: { minVersion: 'TLSv1.2' }
-      });
-      const infoMail = await transporter.sendMail({
-        from: `"Control Master" <${process.env.SMTP_EMAIL}>`,
-        to: recipient,
-        subject,
-        html: emailHtml,
-      });
-      return NextResponse.json({ success: true, provider: 'nodemailer', messageId: infoMail.messageId, operator: info.name, date: formattedDate });
+    const sent = await sendTransactionalEmail({
+      to: recipient,
+      subject,
+      html: emailHtml,
+    });
+
+    if (!sent.success) {
+      return NextResponse.json(
+        { success: false, error: sent.error ?? 'No se pudo enviar el correo' },
+        { status: 503 }
+      );
     }
+
+    return NextResponse.json({
+      success: true,
+      provider: sent.provider,
+      messageId: sent.messageId,
+      operator: info.name,
+      sentTo: recipient,
+      date: formattedDate,
+    });
 
   } catch (err: unknown) {
     return apiErrorResponse(err);

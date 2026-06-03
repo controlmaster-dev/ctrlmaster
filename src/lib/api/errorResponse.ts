@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { ApiError, ValidationError } from "@/lib/errors";
+import { isTransientDbError } from "@/lib/dbErrors";
 
 function normalizeZodError(error: ZodError) {
   return error.issues.map((issue) => ({
@@ -33,6 +34,24 @@ export function apiErrorResponse(error: unknown): NextResponse {
   }
 
   console.error("[API] Unexpected error:", error);
+
+  const isTransient =
+    isTransientDbError(error) ||
+    (error instanceof Error &&
+      /fetch failed|ETIMEDOUT|ENOTFOUND|could not be resolved|aborted/i.test(
+        error.message
+      ));
+
+  if (isTransient) {
+    return NextResponse.json(
+      {
+        error:
+          "Servicio temporalmente no disponible. Comprueba tu conexión e intenta de nuevo en unos segundos.",
+      },
+      { status: 503 }
+    );
+  }
+
   return NextResponse.json(
     { error: "Error interno del servidor" },
     { status: 500 }

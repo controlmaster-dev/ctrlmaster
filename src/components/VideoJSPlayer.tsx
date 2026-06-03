@@ -2,6 +2,15 @@
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import Hls from "hls.js";
+import { Volume2, VolumeX } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import {
+  detectStreamPlaybackIssue,
+  isVideoDecodeError,
+  streamPlaybackErrorMessage,
+  type StreamPlaybackIssue,
+} from "@/lib/streamPlaybackSupport";
 
 const METER_SEGMENTS = 12;
 const METER_TICK_MS = 300;
@@ -15,6 +24,8 @@ interface VideoJSPlayerProps {
   channelLabel?: string;
 
   active?: boolean;
+  soundEnabled?: boolean;
+  onSoundEnabledChange?: (enabled: boolean) => void;
 }
 
 function isPageVisible() {
@@ -27,14 +38,21 @@ export const VideoJSPlayer = React.memo(function VideoJSPlayer({
   variant = "default",
   channelLabel,
   active = true,
+  soundEnabled = false,
+  onSoundEnabledChange,
 }: VideoJSPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const meterRef = useRef<HTMLDivElement>(null);
   const lastMetricAtRef = useRef<Record<string, number>>({});
   const titleRef = useRef(title);
   titleRef.current = title;
+  const soundEnabledRef = useRef(soundEnabled);
+  soundEnabledRef.current = soundEnabled;
 
   const [isBlackScreen, setIsBlackScreen] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [playbackBlocked, setPlaybackBlocked] = useState(false);
+  const [skipCodecCheck, setSkipCodecCheck] = useState(false);
 
   const reportMetric = useCallback(async (type: string, value: number) => {
     if (!active) return;
@@ -54,6 +72,10 @@ export const VideoJSPlayer = React.memo(function VideoJSPlayer({
   }, [active]);
 
   useEffect(() => {
+    setSkipCodecCheck(false);
+  }, [url]);
+
+  useEffect(() => {
     const videoEl = videoRef.current;
     if (!videoEl) return;
 
@@ -64,52 +86,113 @@ export const VideoJSPlayer = React.memo(function VideoJSPlayer({
 
 
     setIsBlackScreen(false);
+    setLoadError(null);
+    setPlaybackBlocked(false);
+
+    const setPlaybackIssue = (issue: StreamPlaybackIssue) => {
+      if (issue === "none") return;
+      setPlaybackBlocked(true);
+      setLoadError(streamPlaybackErrorMessage(issue));
+    };
+
+    if (!skipCodecCheck) {
+      const playbackIssue = detectStreamPlaybackIssue();
+      if (playbackIssue !== "none") {
+        setPlaybackIssue(playbackIssue);
+        return () => {
+          disposed = true;
+        };
+      }
+    }
+
+    const applySound = () => {
+      videoEl.muted = !soundEnabledRef.current;
+      if (soundEnabledRef.current) videoEl.volume = 1;
+    };
+
+    let playAttempts = 0;
+    let playRetryTimer: ReturnType<typeof setTimeout> | null = null;
 
     const tryPlay = () => {
       if (disposed || !isPageVisible()) return;
+      videoEl.muted = true;
       const p = videoEl.play();
-      if (p && typeof p.catch === "function") p.catch(() => {});
+      if (!p || typeof p.then !== "function") {
+        applySound();
+        return;
+      }
+      p.then(() => {
+        if (disposed) return;
+        playAttempts = 0;
+        setLoadError(null);
+        applySound();
+      }).catch(() => {
+        if (disposed) return;
+        playAttempts += 1;
+        if (playAttempts < 8) {
+          playRetryTimer = setTimeout(tryPlay, 250 * playAttempts);
+          return;
+        }
+        if (videoEl.paused && videoEl.readyState < 2) {
+          setLoadError("No se pudo iniciar la reproducción");
+        }
+      });
     };
 
+    const schedulePlay = () => {
+      if (videoEl.readyState >= 2) {
+        tryPlay();
+        return;
+      }
+      videoEl.addEventListener("canplay", tryPlay, { once: true });
+    };
 
     if (Hls.isSupported()) {
       hls = new Hls({
-        enableWorker: true,
-        lowLatencyMode: true,
+        enableWorker: false,
+        lowLatencyMode: false,
         backBufferLength: 30,
       });
       hls.loadSource(url);
       hls.attachMedia(videoEl);
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        tryPlay();
-      });
-      hls.on(Hls.Events.ERROR, (event, data) => {
-        if (data.fatal) {
-          switch (data.type) {
-            case Hls.ErrorTypes.NETWORK_ERROR:
-              hls?.startLoad();
-              break;
-            case Hls.ErrorTypes.MEDIA_ERROR:
+      hls.on(Hls.Events.MANIFEST_PARSED, schedulePlay);
+      let mediaRecoveries = 0;
+      hls.on(Hls.Events.ERROR, (_event, data) => {
+        if (!data.fatal) return;
+        switch (data.type) {
+          case Hls.ErrorTypes.NETWORK_ERROR:
+            hls?.startLoad();
+            break;
+          case Hls.ErrorTypes.MEDIA_ERROR:
+            if (mediaRecoveries < 2) {
+              mediaRecoveries += 1;
               hls?.recoverMediaError();
-              break;
-            default:
+            } else {
+              setPlaybackIssue("no-codec");
               reportMetric("ERROR", 1);
-              break;
-          }
+            }
+            break;
+          default:
+            setLoadError("Error al cargar la señal");
+            reportMetric("ERROR", 1);
+            break;
         }
       });
     } else if (videoEl.canPlayType("application/vnd.apple.mpegurl")) {
-
       videoEl.src = url;
-      const handleMetadata = () => {
-        tryPlay();
-      };
-      videoEl.addEventListener("loadedmetadata", handleMetadata);
-      const handleError = () => {
-        reportMetric("ERROR", 1);
-      };
-      videoEl.addEventListener("error", handleError);
+      videoEl.addEventListener("loadedmetadata", schedulePlay, { once: true });
+    } else {
+      setPlaybackIssue("no-native-hls");
     }
+
+    const onVideoError = () => {
+      if (disposed) return;
+      if (isVideoDecodeError(videoEl)) {
+        setPlaybackIssue("no-codec");
+        reportMetric("ERROR", 1);
+      }
+    };
+    videoEl.addEventListener("error", onVideoError);
 
 
     if (active) {
@@ -203,14 +286,24 @@ export const VideoJSPlayer = React.memo(function VideoJSPlayer({
         tryPlay();
       }
     };
+    const onPlaying = () => {
+      if (!disposed) {
+        playAttempts = 0;
+        setLoadError(null);
+      }
+    };
+    videoEl.addEventListener("playing", onPlaying);
     document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
       disposed = true;
+      videoEl.removeEventListener("error", onVideoError);
+      videoEl.removeEventListener("playing", onPlaying);
       document.removeEventListener("visibilitychange", onVisibility);
 
       if (meterInterval) clearInterval(meterInterval);
       if (blackScreenInterval) clearInterval(blackScreenInterval);
+      if (playRetryTimer) clearTimeout(playRetryTimer);
 
       if (hls) {
         hls.destroy();
@@ -218,7 +311,49 @@ export const VideoJSPlayer = React.memo(function VideoJSPlayer({
         videoEl.src = "";
       }
     };
-  }, [url, active, reportMetric]);
+  }, [url, active, reportMetric, skipCodecCheck]);
+
+  const copyStreamUrl = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      void navigator.clipboard.writeText(url).then(
+        () => toast.success("URL copiada (ábrela en VLC o Chrome)"),
+        () => toast.error("No se pudo copiar la URL")
+      );
+    },
+    [url]
+  );
+
+  useEffect(() => {
+    const videoEl = videoRef.current;
+    if (!videoEl || videoEl.paused) return;
+    videoEl.muted = !soundEnabled;
+    if (soundEnabled) videoEl.volume = 1;
+  }, [soundEnabled]);
+
+  const handleSoundToggle = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      const next = !soundEnabled;
+      onSoundEnabledChange?.(next);
+      const videoEl = videoRef.current;
+      if (!videoEl) return;
+      if (next) {
+        videoEl.muted = false;
+        videoEl.volume = 1;
+        setLoadError(null);
+        const p = videoEl.play();
+        if (p && typeof p.catch === "function") {
+          p.catch(() => {
+            videoEl.muted = true;
+          });
+        }
+      } else {
+        videoEl.muted = true;
+      }
+    },
+    [soundEnabled, onSoundEnabledChange]
+  );
 
   const isProgram = variant === "program";
   const isPreview = variant === "preview";
@@ -261,12 +396,91 @@ export const VideoJSPlayer = React.memo(function VideoJSPlayer({
         </div>
       )}
 
-      {isBlackScreen && active && (
+      {loadError && (
+        <div className="absolute inset-0 z-[35] flex flex-col items-center justify-center gap-2 bg-black/80 px-4 text-center">
+          <span className="max-w-md text-xs leading-relaxed font-medium text-white/90">
+            {loadError}
+          </span>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {playbackBlocked && (
+              <>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  className="h-7 text-xs"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSkipCodecCheck(true);
+                    setPlaybackBlocked(false);
+                    setLoadError(null);
+                  }}
+                >
+                  Intentar de todos modos
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 border-white/20 bg-transparent text-xs text-white hover:bg-white/10"
+                  onClick={copyStreamUrl}
+                >
+                  Copiar URL
+                </Button>
+              </>
+            )}
+            {!playbackBlocked && (
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                className="h-7 text-xs"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLoadError(null);
+                  const el = videoRef.current;
+                  if (!el) return;
+                  el.muted = true;
+                  const p = el.play();
+                  if (p && typeof p.then === "function") {
+                    p.then(() => {
+                      el.muted = !soundEnabled;
+                      if (soundEnabled) el.volume = 1;
+                    }).catch(() => setLoadError("No se pudo iniciar la reproducción"));
+                  }
+                }}
+              >
+                Reintentar
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {isBlackScreen && active && !loadError && (
         <div className="absolute top-8 left-2 z-30">
           <span className="rounded-sm bg-red-600/80 px-2 py-0.5 text-[9px] font-medium uppercase tracking-wide text-white">
             Sin señal
           </span>
         </div>
+      )}
+
+      {onSoundEnabledChange && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="absolute bottom-2 left-2 z-50 h-8 w-8 rounded-sm border border-white/10 bg-black/70 text-white hover:bg-black/90 hover:text-white"
+          onClick={handleSoundToggle}
+          aria-label={soundEnabled ? "Silenciar audio" : "Activar audio"}
+          title={soundEnabled ? "Silenciar" : "Activar sonido"}
+        >
+          {soundEnabled ? (
+            <Volume2 className="h-4 w-4" />
+          ) : (
+            <VolumeX className="h-4 w-4 opacity-80" />
+          )}
+        </Button>
       )}
 
       {showMeter && (

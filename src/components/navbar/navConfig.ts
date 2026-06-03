@@ -1,4 +1,5 @@
 import {
+  ClipboardList,
   Headset,
   Home,
   Key,
@@ -21,6 +22,7 @@ export const LOGO_URL =
 export const mainNav: NavLinkConfig[] = [
   { href: "/", icon: Home, label: "Inicio", exact: true },
   { href: "/reportes", icon: Layout, label: "Reportes" },
+  { href: "/diarios", icon: ClipboardList, label: "Diarios" },
   { href: "/claves", icon: Key, label: "Contraseñas" },
 ];
 
@@ -32,6 +34,7 @@ export const secondaryLinks: NavLinkConfig[] = [
 export const mobileLeftLinks: NavLinkConfig[] = [
   { href: "/", icon: Home, label: "Inicio", exact: true },
   { href: "/reportes", icon: Layout, label: "Reportes" },
+  { href: "/diarios", icon: ClipboardList, label: "Diarios" },
 ];
 
 export const mobileRightLinks: NavLinkConfig[] = [
@@ -44,6 +47,7 @@ export function isRouteActive(pathname: string, href: string, exact?: boolean) {
 }
 
 export function getLinkDescription(label: string) {
+  if (label === "Diarios") return "Funciones obligatorias por operador";
   if (label === "Operadores") return "Disponibilidad y turnos";
   if (label === "Monitoreo") return "Señales en tiempo real";
   return "Ajustes y preferencias";

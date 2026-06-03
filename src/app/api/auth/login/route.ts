@@ -3,6 +3,7 @@ import { apiHandler } from "@/lib/api/handler";
 import { checkRateLimit } from "@/lib/api/rateLimitResponse";
 import { loginSchema } from "@/lib/validation";
 import { loginUser } from "@/server/services/authService";
+import { SESSION_COOKIE_MAX_AGE_SEC } from "@/lib/authConfig";
 
 const handleLogin = apiHandler({ bodySchema: loginSchema }, async ({ req, body }) => {
   const forwardedFor = req.headers.get("x-forwarded-for");
@@ -23,7 +24,7 @@ const handleLogin = apiHandler({ bodySchema: loginSchema }, async ({ req, body }
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
-    maxAge: 60 * 60 * 24,
+    maxAge: SESSION_COOKIE_MAX_AGE_SEC,
     path: "/",
   });
 
@@ -31,7 +32,7 @@ const handleLogin = apiHandler({ bodySchema: loginSchema }, async ({ req, body }
     httpOnly: false,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
-    maxAge: 60 * 60 * 24,
+    maxAge: SESSION_COOKIE_MAX_AGE_SEC,
     path: "/",
   });
 
