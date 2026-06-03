@@ -17,6 +17,7 @@ export interface Operator {
   image?: string;
   role: UserRole | string;
   shifts?: Shift[];
+  defaultShifts?: Shift[];
   isTempSchedule?: boolean;
   tempSchedule?: string | null;
   schedule?: string | null;

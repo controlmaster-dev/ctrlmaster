@@ -41,7 +41,14 @@ export const SCHEDULE_ENDPOINTS = {
 
 
 export const CALENDAR_ENDPOINTS = {
-  USER: (userId: string) => `${API_BASE}/calendar/${userId}`,
+  TOKEN: `${API_BASE}/calendar/token`,
+  USER: (userId: string, feedToken: string, weeks = 4) => {
+    const params = new URLSearchParams({
+      weeks: String(weeks),
+      token: feedToken,
+    });
+    return `${API_BASE}/calendar/${userId}?${params.toString()}`;
+  },
 } as const;
 
 

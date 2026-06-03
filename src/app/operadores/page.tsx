@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, useEffect } from "react";
+import { useCallback, useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,24 @@ import { toast } from "sonner";
 import { OperadoresPageSkeleton } from "@/components/skeletons/OperadoresPageSkeleton";
 import { pageHeaderBarClass, pageMainClass } from "@/lib/page-layout";
 import { getSundayWeekStart } from "@/lib/weekUtils";
-import { useOperadoresBundle, useOperadoresWeek } from "@/hooks/useOperadoresBundle";
+import {
+  countOperatorsOnDuty,
+  formatHoursUntilLabel,
+  getActiveShiftProgress,
+  getCurrentDayIndex,
+  getCurrentHourDecimal,
+  getHoursUntilNextShift,
+  getNextOperatorId,
+  getWeeklySchemeShifts,
+  isOperatorActiveNow,
+} from "@/lib/operadorSchedule";
+import { useScheduleClock } from "@/hooks/useScheduleClock";
+import {
+  sortOperators,
+  useOperadoresBundle,
+  useOperadoresWeek,
+} from "@/hooks/useOperadoresBundle";
+import { cn } from "@/lib/utils";
 import { Navbar } from "@/components/Navbar";
 import { BentoCard } from "@/components/dashboard/BentoCard";
 
@@ -51,7 +68,22 @@ export default function OperatorsPage() {
   const [weeksDuration, setWeeksDuration] = useState(4);
   const [copied, setCopied] = useState(false);
 
+  const scheduleTick = useScheduleClock();
   const { operators, specialEvents, isReady } = useOperadoresBundle(currentRealWeek);
+  const todayIdx = getCurrentDayIndex();
+  const currentHour = getCurrentHourDecimal();
+  const nextOperatorId = useMemo(
+    () => getNextOperatorId(operators, todayIdx, currentHour),
+    [operators, todayIdx, currentHour, scheduleTick]
+  );
+  const onDutyCount = useMemo(
+    () => countOperatorsOnDuty(operators, todayIdx, currentHour),
+    [operators, todayIdx, currentHour, scheduleTick]
+  );
+  const displayedOperators = useMemo(
+    () => sortOperators(operators),
+    [operators, scheduleTick]
+  );
   const { operators: modalOperators, isReady: modalReady } =
     useOperadoresWeek(modalWeekStart);
   const eventsList = specialEvents as SpecialEvent[];
@@ -75,108 +107,54 @@ export default function OperatorsPage() {
   }, []);
 
 
-  const calculatePredictions = useCallback((ops: Operator[]) => {
-    const now = new Date();
-    const currentDay = now.getDay();
-    const currentHour = now.getHours();
-    const futureShifts: Array<{ op: Operator; hoursUntil: number; shift: Shift }> = [];
+  const calculatePredictions = useCallback(
+    (ops: Operator[], crTodayIdx: number, crCurrentHour: number) => {
+      const futureShifts: Array<{ op: Operator; hoursUntil: number; shift: Shift }> = [];
 
-    ops.forEach((op) => {
-      const isAvailable = op.shifts?.some(s => {
-        const end = s.end === 0 ? 24 : s.end;
-        return s.days.includes(currentDay) && currentHour >= s.start && currentHour < end;
+      ops.forEach((op) => {
+        const shifts = getWeeklySchemeShifts(op);
+        const hoursUntil = getHoursUntilNextShift(shifts, crTodayIdx, crCurrentHour);
+        if (hoursUntil === null || hoursUntil <= 0) return;
+
+        const dayShifts = shifts?.filter((s) => s.days.includes(crTodayIdx)) ?? [];
+        const shift =
+          dayShifts.find((s) => crCurrentHour < s.start) ??
+          shifts?.find((s) => s.days.some((d) => d > crTodayIdx)) ??
+          shifts?.[0];
+        if (!shift) return;
+
+        futureShifts.push({ op, hoursUntil, shift });
       });
 
-      if (!op.shifts || isAvailable) return;
-      op.shifts.forEach((shift) => {
-        if (!shift.days || shift.days.length === 0) return;
-        let daysUntil = -1;
-        const sortedDays = [...shift.days].sort((a, b) => a - b);
-        let nextDay = sortedDays.find((d) => d >= currentDay);
+      futureShifts.sort((a, b) => a.hoursUntil - b.hoursUntil);
 
-        if (nextDay === currentDay) {
-          if (currentHour < shift.start) {
-            daysUntil = 0;
-          } else {
-            nextDay = sortedDays.find((d) => d > currentDay);
-          }
-        }
+      const uniquePredictions: Prediction[] = [];
+      const seenOps = new Set<string>();
 
-        if (nextDay === undefined) {
-          nextDay = sortedDays[0];
-          daysUntil = 7 - currentDay + nextDay;
-        } else if (daysUntil === -1) {
-          daysUntil = nextDay - currentDay;
-        }
+      for (const item of futureShifts) {
+        if (seenOps.has(item.op.id)) continue;
+        if (uniquePredictions.length >= 2) break;
+        seenOps.add(item.op.id);
 
-        let totalHoursAway = daysUntil * 24 + (shift.start - currentHour);
-        if (totalHoursAway < 0) totalHoursAway += 24 * 7;
+        uniquePredictions.push({
+          nextOperator: item.op,
+          timeUntil: formatHoursUntilLabel(item.hoursUntil),
+          shiftLabel: `${getDayRangeLabel(item.shift.days)} ${formatTime(item.shift.start)}-${formatTime(item.shift.end)}`,
+        });
+      }
 
-        futureShifts.push({ op, hoursUntil: totalHoursAway, shift });
-      });
-    });
-
-    futureShifts.sort((a, b) => a.hoursUntil - b.hoursUntil);
-
-    const uniquePredictions: Prediction[] = [];
-    const seenOps = new Set<string>();
-
-    for (const item of futureShifts) {
-      if (seenOps.has(item.op.id)) continue;
-      if (uniquePredictions.length >= 2) break;
-      seenOps.add(item.op.id);
-
-      let timeLabel = "";
-      if (item.hoursUntil < 1) timeLabel = "En menos de 1h";
-      else if (item.hoursUntil < 24) timeLabel = `En ${Math.floor(item.hoursUntil)}h`;
-      else timeLabel = `En ${Math.floor(item.hoursUntil / 24)}d ${Math.floor(item.hoursUntil % 24)}h`;
-
-      uniquePredictions.push({
-        nextOperator: item.op,
-        timeUntil: timeLabel,
-        shiftLabel: `${getDayRangeLabel(item.shift.days)} ${formatTime(item.shift.start)}-${formatTime(item.shift.end)}`,
-      });
-    }
-
-    setPredictions(uniquePredictions);
-  }, [formatTime, getDayRangeLabel]);
+      setPredictions(uniquePredictions);
+    },
+    [formatTime, getDayRangeLabel]
+  );
 
   useEffect(() => {
     if (operators.length > 0) {
-      calculatePredictions(operators);
+      calculatePredictions(operators, todayIdx, currentHour);
     } else {
       setPredictions([]);
     }
-  }, [operators, calculatePredictions]);
-
-
-  const getCurrentShiftStats = (op: Operator) => {
-    if (!op.shifts) return null;
-    const now = new Date();
-    const currentDay = now.getDay();
-    const currentHour = now.getHours() + now.getMinutes() / 60;
-
-    const activeShift = op.shifts.find((s) => {
-      const end = s.end === 0 ? 24 : s.end;
-      return s.days.includes(currentDay) && currentHour >= s.start && currentHour < end;
-    });
-
-    if (!activeShift) return null;
-
-    const end = activeShift.end === 0 ? 24 : activeShift.end;
-    const elapsed = currentHour - activeShift.start;
-    const duration = end - activeShift.start;
-    const progress = Math.min(100, Math.max(0, (elapsed / duration) * 100));
-    const remainingHours = end - currentHour;
-    const remainingH = Math.floor(remainingHours);
-    const remainingM = Math.round((remainingHours - remainingH) * 60);
-
-    return {
-      progress,
-      remaining: `${remainingH}h ${remainingM}m`,
-      label: `${formatTime(activeShift.start)} - ${formatTime(activeShift.end)}`,
-    };
-  };
+  }, [operators, calculatePredictions, scheduleTick, todayIdx, currentHour]);
 
   const getActiveEvent = (): SpecialEvent | null => {
     if (!eventsList.length) return null;
@@ -190,9 +168,8 @@ export default function OperatorsPage() {
   };
 
 
-  const handleSubscribe = (mode: boolean | 'copy') => {
+  const handleSubscribe = async (mode: boolean | 'copy') => {
     const operatorId = user?.id;
-    console.log("HandleSubscribe context:", { operatorId, mode, user });
 
     if (!operatorId) {
       toast.error("No se pudo identificar tu sesión de usuario", {
@@ -201,7 +178,26 @@ export default function OperatorsPage() {
       return;
     }
 
-    let baseUrl = `${window.location.origin}/api/calendar/${operatorId}?weeks=${weeksDuration}`;
+    let feedToken: string;
+    try {
+      const tokenRes = await fetch("/api/calendar/token", { credentials: "include" });
+      const tokenData = await tokenRes.json();
+      if (!tokenRes.ok || !tokenData.token) {
+        throw new Error(tokenData.error || "No se pudo obtener el enlace del calendario");
+      }
+      feedToken = tokenData.token as string;
+    } catch (err) {
+      toast.error("Enlace de calendario no disponible", {
+        description: err instanceof Error ? err.message : "Inicia sesión e intenta de nuevo.",
+      });
+      return;
+    }
+
+    const params = new URLSearchParams({
+      weeks: String(weeksDuration),
+      token: feedToken,
+    });
+    let baseUrl = `${window.location.origin}/api/calendar/${operatorId}?${params.toString()}`;
     if (baseUrl.includes("0.0.0.0")) baseUrl = baseUrl.replace("0.0.0.0", "localhost");
 
     if (mode === true) {
@@ -237,21 +233,6 @@ export default function OperatorsPage() {
 
   const activeEvent = getActiveEvent();
 
-  const onDutyCount = operators.filter((op) => {
-    const now = new Date();
-    const currentDay = now.getDay();
-    const currentHour = now.getHours() + now.getMinutes() / 60;
-    return !!op.shifts?.some((s) => {
-      const end = s.end === 0 ? 24 : s.end;
-      return (
-        s.days.includes(currentDay) &&
-        currentHour >= s.start &&
-        currentHour < end
-      );
-    });
-  }).length;
-
-
   return (
     <div className="operadores-ui relative min-h-screen overflow-hidden pb-20 text-foreground selection:bg-brand selection:text-white">
       <Navbar />
@@ -262,30 +243,33 @@ export default function OperatorsPage() {
         ) : (
         <div className="space-y-5">
         <BentoCard variant="default" className="overflow-hidden">
-          <div className="border-b border-border px-4 py-4 md:px-5">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-              <div>
+          <div className="border-b border-border px-4 py-5 md:px-6 md:py-6">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
+              <div className="min-w-0 flex-1">
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                   Equipo de control
                 </p>
-                <div className="flex flex-wrap items-center gap-3 mt-1">
-                  <h1 className="text-xl font-bold tracking-tight md:text-2xl">
-                    Horarios de operadores
-                  </h1>
+                <h1 className="mt-1 text-xl font-bold tracking-tight md:text-2xl">
+                  Horarios de operadores
+                </h1>
+                <p className="mt-2 max-w-xl text-sm text-muted-foreground">
+                  Estado en vivo de los trabajadores de Control Máster.
+                </p>
+              </div>
 
-
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 gap-2 rounded-[6px] border-border bg-muted/20 hover:bg-muted/40 text-xs font-semibold"
-                      >
-                        <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span>Distribución semanal</span>
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="operadores-ui flex h-full w-full max-w-[98vw] flex-col overflow-hidden border-border bg-card p-0 md:h-[95vh] md:rounded-[6px]">
+              <div className="flex w-full flex-col gap-4 sm:max-w-md lg:w-auto lg:max-w-none lg:shrink-0">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button
+                      type="button"
+                      size="lg"
+                      className="h-11 w-full gap-2 rounded-lg bg-brand px-6 text-sm font-semibold text-white hover:bg-brand-hover lg:min-w-[260px]"
+                    >
+                      <Calendar className="h-5 w-5 shrink-0" aria-hidden />
+                      Ver distribución semanal
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="operadores-ui flex h-full w-full max-w-[98vw] flex-col overflow-hidden border-border bg-card p-0 md:h-[95vh] md:rounded-[6px]">
                       <div className="flex flex-col gap-4 border-b border-border px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                         <div>
                           <DialogTitle className="text-lg font-semibold">
@@ -309,30 +293,33 @@ export default function OperatorsPage() {
                               <option value={24}>6 meses</option>
                             </select>
 
-                            <div className="flex rounded-[6px] border border-border bg-muted/20 p-0.5">
+                            <div className="flex items-center gap-1.5">
                               <Button
                                 onClick={() => handleSubscribe(true)}
-                                variant="ghost"
+                                variant="outline"
                                 size="sm"
-                                className="h-8 gap-1.5 rounded-[4px] text-xs font-semibold hover:bg-card hover:shadow-none"
+                                className="h-9 gap-1.5 rounded-md border-border text-xs font-medium shadow-none hover:bg-muted/30"
                               >
                                 <Calendar className="h-3.5 w-3.5" />
                                 Suscribir
                               </Button>
                               <Button
                                 onClick={() => (handleSubscribe as unknown as (m: string) => void)("copy")}
-                                variant="ghost"
+                                variant="outline"
                                 size="icon"
-                                className={`h-8 w-8 rounded-[4px] hover:bg-card hover:shadow-none ${copied ? "text-emerald-500" : "text-muted-foreground"}`}
+                                className={cn(
+                                  "h-9 w-9 rounded-md border-border shadow-none hover:bg-muted/30",
+                                  copied ? "text-emerald-600" : "text-muted-foreground"
+                                )}
                                 title="Copiar enlace"
                               >
                                 {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                               </Button>
                               <Button
                                 onClick={() => handleSubscribe(false)}
-                                variant="ghost"
+                                variant="outline"
                                 size="icon"
-                                className="h-8 w-8 rounded-[4px] hover:bg-card hover:shadow-none text-muted-foreground"
+                                className="h-9 w-9 rounded-md border-border text-muted-foreground shadow-none hover:bg-muted/30"
                                 title="Descargar .ics"
                               >
                                 <Download className="h-3.5 w-3.5" />
@@ -350,16 +337,11 @@ export default function OperatorsPage() {
                           isLoading={!modalReady}
                         />
                       </div>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-                <p className="mt-1 max-w-xl text-sm text-muted-foreground">
-                  Estado en vivo de los trabajadores de Control Máster.
-                </p>
-              </div>
+                  </DialogContent>
+                </Dialog>
 
-              {operators.length > 0 && (
-                <div className="flex shrink-0 border border-border bg-muted/20 rounded-[6px] overflow-hidden text-center text-xs shadow-none">
+                {operators.length > 0 && (
+                  <div className="flex w-full border border-border bg-muted/20 rounded-lg overflow-hidden text-center text-xs shadow-sm">
                   <div className="min-w-[5.5rem] px-4 py-2.5 bg-card flex flex-col items-center justify-center">
                     <div className="flex items-center gap-1.5">
                       <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -388,7 +370,8 @@ export default function OperatorsPage() {
                     <p className="text-[10px] text-muted-foreground mt-1">Total</p>
                   </div>
                 </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
 
@@ -430,7 +413,7 @@ export default function OperatorsPage() {
           </div>
 
           <div className="lg:col-span-3">
-            {operators.length === 0 ? (
+            {displayedOperators.length === 0 ? (
               <div className="border border-dashed border-border/60 bg-muted/10 py-16 text-center">
                 <p className="text-sm font-medium text-foreground">
                   No hay operadores configurados
@@ -441,28 +424,39 @@ export default function OperatorsPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {operators.map((op) => {
-                  const now = new Date();
-                  const currentDay = now.getDay();
-                  const currentHour = now.getHours() + now.getMinutes() / 60;
-                  const isAvailable = !!op.shifts?.some((s) => {
-                    const end = s.end === 0 ? 24 : s.end;
-                    return (
-                      s.days.includes(currentDay) &&
-                      currentHour >= s.start &&
-                      currentHour < end
-                    );
-                  });
+                {displayedOperators.map((op) => {
+                  const schemeShifts = getWeeklySchemeShifts(op);
+                  const hoursUntilNext = getHoursUntilNextShift(
+                    schemeShifts,
+                    todayIdx,
+                    currentHour
+                  );
+                  const isAvailable = isOperatorActiveNow(
+                    schemeShifts,
+                    todayIdx,
+                    currentHour
+                  );
 
                   return (
                     <OperatorCard
                       key={op.id}
                       operator={op}
                       isAvailable={isAvailable}
-                      activeStats={isAvailable ? getCurrentShiftStats(op) : null}
+                      activeStats={
+                        isAvailable
+                          ? getActiveShiftProgress(
+                              schemeShifts,
+                              formatTime,
+                              todayIdx,
+                              currentHour
+                            )
+                          : null
+                      }
                       activeEvent={activeEvent}
                       currentWeekStart={currentRealWeek}
                       formatTime={formatTime}
+                      isNextInQueue={nextOperatorId === op.id}
+                      hoursUntilNext={hoursUntilNext}
                     />
                   );
                 })}

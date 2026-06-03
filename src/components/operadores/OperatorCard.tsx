@@ -2,8 +2,18 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Shield, Info, Calendar as CalIcon } from "lucide-react";
-import type { Operator, Shift } from "@/lib/types";
+import { Info, Calendar as CalIcon } from "lucide-react";
+import type { Operator } from "@/lib/types";
+import {
+  formatShiftRange,
+  getCurrentDayIndex,
+  getCurrentHourDecimal,
+  getTodayShiftCellStatus,
+  getWeeklySchemeShifts,
+  isDayOff,
+  shiftsForDayOfWeek,
+  WEEK_COLUMNS_MONDAY_FIRST,
+} from "@/lib/operadorSchedule";
 import { cn } from "@/lib/utils";
 
 interface ShiftStats {
@@ -26,6 +36,9 @@ interface OperatorCardProps {
   activeEvent: SpecialEvent | null;
   currentWeekStart: string;
   formatTime: (hour: number) => string;
+  /** Próximo en entrar según cola de turnos */
+  isNextInQueue?: boolean;
+  hoursUntilNext?: number | null;
 }
 
 export function OperatorCard({
@@ -33,9 +46,14 @@ export function OperatorCard({
   isAvailable,
   activeStats,
   activeEvent,
-  currentWeekStart,
   formatTime,
+  isNextInQueue = false,
+  hoursUntilNext = null,
 }: OperatorCardProps) {
+  const todayIdx = getCurrentDayIndex();
+  const currentHour = getCurrentHourDecimal();
+  const schemeShifts = getWeeklySchemeShifts(op);
+
   const returnDateStr = activeEvent
     ? (() => {
         const endDate = new Date(activeEvent.endDate);
@@ -47,9 +65,12 @@ export function OperatorCard({
     <article
       className={cn(
         "flex h-full flex-col border rounded-lg bg-card transition-all duration-300 hover:border-foreground/15 dark:hover:border-foreground/20",
-        isAvailable
-          ? "border-emerald-500/20 dark:border-emerald-500/30 bg-emerald-500/[0.01] dark:bg-emerald-500/[0.02]"
-          : "border-border"
+        isAvailable &&
+          "border-emerald-500/20 dark:border-emerald-500/30 bg-emerald-500/[0.01] dark:bg-emerald-500/[0.02]",
+        isNextInQueue &&
+          !isAvailable &&
+          "border-violet-500/45 bg-violet-500/[0.04] ring-1 ring-violet-500/25 dark:border-violet-400/40 dark:bg-violet-500/[0.06]",
+        !isAvailable && !isNextInQueue && "border-border"
       )}
     >
       <div className="flex items-start gap-3 border-b border-border px-4 py-3">
@@ -76,19 +97,27 @@ export function OperatorCard({
         </div>
 
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
-            <h3 className="truncate text-sm font-semibold tracking-tight text-foreground">
-              {op.name}
-            </h3>
-            {op.role === "BOSS" && (
-              <Shield className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-            )}
-          </div>
+          <h3 className="truncate text-sm font-semibold tracking-tight text-foreground">
+            {op.name}
+          </h3>
           <p className="mt-0.5 text-[11px] text-muted-foreground">
             {isAvailable ? (
               <span className="text-foreground/90 font-medium flex items-center gap-1">
                 <span className="h-1 w-1 rounded-full bg-emerald-500 inline-block animate-pulse" />
                 En turno ahora
+              </span>
+            ) : isNextInQueue ? (
+              <span className="font-medium text-violet-700 dark:text-violet-300">
+                Próximo en entrar
+                {hoursUntilNext != null && hoursUntilNext > 0 && (
+                  <span className="text-violet-600/80 dark:text-violet-400/90">
+                    {" "}
+                    ·{" "}
+                    {hoursUntilNext < 1
+                      ? "menos de 1h"
+                      : `en ${Math.floor(hoursUntilNext)}h`}
+                  </span>
+                )}
               </span>
             ) : (
               "Fuera de turno"
@@ -155,48 +184,159 @@ export function OperatorCard({
               )}
             </div>
 
-            {op.shifts && op.shifts.length > 0 ? (
-              <div className="space-y-2.5">
-                <div className="flex justify-between items-center gap-1 select-none">
-                  {['D', 'L', 'M', 'M', 'J', 'V', 'S'].map((dayLabel, dayIdx) => {
-                    const activeShift = op.shifts?.find(s => s.days.includes(dayIdx));
-                    const startOfWeekDate = new Date(currentWeekStart + "T12:00:00");
-                    const todayDate = new Date();
-                    const targetDate = new Date(startOfWeekDate);
-                    targetDate.setDate(startOfWeekDate.getDate() + dayIdx);
-                    const isTodayReal = targetDate.toDateString() === todayDate.toDateString();
+            {schemeShifts && schemeShifts.length > 0 ? (
+              <div className="space-y-2">
+                <div className="grid grid-cols-7 gap-1.5 select-none">
+                  {WEEK_COLUMNS_MONDAY_FIRST.map(({ label: dayLabel, dayIdx, name: dayName }) => {
+                    const dayShifts = shiftsForDayOfWeek(schemeShifts, dayIdx);
+                    const isOff = isDayOff(schemeShifts, dayIdx);
+                    const todayStatus = getTodayShiftCellStatus(
+                      schemeShifts,
+                      dayIdx,
+                      todayIdx,
+                      currentHour
+                    );
+                    const isActiveToday = todayStatus === "active";
+                    const isEndedToday = todayStatus === "ended";
+                    const isUpcomingToday = todayStatus === "upcoming";
+                    const isWorkDay = !isOff;
+
+                    const rangesLabel = isOff
+                      ? "Libre"
+                      : dayShifts.map((s) => formatShiftRange(s, formatTime)).join(", ");
+
+                    const titleSuffix =
+                      todayStatus === "active"
+                        ? " (hoy, en turno)"
+                        : todayStatus === "ended"
+                          ? " (hoy, turno finalizado)"
+                          : todayStatus === "upcoming"
+                            ? " (hoy, turno pendiente)"
+                            : "";
 
                     return (
                       <div
                         key={dayIdx}
                         className={cn(
-                          "flex-1 flex flex-col items-center justify-center py-1 rounded-md border text-[9px] font-bold transition-all duration-200",
-                          isTodayReal
-                            ? "border-emerald-500 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 scale-105"
-                            : activeShift
-                              ? "border-foreground/10 bg-foreground/[0.03] text-foreground"
-                              : "border-transparent bg-transparent text-muted-foreground/30"
+                          "flex min-h-[58px] flex-col items-center justify-center gap-0.5 rounded-lg px-0.5 py-1.5 transition-all duration-200",
+                          isOff &&
+                            "border border-dashed border-muted-foreground/25 bg-muted/70 dark:bg-black/35 opacity-75",
+                          isActiveToday &&
+                            "border-2 border-emerald-500 bg-emerald-500/20 shadow-md shadow-emerald-500/10 dark:bg-emerald-500/25",
+                          isEndedToday &&
+                            "border border-amber-500/35 bg-card shadow-sm dark:bg-background/95",
+                          isUpcomingToday &&
+                            (isNextInQueue
+                              ? "border-2 border-violet-500/50 bg-violet-500/15 shadow-sm shadow-violet-500/10 dark:bg-violet-500/20"
+                              : "border border-violet-400/25 bg-card shadow-sm dark:bg-background/95"),
+                          isWorkDay &&
+                            todayStatus === "not-today" &&
+                            "border border-foreground/20 bg-card shadow-sm dark:border-foreground/25 dark:bg-background/95"
                         )}
-                        title={activeShift ? `${dayLabel} (${formatTime(activeShift.start)} - ${formatTime(activeShift.end)})` : dayLabel}
+                        title={`${dayName}: ${rangesLabel}${titleSuffix}`}
                       >
-                        <span>{dayLabel}</span>
-                        {activeShift && !isTodayReal && (
-                          <span className="h-1 w-1 rounded-full bg-foreground/30 mt-0.5" />
+                        <span
+                          className={cn(
+                            "text-[9px] font-bold leading-none",
+                            isOff && "text-muted-foreground/60",
+                            isActiveToday && "text-emerald-800 dark:text-emerald-200",
+                            isEndedToday && "text-foreground",
+                            (isUpcomingToday || (isWorkDay && todayStatus === "not-today")) &&
+                              "text-foreground"
+                          )}
+                        >
+                          {dayLabel}
+                        </span>
+
+                        {isActiveToday && (
+                          <span className="rounded bg-emerald-600/90 px-1 py-px text-[6px] font-bold uppercase leading-none text-white">
+                            Hoy
+                          </span>
                         )}
-                        {isTodayReal && (
-                          <span className="h-1 w-1 rounded-full bg-emerald-500 mt-0.5 animate-pulse" />
+
+                        {isEndedToday && (
+                          <span className="max-w-full px-0.5 text-center text-[5px] font-bold uppercase leading-tight text-amber-700 dark:text-amber-400">
+                            Finalizó
+                          </span>
                         )}
+
+                        {isUpcomingToday && (
+                          <span
+                            className={cn(
+                              "max-w-full px-0.5 text-center text-[5px] font-bold uppercase leading-tight",
+                              isNextInQueue
+                                ? "text-violet-800 dark:text-violet-200"
+                                : "text-violet-700/80 dark:text-violet-400/90"
+                            )}
+                          >
+                            {isNextInQueue ? "Entra" : "Luego"}
+                          </span>
+                        )}
+
+                        {isWorkDay && (
+                          <span
+                            className={cn(
+                              "mt-0.5 h-0.5 w-3 rounded-full",
+                              isActiveToday && "bg-emerald-500",
+                              isEndedToday && "bg-amber-500/60",
+                              isUpcomingToday &&
+                                (isNextInQueue ? "bg-violet-500" : "bg-violet-400/40"),
+                              todayStatus === "not-today" && "bg-foreground/35"
+                            )}
+                            aria-hidden
+                          />
+                        )}
+
+                        <span
+                          className={cn(
+                            "w-full px-0.5 text-center leading-tight",
+                            isOff &&
+                              "text-[7px] font-medium uppercase tracking-wide text-muted-foreground/55",
+                            isActiveToday &&
+                              "font-mono text-[7px] font-bold text-emerald-900 dark:text-emerald-100",
+                            (isEndedToday || isUpcomingToday) &&
+                              "font-mono text-[7px] font-bold text-foreground/85",
+                            isWorkDay &&
+                              todayStatus === "not-today" &&
+                              "font-mono text-[7px] font-bold text-foreground"
+                          )}
+                        >
+                          {isOff ? (
+                            "Libre"
+                          ) : (
+                            dayShifts.map((s, i) => (
+                              <span key={i} className="block whitespace-nowrap">
+                                {formatShiftRange(s, formatTime)}
+                              </span>
+                            ))
+                          )}
+                        </span>
                       </div>
                     );
                   })}
                 </div>
-                
-                <div className="flex flex-wrap gap-1 mt-1 justify-center">
-                  {op.shifts.map((s, idx) => (
-                    <span key={idx} className="text-[9px] font-mono font-semibold bg-muted/40 border border-border px-1.5 py-0.5 rounded-md text-muted-foreground">
-                      {formatTime(s.start)} – {formatTime(s.end)}
-                    </span>
-                  ))}
+
+                <div className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-0.5 text-[8px] text-muted-foreground">
+                  <span className="inline-flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-sm border border-foreground/25 bg-card shadow-sm" />
+                    Turno
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-sm border border-dashed border-muted-foreground/30 bg-muted/70" />
+                    Libre
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-sm border-2 border-emerald-500 bg-emerald-500/25" />
+                    En turno
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-sm border border-amber-500/40 bg-card" />
+                    Finalizó
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-sm border-2 border-violet-500/50 bg-violet-500/20" />
+                    Por entrar
+                  </span>
                 </div>
               </div>
             ) : (

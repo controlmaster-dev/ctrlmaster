@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserFromToken } from '@/lib/auth';
 
+export { requireRole } from '@/lib/roles';
 
 export async function validateApiAuth(req: NextRequest) {
   const token = req.cookies.get('auth-token')?.value;
@@ -26,19 +27,6 @@ export async function validateApiAuth(req: NextRequest) {
 
   return { user };
 }
-
-
-export function requireRole(user: { role?: string } | Record<string, unknown>, allowedRoles: string[]) {
-  const role = typeof user.role === 'string' ? user.role : '';
-  if (!allowedRoles.includes(role)) {
-    return NextResponse.json(
-      { error: 'No tienes permisos para realizar esta acción.' },
-      { status: 403 }
-    );
-  }
-  return { authorized: true };
-}
-
 
 export function requireCronAuth(req: Request): NextResponse | null {
   const secret = process.env.CRON_SECRET;

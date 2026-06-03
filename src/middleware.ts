@@ -3,6 +3,7 @@
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { isSessionValid } from '@/lib/sessionMiddleware';
 
 
 const PUBLIC_ROUTES = [
@@ -16,10 +17,9 @@ const PUBLIC_API_ROUTES = [
   '/api/auth/login',
   '/api/auth/register',
   '/api/auth/verify',
+  '/api/auth/logout',
   '/api/users',
   '/api/special-events',
-
-
   '/api/calendar',
   '/api/health',
 ];
@@ -64,14 +64,21 @@ function isApiRoute(pathname: string): boolean {
 }
 
 
-function hasSessionCookie(request: NextRequest): boolean {
-  return !!request.cookies.get('auth-token')?.value;
-}
-
 function hasCronSecret(request: NextRequest): boolean {
   const secret = process.env.CRON_SECRET;
   if (!secret) return false;
   return request.headers.get('authorization') === `Bearer ${secret}`;
+}
+
+
+function unauthorizedApiResponse(): NextResponse {
+  return NextResponse.json(
+    { error: 'No autorizado. Inicia sesión nuevamente.' },
+    {
+      status: 401,
+      headers: SECURITY_HEADERS,
+    }
+  );
 }
 
 
@@ -97,24 +104,16 @@ export async function middleware(request: NextRequest) {
 
 
   if (isApiRoute(pathname) && !isPublic) {
-    const hasSession = hasSessionCookie(request);
-
-    if (!hasSession) {
-      return NextResponse.json(
-        { error: 'No autorizado. Inicia sesión nuevamente.' },
-        {
-          status: 401,
-          headers: SECURITY_HEADERS,
-        }
-      );
+    const valid = await isSessionValid(request);
+    if (!valid) {
+      return unauthorizedApiResponse();
     }
   }
 
 
   if (!isPublic && !isApiRoute(pathname)) {
-    const hasSession = hasSessionCookie(request);
-
-    if (!hasSession) {
+    const valid = await isSessionValid(request);
+    if (!valid) {
       const loginUrl = new URL('/login', request.nextUrl.origin);
       loginUrl.searchParams.set('callbackUrl', pathname);
       return NextResponse.redirect(loginUrl);

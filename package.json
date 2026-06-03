@@ -10,6 +10,7 @@
     "electron:dev": "NODE_ENV=development electron .",
     "electron:build": "electron-builder",
     "lint": "npx tsc --noEmit && npx eslint .",
+    "test": "node --import tsx --import ./tests/setup.ts --test tests/**/*.test.ts",
     "format": "npx biome format --write",
     "all": "next build && next start"
   },

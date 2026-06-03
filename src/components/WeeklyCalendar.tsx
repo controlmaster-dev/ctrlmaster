@@ -4,19 +4,68 @@ import { useMemo, useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { Plus, ChevronLeft, ChevronRight, User, Trash2, Plane, CalendarDays, Shield } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, User, Trash2, Plane, CalendarDays } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Shift, Operator, WeekDate, DayColumn, EditingState, WeeklyCalendarProps } from "@/lib/types";
+import { formatInTimeZone } from "date-fns-tz";
+import {
+  COSTA_RICA_TZ,
+  getCostaRicaDateString,
+  getCurrentDayIndex,
+  getCurrentHourDecimal,
+  getNextShiftSlot,
+  getShiftCardWeekStatus,
+  type ShiftCardWeekStatus,
+} from "@/lib/operadorSchedule";
+import { useScheduleClock } from "@/hooks/useScheduleClock";
 import { cn } from "@/lib/utils";
 
 const DAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+
+/** Orden visual: lunes → domingo */
+const WEEK_DISPLAY_ORDER = [1, 2, 3, 4, 5, 6, 0] as const;
+
+function formatShiftTime(hour: number): string {
+  const endHour = hour === 0 ? 24 : hour;
+  const ampm = endHour >= 12 ? 'pm' : 'am';
+  const h = endHour % 12 || 12;
+  return `${h}${ampm}`;
+}
+
+function formatShiftRange(start: number, end: number): string {
+  const endHour = end === 0 ? 24 : end;
+  return `${formatShiftTime(start)} – ${formatShiftTime(endHour)}`;
+}
 
 function getInitials(name: string) {
   const parts = name.split(' ').filter(Boolean);
   if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
   return (name[0] || 'U').toUpperCase();
+}
+
+function shiftCardClasses(status: ShiftCardWeekStatus) {
+  return {
+    box:
+      status === "active"
+        ? "border-emerald-500/50 ring-1 ring-emerald-500/20"
+        : status === "upcoming"
+          ? "border-violet-500/50 ring-1 ring-violet-500/20"
+          : "border-border/80",
+    name:
+      status === "active"
+        ? "text-emerald-800 dark:text-emerald-300"
+        : status === "upcoming"
+          ? "text-violet-800 dark:text-violet-300"
+          : "text-foreground",
+    time:
+      status === "active"
+        ? "font-semibold text-emerald-700 dark:text-emerald-400"
+        : status === "upcoming"
+          ? "font-semibold text-violet-700 dark:text-violet-400"
+          : "font-medium text-foreground/90",
+  };
 }
 
 export function WeeklyCalendar({
@@ -28,6 +77,9 @@ export function WeeklyCalendar({
   onEditUser
 }: WeeklyCalendarProps) {
   const isEditingEnabled = !!onUpdateSchedule;
+  const scheduleTick = useScheduleClock();
+  const todayIdx = getCurrentDayIndex();
+  const currentHour = getCurrentHourDecimal();
 
   const weekDates = useMemo<WeekDate[]>(() => {
     if (!currentWeekStart) return [];
@@ -37,12 +89,10 @@ export function WeeklyCalendar({
     return DAYS.map((d, i) => {
       const date = new Date(start);
       date.setDate(start.getDate() + i);
-      const dayNum = date.getDate();
-      const monthNum = date.getMonth() + 1;
       return {
         name: d,
-        dateStr: `${dayNum}/${monthNum.toString().padStart(2, '0')}`,
-        fullDate: date.toISOString().split('T')[0]
+        dateStr: formatInTimeZone(date, COSTA_RICA_TZ, "d/MM"),
+        fullDate: formatInTimeZone(date, COSTA_RICA_TZ, "yyyy-MM-dd"),
       };
     });
   }, [currentWeekStart]);
@@ -62,10 +112,14 @@ export function WeeklyCalendar({
   }, [currentWeekStart, onWeekChange]);
 
   const isCurrentRealWeek = useMemo(() => {
-    const now = new Date();
-    const nowStr = now.toISOString().split('T')[0];
-    return weekDates.some((wd) => wd.fullDate === nowStr);
-  }, [weekDates]);
+    const todayCr = getCostaRicaDateString();
+    return weekDates.some((wd) => wd.fullDate === todayCr);
+  }, [weekDates, scheduleTick]);
+
+  const nextShiftSlot = useMemo(() => {
+    if (!isCurrentRealWeek) return null;
+    return getNextShiftSlot(operators, todayIdx, currentHour);
+  }, [operators, todayIdx, currentHour, isCurrentRealWeek, scheduleTick]);
 
   const dayColumns = useMemo<DayColumn[]>(() => {
     const columns: DayColumn[] = weekDates.map((d, i) => ({
@@ -91,12 +145,6 @@ export function WeeklyCalendar({
 
     return columns;
   }, [operators, weekDates]);
-
-  const formatTime = (h: number) => {
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    const hour = h % 12 || 12;
-    return `${hour}:00 ${ampm}`;
-  };
 
   const [editingState, setEditingState] = useState<EditingState | null>(null);
   const [confirmingVacation, setConfirmingVacation] = useState(false);
@@ -298,7 +346,7 @@ export function WeeklyCalendar({
             {currentWeekStart}
           </span>
           {isCurrentRealWeek && (
-            <span className="border border-border/60 bg-muted/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-foreground rounded-md">
+            <span className="rounded-md border border-emerald-500/25 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-400">
               Semana actual
             </span>
           )}
@@ -314,7 +362,7 @@ export function WeeklyCalendar({
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="border-x border-border/60 px-2.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <span className="border-x border-border/60 px-2.5 text-[10px] font-medium text-muted-foreground">
               Semana
             </span>
             <Button
@@ -339,77 +387,100 @@ export function WeeklyCalendar({
           </div>
         )}
 
-        <div className="hidden md:grid grid-cols-7 divide-x divide-border h-full min-w-[1200px]">
-          {dayColumns.map((col, i) => {
-            const isToday = isCurrentRealWeek && new Date().getDay() === i;
+        <div className="hidden h-full min-w-[1100px] md:grid md:grid-cols-7 md:divide-x md:divide-border">
+          {WEEK_DISPLAY_ORDER.map((dayIdx) => {
+            const col = dayColumns[dayIdx];
+            if (!col) return null;
+            const isToday = isCurrentRealWeek && dayIdx === todayIdx;
+            const dayName = col.dateLabel.split(' ')[0];
+            const dayDate = col.dateLabel.split(' ')[1];
+
             return (
               <div
                 key={col.dayIndex}
                 className={cn(
                   "group relative flex flex-col transition-colors",
-                  isToday ? 'bg-muted/15' : 'hover:bg-muted/5'
+                  isToday ? "bg-emerald-500/[0.03]" : "hover:bg-muted/5"
                 )}
               >
                 <div
-                  className={`sticky top-0 z-10 border-b py-2.5 text-center backdrop-blur-sm ${
+                  className={cn(
+                    "sticky top-0 z-10 border-b px-1 py-2.5 text-center",
                     isToday
-                      ? 'border-emerald-500/30 bg-emerald-500/5 text-foreground'
-                      : 'border-border bg-background/95 text-muted-foreground'
-                  }`}
+                      ? "border-emerald-500/30 bg-background"
+                      : "border-border bg-background"
+                  )}
                 >
-                  <span className={cn("mb-0.5 block text-[10px] font-semibold uppercase tracking-wider", isToday ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground")}>
-                    {col.dateLabel.split(' ')[0]}
+                  <span
+                    className={cn(
+                      "mb-0.5 block text-[10px] font-medium uppercase tracking-wide",
+                      isToday ? "text-emerald-700 dark:text-emerald-400" : "text-muted-foreground"
+                    )}
+                  >
+                    {dayName.slice(0, 3)}
                   </span>
-                  <span className="text-base font-bold leading-none tabular-nums">
-                    {col.dateLabel.split(' ')[1]}
+                  <span
+                    className={cn(
+                      "text-sm font-medium tabular-nums leading-none",
+                      isToday ? "text-emerald-800 dark:text-emerald-300" : "text-foreground"
+                    )}
+                  >
+                    {dayDate}
                   </span>
                 </div>
 
-                <div className="flex-1 space-y-1 p-1.5 pb-10">
+                <div className="flex-1 space-y-2 p-2 pb-10">
                   {col.shifts.map((item, idx) => {
-                    const isActiveNow = isToday &&
-                      new Date().getHours() >= item.shift.start &&
-                      new Date().getHours() < (item.shift.end === 0 ? 24 : item.shift.end);
+                    const cardStatus = getShiftCardWeekStatus(
+                      item.shift,
+                      col.dayIndex,
+                      item.op.id,
+                      todayIdx,
+                      currentHour,
+                      isCurrentRealWeek,
+                      nextShiftSlot
+                    );
+                    const accent = shiftCardClasses(cardStatus);
+
                     return (
                       <div
                         key={`${item.op.id}-${idx}`}
                         onClick={() => handleEditClick(item.op, col.dayIndex)}
                         className={cn(
-                          "group/card relative cursor-pointer border bg-card p-2.5 transition-all duration-200 hover:border-foreground/20 rounded-lg shadow-none",
-                          isActiveNow
-                            ? 'border-emerald-500 bg-emerald-500/5 dark:bg-emerald-500/10 border-l-2'
-                            : 'border-border'
+                          "group/card relative cursor-pointer rounded-md border bg-card/80 p-2.5 transition-colors hover:bg-muted/30",
+                          accent.box
                         )}
                       >
-                        <div className="mb-2 flex items-center gap-2">
-                          <Avatar className="h-6 w-6 shrink-0 rounded-md border border-border">
+                        <div className="flex items-start gap-2">
+                          <Avatar className="h-7 w-7 shrink-0 rounded-md border border-border/60">
                             <AvatarImage src={item.op.image} className="rounded-md" />
-                            <AvatarFallback className="rounded-md bg-muted/50 text-[8px] font-bold text-muted-foreground">
-                              {getInitials(item.op.name || 'U')}
+                            <AvatarFallback className="rounded-md bg-muted text-[9px] font-medium text-muted-foreground">
+                              {getInitials(item.op.name || "U")}
                             </AvatarFallback>
                           </Avatar>
                           <div className="min-w-0 flex-1">
-                            <div className={cn("truncate text-[10px] font-bold leading-tight", isActiveNow ? "text-emerald-700 dark:text-emerald-300" : "text-foreground")}>
+                            <p
+                              className={cn(
+                                "truncate text-xs font-medium leading-snug",
+                                accent.name
+                              )}
+                            >
                               {item.op.name}
-                            </div>
-                            <div className="mt-0.5 truncate text-[8px] leading-none text-muted-foreground">
-                              {item.op.role === 'BOSS' ? 'Admin' : 'Operador'}
-                            </div>
+                            </p>
+                            <p
+                              className={cn(
+                                "mt-0.5 font-mono text-xs tabular-nums",
+                                accent.time
+                              )}
+                            >
+                              {formatShiftRange(item.shift.start, item.shift.end)}
+                            </p>
                           </div>
-                          {item.op.role === 'BOSS' && (
-                            <Shield className="h-3 w-3 shrink-0 text-muted-foreground" />
-                          )}
-                        </div>
-
-                        <div className="flex items-center justify-between border-t border-border/40 pt-1.5 font-mono text-[9px] text-muted-foreground">
-                          <span className={isActiveNow ? "text-emerald-600 dark:text-emerald-400 font-medium" : ""}>{formatTime(item.shift.start)}</span>
-                          <span className="opacity-40">–</span>
-                          <span className={isActiveNow ? "text-emerald-600 dark:text-emerald-400 font-medium" : ""}>{formatTime(item.shift.end)}</span>
                         </div>
 
                         {item.op.isTempSchedule && (
                           <div
-                            className="absolute bottom-1 right-1 h-1.5 w-1.5 bg-foreground/45 rounded-full"
+                            className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-amber-500/80"
                             title="Horario temporal"
                           />
                         )}
@@ -434,25 +505,37 @@ export function WeeklyCalendar({
         </div>
 
         <div className="flex w-full flex-col divide-y divide-border pb-20 md:hidden">
-          {dayColumns.map((col, i) => {
-            const isToday = isCurrentRealWeek && new Date().getDay() === i;
+          {WEEK_DISPLAY_ORDER.map((dayIdx) => {
+            const col = dayColumns[dayIdx];
+            if (!col) return null;
+            const isToday = isCurrentRealWeek && dayIdx === todayIdx;
+
             return (
-              <div key={col.dayIndex} className={cn("flex flex-col", isToday ? 'bg-muted/10' : '')}>
+              <div
+                key={col.dayIndex}
+                className={cn("flex flex-col", isToday && "bg-emerald-500/[0.03]")}
+              >
                 <div
-                  className={`sticky top-0 z-20 flex items-center justify-between border-b px-4 py-2 backdrop-blur-sm ${
-                    isToday ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-border bg-background/95'
-                  }`}
+                  className={cn(
+                    "sticky top-0 z-20 flex items-center justify-between border-b px-4 py-2.5",
+                    isToday ? "border-emerald-500/30 bg-background" : "border-border bg-background"
+                  )}
                 >
                   <div className="flex items-baseline gap-2">
-                    <span className={cn("text-sm font-semibold capitalize", isToday ? "text-emerald-600 dark:text-emerald-400" : "text-foreground")}>
-                      {col.dateLabel.split(' ')[0]}
+                    <span
+                      className={cn(
+                        "text-sm font-medium capitalize",
+                        isToday ? "text-emerald-700 dark:text-emerald-400" : "text-foreground"
+                      )}
+                    >
+                      {col.dateLabel.split(" ")[0]}
                     </span>
-                    <span className="text-xs text-muted-foreground">
-                      {col.dateLabel.split(' ')[1]}
+                    <span className="text-xs tabular-nums text-muted-foreground">
+                      {col.dateLabel.split(" ")[1]}
                     </span>
                   </div>
                   {isToday && (
-                    <span className="border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 rounded-md">
+                    <span className="rounded-md border border-emerald-500/25 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-400">
                       Hoy
                     </span>
                   )}
@@ -460,49 +543,56 @@ export function WeeklyCalendar({
 
                 <div className="grid grid-cols-1 gap-2 p-3">
                   {col.shifts.length === 0 ? (
-                    <div className="py-3 text-center text-xs italic text-muted-foreground border border-dashed border-border rounded-lg bg-muted/5">
+                    <div className="rounded-lg border border-dashed border-border bg-muted/5 py-3 text-center text-xs text-muted-foreground">
                       Sin turnos
                     </div>
                   ) : (
                     col.shifts.map((item, idx) => {
-                      const isActiveNow = isToday &&
-                        new Date().getHours() >= item.shift.start &&
-                        new Date().getHours() < (item.shift.end === 0 ? 24 : item.shift.end);
+                      const cardStatus = getShiftCardWeekStatus(
+                        item.shift,
+                        col.dayIndex,
+                        item.op.id,
+                        todayIdx,
+                        currentHour,
+                        isCurrentRealWeek,
+                        nextShiftSlot
+                      );
+                      const accent = shiftCardClasses(cardStatus);
+
                       return (
                         <div
                           key={`${item.op.id}-${idx}`}
                           onClick={() => handleEditClick(item.op, col.dayIndex)}
                           className={cn(
-                            "flex items-center justify-between border border-border bg-card p-3 rounded-lg shadow-none cursor-pointer transition-colors hover:bg-muted/10",
-                            isActiveNow ? "border-emerald-500 bg-emerald-500/5 dark:bg-emerald-500/10 border-l-2" : ""
+                            "cursor-pointer rounded-lg border bg-card p-3 transition-colors hover:bg-muted/20",
+                            cardStatus === "none" ? "border-border" : accent.box
                           )}
                         >
-                          <div className="flex min-w-0 items-center gap-3 overflow-hidden">
-                            <Avatar className="h-9 w-9 shrink-0 rounded-lg border border-border">
-                              <AvatarImage src={item.op.image} className="rounded-lg" />
-                              <AvatarFallback className="rounded-lg bg-muted/50 text-[10px] font-bold text-muted-foreground">
-                                {getInitials(item.op.name || 'U')}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="min-w-0">
-                              <div className={cn("truncate text-sm font-semibold", isActiveNow ? "text-emerald-700 dark:text-emerald-300" : "text-foreground")}>
-                                {item.op.name}
-                              </div>
-                              <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                                {item.op.role === 'BOSS' ? (
-                                  <>
-                                    <Shield className="h-3 w-3" /> Admin
-                                  </>
-                                ) : (
-                                  'Operador'
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex min-w-0 items-center gap-2.5">
+                              <Avatar className="h-8 w-8 shrink-0 rounded-md border border-border/60">
+                                <AvatarImage src={item.op.image} className="rounded-md" />
+                                <AvatarFallback className="rounded-md bg-muted text-[9px] font-medium text-muted-foreground">
+                                  {getInitials(item.op.name || "U")}
+                                </AvatarFallback>
+                              </Avatar>
+                              <p
+                                className={cn(
+                                  "min-w-0 truncate text-sm font-medium",
+                                  accent.name
                                 )}
-                              </div>
+                              >
+                                {item.op.name}
+                              </p>
                             </div>
-                          </div>
-
-                          <div className="flex shrink-0 flex-col items-end pl-2 font-mono text-xs">
-                            <span className={cn("font-medium", isActiveNow ? "text-emerald-600 dark:text-emerald-400" : "text-foreground")}>{formatTime(item.shift.start)}</span>
-                            <span className="text-muted-foreground">{formatTime(item.shift.end)}</span>
+                            <p
+                              className={cn(
+                                "shrink-0 font-mono text-xs tabular-nums",
+                                accent.time
+                              )}
+                            >
+                              {formatShiftRange(item.shift.start, item.shift.end)}
+                            </p>
                           </div>
                         </div>
                       );
@@ -520,7 +610,7 @@ export function WeeklyCalendar({
           <div className="p-6 space-y-6 flex-1 overflow-y-auto">
             <div className="flex justify-between items-start border-b border-border pb-4">
               <div>
-                <DialogTitle className="font-bold text-xl tracking-tight text-foreground">
+                <DialogTitle className="text-lg font-semibold text-foreground">
                   Editar Turno
                 </DialogTitle>
                 <DialogDescription className="mt-1 text-xs text-muted-foreground">
@@ -636,7 +726,7 @@ export function WeeklyCalendar({
                           </SelectTrigger>
                           <SelectContent className="bg-card border-border rounded-lg">
                             {Array.from({ length: 24 }, (_, i) => i).map((h) => (
-                              <SelectItem key={h} value={String(h)}>{formatTime(h)}</SelectItem>
+                              <SelectItem key={h} value={String(h)}>{formatShiftTime(h)}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -647,7 +737,7 @@ export function WeeklyCalendar({
                           </SelectTrigger>
                           <SelectContent className="bg-card border-border rounded-lg">
                             {Array.from({ length: 25 }, (_, i) => i).map((h) => (
-                              <SelectItem key={h} value={String(h)}>{formatTime(h)}</SelectItem>
+                              <SelectItem key={h} value={String(h)}>{formatShiftTime(h)}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>

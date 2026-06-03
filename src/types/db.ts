@@ -18,6 +18,7 @@ export interface User {
   birthday: string | null;
   schedule: string | null;
   tempSchedule: string | null;
+  calendarFeedToken: string | null;
   createdAt: string;
 }
 

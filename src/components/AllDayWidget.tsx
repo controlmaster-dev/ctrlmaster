@@ -1,9 +1,16 @@
 "use client";
 
 import { useMemo } from "react";
-import { CalendarDays, Shield } from "lucide-react";
+import { CalendarDays } from "lucide-react";
+import { useScheduleClock } from "@/hooks/useScheduleClock";
 import { addDays, format } from "date-fns";
 import { es } from "date-fns/locale";
+import { toZonedTime } from "date-fns-tz";
+import {
+  COSTA_RICA_TZ,
+  getCurrentDayIndex,
+  getWeeklySchemeShifts,
+} from "@/lib/operadorSchedule";
 
 interface Shift {
   days: number[];
@@ -51,13 +58,14 @@ function formatName(name: string) {
   return name;
 }
 
-function getDayOperators(operators: Operator[], date: Date) {
-  const dayIndex = date.getDay();
+function getDayOperators(operators: Operator[], dayOffset: number) {
+  const dayIndex = (getCurrentDayIndex() + dayOffset) % 7;
   const result: { op: Operator; shift: Shift }[] = [];
 
   operators.forEach((op) => {
-    if (!op.shifts) return;
-    op.shifts.forEach((shift) => {
+    const shifts = getWeeklySchemeShifts(op);
+    if (!shifts) return;
+    shifts.forEach((shift) => {
       if (shift.days.includes(dayIndex)) {
         result.push({ op, shift });
       }
@@ -67,16 +75,20 @@ function getDayOperators(operators: Operator[], date: Date) {
   return result.sort((a, b) => a.shift.start - b.shift.start);
 }
 
+function formatCostaRicaDayLabel(dayOffset: number) {
+  const zoned = toZonedTime(addDays(new Date(), dayOffset), COSTA_RICA_TZ);
+  return format(zoned, "EEEE d MMM", { locale: es });
+}
+
 function DayShiftList({
   label,
   list,
-  date,
+  dateLabel,
 }: {
   label: string;
   list: { op: Operator; shift: Shift }[];
-  date: Date;
+  dateLabel: string;
 }) {
-  const dateLabel = format(date, "EEEE d MMM", { locale: es });
 
   return (
     <div>
@@ -105,11 +117,8 @@ function DayShiftList({
                   {getInitials(item.op.name)}
                 </span>
                 <div className="min-w-0">
-                  <p className="flex items-center gap-1 truncate text-xs font-semibold text-foreground">
+                  <p className="truncate text-xs font-semibold text-foreground">
                     {formatName(item.op.name)}
-                    {item.op.role?.toUpperCase() === "BOSS" && (
-                      <Shield className="h-3 w-3 shrink-0 text-muted-foreground" />
-                    )}
                   </p>
                 </div>
               </div>
@@ -125,14 +134,18 @@ function DayShiftList({
 }
 
 export function AllDayWidget({ operators, specialEvents = [] }: AllDayWidgetProps) {
+  const scheduleTick = useScheduleClock();
+
   const todayOperators = useMemo(
-    () => getDayOperators(operators, new Date()),
-    [operators]
+    () => getDayOperators(operators, 0),
+    [operators, scheduleTick]
   );
   const tomorrowOperators = useMemo(
-    () => getDayOperators(operators, addDays(new Date(), 1)),
-    [operators]
+    () => getDayOperators(operators, 1),
+    [operators, scheduleTick]
   );
+  const todayLabel = useMemo(() => formatCostaRicaDayLabel(0), [scheduleTick]);
+  const tomorrowLabel = useMemo(() => formatCostaRicaDayLabel(1), [scheduleTick]);
 
   const activeEvent = useMemo(() => {
     const now = new Date();
@@ -144,7 +157,7 @@ export function AllDayWidget({ operators, specialEvents = [] }: AllDayWidgetProp
       end.setHours(23, 59, 59, 999);
       return now >= start && now <= end;
     });
-  }, [specialEvents]);
+  }, [specialEvents, scheduleTick]);
 
   return (
     <section className="border border-border bg-card rounded-lg overflow-hidden">
@@ -170,11 +183,11 @@ export function AllDayWidget({ operators, specialEvents = [] }: AllDayWidgetProp
           </div>
         )}
 
-        <DayShiftList label="Hoy" list={todayOperators} date={new Date()} />
+        <DayShiftList label="Hoy" list={todayOperators} dateLabel={todayLabel} />
         <DayShiftList
           label="Mañana"
           list={tomorrowOperators}
-          date={addDays(new Date(), 1)}
+          dateLabel={tomorrowLabel}
         />
       </div>
     </section>

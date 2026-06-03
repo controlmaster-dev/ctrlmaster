@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { Operator } from "@/lib/types";
+import { sortOperatorsByShiftQueue } from "@/lib/operadorSchedule";
 import {
   getOperadoresBundle,
   setOperadoresBundle,
@@ -11,21 +12,7 @@ import {
 } from "@/lib/operadoresCache";
 
 export function sortOperators(data: Operator[]): Operator[] {
-  return [...data].sort((a, b) => {
-    const isAvail = (op: Operator) =>
-      !!op.shifts?.some((s) => {
-        const now = new Date();
-        const currentDay = now.getDay();
-        const currentHour = now.getHours() + now.getMinutes() / 60;
-        const end = s.end === 0 ? 24 : s.end;
-        return s.days.includes(currentDay) && currentHour >= s.start && currentHour < end;
-      });
-    const aAvail = isAvail(a);
-    const bAvail = isAvail(b);
-    if (aAvail && !bAvail) return -1;
-    if (!aAvail && bAvail) return 1;
-    return 0;
-  });
+  return sortOperatorsByShiftQueue(data);
 }
 
 export function useOperadoresBundle(currentWeekStart: string) {
