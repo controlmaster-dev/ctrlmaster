@@ -1,6 +1,6 @@
 "use client";
 
-import { GripVertical, Pencil, Trash2 } from "lucide-react";
+import { GripVertical, Pencil, Trash2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { OperatorDuty } from "@/types/operatorDuty";
 import { cn } from "@/lib/utils";
@@ -20,22 +20,22 @@ type DiariosDutyCardProps = {
   onDragStart?: (dutyId: string) => void;
   onDragEnd?: () => void;
   dragging?: boolean;
-  compact?: boolean;
 };
 
 export function DiariosDutyCard({
   duty,
   sharedCount,
   canEdit,
-  compact = false,
   onEdit,
   onDelete,
   onDragStart,
   onDragEnd,
   dragging,
 }: DiariosDutyCardProps) {
+  const isShared = sharedCount != null && sharedCount > 1;
+
   return (
-    <div
+    <article
       draggable={canEdit}
       onDragStart={(e) => {
         if (!canEdit) return;
@@ -45,50 +45,42 @@ export function DiariosDutyCard({
       }}
       onDragEnd={() => onDragEnd?.()}
       className={cn(
-        "group rounded-md border border-border/80 bg-card shadow-sm transition-all",
-        compact ? "p-1.5" : "p-3",
-        canEdit && "cursor-grab active:cursor-grabbing",
-        dragging && "opacity-50 ring-1 ring-brand/40",
-        canEdit && "hover:border-foreground/20"
+        "group relative rounded-lg border border-border/70 bg-card px-2.5 py-2.5 shadow-sm transition-all",
+        canEdit && "cursor-grab active:cursor-grabbing active:shadow-md",
+        dragging && "rotate-[1deg] opacity-60 ring-2 ring-brand/40 shadow-md",
+        canEdit && "hover:border-foreground/25 hover:shadow-md"
       )}
     >
-      <div className={cn("flex items-start", compact ? "gap-1" : "gap-2")}>
-        {canEdit && !compact && (
-          <GripVertical className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/60" aria-hidden />
+      <div className="flex items-start gap-2">
+        {canEdit && (
+          <GripVertical
+            className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/40 group-hover:text-muted-foreground/70"
+            aria-hidden
+          />
         )}
         <div className="min-w-0 flex-1">
-          <p
-            className={cn(
-              "font-medium leading-snug text-foreground",
-              compact ? "line-clamp-3 text-[11px]" : "text-sm"
-            )}
-            title={duty.title}
-          >
+          <p className="text-sm font-medium leading-snug text-foreground" title={duty.title}>
             {duty.title}
-            {sharedCount && sharedCount > 1 ? (
-              <span className="block text-[10px] font-normal text-muted-foreground">
-                {sharedCount} personas
-              </span>
-            ) : null}
           </p>
-          {!compact && duty.description ? (
-            <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+          {duty.description ? (
+            <p className="mt-1.5 line-clamp-3 text-xs leading-relaxed text-muted-foreground">
               {duty.description}
             </p>
           ) : null}
+          {isShared && (
+            <p className="mt-2 inline-flex items-center gap-1 rounded-md bg-muted/80 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+              <Users className="h-3 w-3 shrink-0" />
+              {sharedCount} personas
+            </p>
+          )}
         </div>
         {canEdit && (
-          <div
-            className={cn(
-              "flex shrink-0 gap-0.5",
-              compact ? "opacity-100" : "opacity-0 transition-opacity group-hover:opacity-100"
-            )}
-          >
+          <div className="flex shrink-0 flex-col gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
             <Button
               type="button"
               variant="ghost"
               size="icon"
-              className={compact ? "h-6 w-6" : "h-7 w-7"}
+              className="h-7 w-7"
               aria-label="Editar función"
               onClick={onEdit}
             >
@@ -98,10 +90,7 @@ export function DiariosDutyCard({
               type="button"
               variant="ghost"
               size="icon"
-              className={cn(
-                "text-destructive hover:text-destructive",
-                compact ? "h-6 w-6" : "h-7 w-7"
-              )}
+              className="h-7 w-7 text-destructive hover:text-destructive"
               aria-label="Eliminar función"
               onClick={onDelete}
             >
@@ -110,7 +99,7 @@ export function DiariosDutyCard({
           </div>
         )}
       </div>
-    </div>
+    </article>
   );
 }
 

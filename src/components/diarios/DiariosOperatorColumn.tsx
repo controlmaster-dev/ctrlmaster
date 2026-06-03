@@ -66,39 +66,47 @@ export function DiariosOperatorColumn({
   };
 
   return (
-    <div
+    <section
       className={cn(
-        "flex min-h-[140px] min-w-0 flex-col rounded-lg border bg-card/50",
-        isCurrentUser ? "border-brand/40 ring-1 ring-brand/20" : "border-border/80",
-        dragOver && canEdit && "border-brand bg-brand/[0.03]"
+        "diarios-column",
+        isCurrentUser && "ring-2 ring-brand/35",
+        dragOver && canEdit && "ring-2 ring-brand/50"
       )}
       onDragOver={handleDragOver}
       onDragLeave={() => setDragOver(false)}
       onDrop={handleDrop}
+      aria-label={`Columna de ${operator.name}`}
     >
-      <div className="flex items-start gap-1.5 border-b border-border/80 px-2 py-2">
-        <Avatar className="h-6 w-6 shrink-0 border border-border/60">
+      <div
+        className={cn(
+          "diarios-column-header flex items-start gap-2",
+          isCurrentUser ? "bg-brand/8" : "bg-muted/40"
+        )}
+      >
+        <Avatar className="h-8 w-8 shrink-0 border border-border/60 shadow-sm">
           <AvatarImage src={operator.image || ""} alt={operator.name} />
-          <AvatarFallback className="text-[8px] font-semibold">
+          <AvatarFallback className="text-[10px] font-semibold">
             {getInitials(operator.name)}
           </AvatarFallback>
         </Avatar>
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 pt-0.5">
           <p
-            className="truncate text-xs font-medium leading-tight text-foreground"
+            className="truncate text-sm font-semibold leading-tight text-foreground"
             title={operator.name}
           >
             {operator.name}
+            {isCurrentUser ? (
+              <span className="ml-1 text-xs font-normal text-brand">(tú)</span>
+            ) : null}
           </p>
-          <p className="truncate text-[10px] leading-tight text-muted-foreground">
-            {duties.length} {duties.length === 1 ? "función" : "funciones"}
-            {isCurrentUser ? " · tú" : ""}
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {duties.length} {duties.length === 1 ? "tarjeta" : "tarjetas"}
           </p>
         </div>
         {canEdit && duties.length > 0 && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0">
+              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -120,11 +128,18 @@ export function DiariosOperatorColumn({
         )}
       </div>
 
-      <div className="flex min-h-[80px] flex-1 flex-col gap-1.5 overflow-y-auto p-1.5">
+      <div className="diarios-column-body">
         {duties.length === 0 ? (
-          <p className="px-1 py-4 text-center text-[10px] leading-snug text-muted-foreground">
-            {canEdit ? "Arrastre funciones aquí" : "Sin funciones asignadas"}
-          </p>
+          <div
+            className={cn(
+              "flex flex-1 flex-col items-center justify-center rounded-lg border border-dashed border-border/70 px-3 py-10 text-center",
+              dragOver && canEdit && "border-brand bg-brand/[0.04]"
+            )}
+          >
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              {canEdit ? "Suelte una tarjeta aquí" : "Sin funciones asignadas"}
+            </p>
+          </div>
         ) : (
           duties.map((duty, index) => (
             <DiariosDutyCard
@@ -132,7 +147,6 @@ export function DiariosOperatorColumn({
               duty={duty}
               sharedCount={dutySharedCounts?.[duty.id]}
               canEdit={canEdit}
-              compact
               dragging={draggingDutyId === duty.id}
               onDragStart={() => onDragStartDuty(duty.id, operator.id)}
               onDragEnd={onDragEnd}
@@ -142,6 +156,6 @@ export function DiariosOperatorColumn({
           ))
         )}
       </div>
-    </div>
+    </section>
   );
 }

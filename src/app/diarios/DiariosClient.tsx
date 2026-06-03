@@ -1,10 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Loader2, Plus } from "lucide-react";
+import { ClipboardList, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { BentoCard } from "@/components/dashboard/BentoCard";
 import { Button } from "@/components/ui/button";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import {
@@ -15,7 +14,7 @@ import { DiariosOperatorColumn } from "@/components/diarios/DiariosOperatorColum
 import { DiariosTransferDialog } from "@/components/diarios/DiariosTransferDialog";
 import { DiariosUnassignedPanel } from "@/components/diarios/DiariosUnassignedPanel";
 import { useDiariosBoard } from "@/hooks/useDiariosBoard";
-import { pageContainerClass } from "@/lib/page-layout";
+import { cn } from "@/lib/utils";
 import type { DiariosOperator, OperatorDuty } from "@/types/operatorDuty";
 
 const MANAGE_ROLES = new Set(["ADMIN", "BOSS", "ENGINEER"]);
@@ -61,16 +60,6 @@ export function DiariosClient() {
     }
     return counts;
   }, [board.assignments]);
-
-  const boardColumnCount = board.operators.length + (canEdit ? 1 : 0);
-
-  const boardGridStyle = useMemo(
-    () =>
-      ({
-        ["--diarios-cols" as string]: Math.max(boardColumnCount, 1),
-      }) as React.CSSProperties,
-    [boardColumnCount]
-  );
 
   const handleAssign = async (
     dutyId: string,
@@ -160,7 +149,7 @@ export function DiariosClient() {
 
   if (loading) {
     return (
-      <div className={`${pageContainerClass} flex min-h-[50vh] items-center justify-center`}>
+      <div className="diarios-ui flex h-[calc(100dvh-3.5rem-60px)] items-center justify-center bg-muted/20 md:h-[calc(100dvh-3.5rem)]">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
@@ -206,24 +195,45 @@ export function DiariosClient() {
         onConfirm={handleTransfer}
       />
 
-      <div className={`${pageContainerClass} space-y-5`}>
-        <BentoCard className="p-4 md:p-5">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="space-y-2">
-              <div>
-                <h1 className="text-xl font-semibold tracking-tight md:text-2xl">Diarios</h1>
-                <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-                  Funciones obligatorias de cada operador en Control Máster.{" "}
+      <div
+        className={cn(
+          "diarios-ui flex h-[calc(100dvh-3.5rem-60px)] flex-col overflow-hidden",
+          "bg-[#e8eaed] dark:bg-muted/15 md:h-[calc(100dvh-3.5rem)]"
+        )}
+      >
+        <header className="diarios-toolbar shrink-0 border-b border-border/60 bg-background/90 px-3 py-2.5 backdrop-blur-sm md:px-5 md:py-3">
+          <div className="mx-auto flex max-w-[2200px] flex-wrap items-center gap-3 md:gap-4">
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-brand/10 text-brand">
+                <ClipboardList className="h-4 w-4" />
+              </div>
+              <div className="min-w-0">
+                <h1 className="truncate text-base font-semibold tracking-tight md:text-lg">
+                  Diarios
+                </h1>
+                <p className="hidden text-xs text-muted-foreground sm:block">
                   {canEdit
-                    ? "Arrastre tarjetas entre columnas, desligue o delegue al salir de un puesto."
-                    : "Consulte su perfil y las responsabilidades del equipo."}
+                    ? "Arrastre tarjetas entre columnas · delegue o desligue al cambiar de puesto"
+                    : "Funciones obligatorias del equipo en Control Máster"}
                 </p>
               </div>
-              <p className="text-xs text-muted-foreground">
-                {board.duties.length} en catálogo · {totalAssigned} asignaciones ·{" "}
-                {board.unassigned.length} sin asignar · {board.operators.length} perfiles
-              </p>
             </div>
+
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="rounded-md bg-muted/80 px-2.5 py-1 font-medium text-foreground">
+                {board.duties.length} catálogo
+              </span>
+              <span className="rounded-md bg-muted/80 px-2.5 py-1 text-muted-foreground">
+                {totalAssigned} asignadas
+              </span>
+              <span className="rounded-md bg-muted/80 px-2.5 py-1 text-muted-foreground">
+                {board.unassigned.length} sin asignar
+              </span>
+              <span className="rounded-md bg-muted/80 px-2.5 py-1 text-muted-foreground">
+                {board.operators.length} columnas
+              </span>
+            </div>
+
             {canEdit && (
               <Button
                 className="h-9 shrink-0 gap-2 bg-brand text-white hover:bg-brand-hover"
@@ -231,27 +241,23 @@ export function DiariosClient() {
                 disabled={saving}
               >
                 <Plus className="h-4 w-4" />
-                Nueva función
+                <span className="hidden sm:inline">Nueva función</span>
+                <span className="sm:hidden">Nueva</span>
               </Button>
             )}
           </div>
-        </BentoCard>
+        </header>
 
-        <BentoCard className="overflow-hidden p-2 md:p-3">
+        <div className="diarios-board flex-1 min-h-0" role="region" aria-label="Tablero de funciones">
           {board.operators.length === 0 && !canEdit ? (
-            <div className="flex min-h-[200px] items-center justify-center p-8">
-              <p className="text-center text-sm text-muted-foreground">
+            <div className="flex h-full items-center justify-center p-8">
+              <p className="max-w-md text-center text-sm text-muted-foreground">
                 No hay perfiles en el tablero. Agregue usuarios (operador o admin) en
                 configuración.
               </p>
             </div>
           ) : (
-            <div
-              className="diarios-board-grid"
-              style={boardGridStyle}
-              role="list"
-              aria-label="Tablero de funciones por persona"
-            >
+            <div className="diarios-board-track" role="list" aria-label="Columnas del tablero">
               {canEdit && (
                 <DiariosUnassignedPanel
                   duties={board.unassigned}
@@ -263,6 +269,7 @@ export function DiariosClient() {
                   }
                   onEditDuty={openEditDuty}
                   onDeleteDuty={setDeleteTarget}
+                  onAddDuty={openCreateDuty}
                   onDragStartDuty={(dutyId) => {
                     setDraggingDutyId(dutyId);
                     setDragSource({ dutyId, userId: null });
@@ -304,20 +311,18 @@ export function DiariosClient() {
               ))}
             </div>
           )}
-        </BentoCard>
+        </div>
 
-          {!canEdit && board.unassigned.length > 0 && (
-            <BentoCard className="p-4 lg:hidden">
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Sin asignar ({board.unassigned.length})
-              </p>
-              <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-                {board.unassigned.map((d) => (
-                  <li key={d.id}>{d.title}</li>
-                ))}
-              </ul>
-            </BentoCard>
-          )}
+        {!canEdit && board.unassigned.length > 0 && (
+          <div className="shrink-0 border-t border-border/60 bg-background/95 px-4 py-2 md:hidden">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Sin asignar ({board.unassigned.length})
+            </p>
+            <p className="truncate text-xs text-muted-foreground">
+              {board.unassigned.map((d) => d.title).join(" · ")}
+            </p>
+          </div>
+        )}
       </div>
     </>
   );
