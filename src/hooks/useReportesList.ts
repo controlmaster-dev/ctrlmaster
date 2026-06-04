@@ -23,11 +23,7 @@ import type {
   ReportsResponse,
   OperatorStat,
 } from "@/components/reportes/reportes-types";
-import {
-  fetchReportStats,
-  normalizeReportStats,
-  type ReportStatsCounts,
-} from "@/lib/reportStats";
+import { normalizeReportStats, type ReportStatsCounts } from "@/lib/reportStats";
 const LIMIT = 20;
 
 export function useReportesList() {
@@ -64,25 +60,36 @@ export function useReportesList() {
     return params.toString();
   }, [page, debouncedSearch, statusFilter, priorityFilter, operatorFilter, dateFrom, dateTo]);
 
-  const fetchGlobalStats = useCallback(() => fetchReportStats(), []);
-
   const parseListResponse = useCallback(
     async (res: Response): Promise<{
       ok: boolean;
       reports: Report[];
       total: number;
       totalPages: number;
+      stats: ReportStatsCounts;
     }> => {
       const data = (await res.json()) as ReportsResponse | Report[] | { error?: string };
 
       if (!res.ok) {
         console.error("[reportes] list API error:", data);
-        return { ok: false, reports: [], total: 0, totalPages: 1 };
+        return {
+          ok: false,
+          reports: [],
+          total: 0,
+          totalPages: 1,
+          stats: normalizeReportStats(null),
+        };
       }
 
       if (Array.isArray(data)) {
         const reports = toReportesListItems(data);
-        return { ok: true, reports, total: reports.length, totalPages: 1 };
+        return {
+          ok: true,
+          reports,
+          total: reports.length,
+          totalPages: 1,
+          stats: normalizeReportStats(null),
+        };
       }
 
       if (
@@ -98,11 +105,18 @@ export function useReportesList() {
           reports,
           total: payload.total ?? reports.length,
           totalPages: payload.totalPages ?? 1,
+          stats: normalizeReportStats(payload.stats),
         };
       }
 
       console.error("[reportes] unexpected list payload:", data);
-      return { ok: false, reports: [], total: 0, totalPages: 1 };
+      return {
+        ok: false,
+        reports: [],
+        total: 0,
+        totalPages: 1,
+        stats: normalizeReportStats(null),
+      };
     },
     []
   );
@@ -113,25 +127,23 @@ export function useReportesList() {
       if (!opts?.silent) setLoading(true);
 
       try {
-        const [listRes, stats] = await Promise.all([
-          fetch(`/api/reports?${queryKey}`, { credentials: "include" }),
-          fetchGlobalStats(),
-        ]);
-
+        const listRes = await fetch(`/api/reports?${queryKey}`, {
+          credentials: "include",
+        });
         const parsed = await parseListResponse(listRes);
 
         if (parsed.ok) {
           setReports(parsed.reports);
           setTotal(parsed.total);
           setTotalPages(parsed.totalPages);
-          setGlobalStats(stats);
+          setGlobalStats(parsed.stats);
 
           setReportesListCache({
             queryKey,
             reports: parsed.reports,
             total: parsed.total,
             totalPages: parsed.totalPages,
-            globalStats: stats,
+            globalStats: parsed.stats,
             fetchedAt: Date.now(),
           });
 
@@ -146,7 +158,7 @@ export function useReportesList() {
         setInitialLoad(false);
       }
     },
-    [buildQuery, fetchGlobalStats, parseListResponse]
+    [buildQuery, parseListResponse]
   );
 
   useEffect(() => {
@@ -182,29 +194,16 @@ export function useReportesList() {
 
   const fetchOperatorStats = useCallback(async () => {
     try {
-      const res = await fetch("/api/reports?limit=500");
-      const data = (await res.json()) as ReportsResponse;
-      if (!data.reports) return;
-
-      const stats: Record<string, OperatorStat> = {};
-      data.reports.forEach((r) => {
-        if (!stats[r.operatorName]) {
-          stats[r.operatorName] = {
-            name: r.operatorName,
-            total: 0,
-            pending: 0,
-            resolved: 0,
-            emailSent: 0,
-          };
-        }
-        stats[r.operatorName].total++;
-        if (r.status === "pending") stats[r.operatorName].pending++;
-        if (r.status === "resolved") stats[r.operatorName].resolved++;
-        if (r.emailStatus === "sent") stats[r.operatorName].emailSent++;
+      const res = await fetch("/api/reports/operator-stats", {
+        credentials: "include",
       });
-      setOperatorStats(Object.values(stats).sort((a, b) => b.total - a.total));
+      if (!res.ok) return;
+      const data = (await res.json()) as { operators?: OperatorStat[] };
+      if (Array.isArray(data.operators)) {
+        setOperatorStats(data.operators);
+      }
     } catch (e) {
-      console.error(e);
+      console.error("[reportes] operator stats failed:", e);
     }
   }, []);
 

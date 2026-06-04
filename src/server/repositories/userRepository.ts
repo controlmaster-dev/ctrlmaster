@@ -1,7 +1,14 @@
-import sql from '@/lib/db';
-import type { Shift } from '@/lib/types';
+import { randomUUID } from "crypto";
+import { connectMongo } from "@/lib/mongo";
+import {
+  ReportModel,
+  SpecialEventModel,
+  SpecialEventShiftModel,
+  UserModel,
+} from "@/models";
+import type { Shift } from "@/lib/types";
 
-export type UserRole = 'ADMIN' | 'BOSS' | 'ENGINEER' | 'OPERATOR';
+export type UserRole = "ADMIN" | "BOSS" | "ENGINEER" | "OPERATOR";
 
 export type UserRow = {
   id: string;
@@ -60,98 +67,124 @@ export type UpdateUserData = {
   tempSchedule?: string;
 };
 
+function userToRow(u: Record<string, unknown>): UserRow {
+  return {
+    id: String(u._id),
+    name: String(u.name),
+    email: String(u.email),
+    username: (u.username as string) ?? null,
+    role: u.role as UserRole,
+    image: (u.image as string) ?? null,
+    phone: (u.phone as string) ?? null,
+    birthday: (u.birthday as string) ?? null,
+    schedule: (u.schedule as string) ?? null,
+    tempSchedule: (u.tempSchedule as string) ?? null,
+    lastLogin: u.lastLogin ? String(u.lastLogin) : null,
+    lastLoginIP: (u.lastLoginIP as string) ?? null,
+    lastLoginCountry: (u.lastLoginCountry as string) ?? null,
+    currentPath: (u.currentPath as string) ?? null,
+    lastActive: u.lastActive ? String(u.lastActive) : null,
+    createdAt: String(u.createdAt),
+  };
+}
+
 export async function listUsers() {
-  return sql<UserRow[]>`
-    SELECT "id", "name", "email", "username", "role", "image", "phone",
-           "birthday", "schedule", "tempSchedule",
-           "lastLogin", "lastLoginIP", "lastLoginCountry",
-           "currentPath", "lastActive", "createdAt"
-    FROM "User"
-    ORDER BY "role" ASC, "name" ASC
-  `;
+  await connectMongo();
+  const users = await UserModel.find()
+    .select(
+      "name email username role image phone birthday schedule tempSchedule lastLogin lastLoginIP lastLoginCountry currentPath lastActive createdAt"
+    )
+    .sort({ role: 1, name: 1 })
+    .lean();
+  return users.map((u) => userToRow(u as Record<string, unknown>));
 }
 
 export async function countReportsByUser(userIds: string[]) {
   if (userIds.length === 0) return {};
-
-  const counts = await sql<Array<{ operatorId: string; count: number }>>`
-    SELECT "operatorId", COUNT(*)::int AS count
-    FROM "Report"
-    WHERE "operatorId" = ANY(${userIds})
-    GROUP BY "operatorId"
-  `;
-
-  return Object.fromEntries(counts.map((row) => [row.operatorId, row.count]));
+  await connectMongo();
+  const counts = await ReportModel.aggregate<{ _id: string; count: number }>([
+    { $match: { operatorId: { $in: userIds } } },
+    { $group: { _id: "$operatorId", count: { $sum: 1 } } },
+  ]);
+  return Object.fromEntries(counts.map((row) => [row._id, row.count]));
 }
 
 export async function findActiveSpecialEvent(weekStart: string, weekEnd: string) {
-  const [event] = await sql<SpecialEventRow[]>`
-    SELECT * FROM "SpecialEvent"
-    WHERE "isActive" = TRUE
-      AND "startDate" <= ${weekEnd}
-      AND "endDate" >= ${weekStart}
-    LIMIT 1
-  `;
-
-  return event ?? null;
+  await connectMongo();
+  const event = await SpecialEventModel.findOne({
+    isActive: true,
+    startDate: { $lte: weekEnd },
+    endDate: { $gte: weekStart },
+  }).lean();
+  if (!event) return null;
+  return {
+    id: String(event._id),
+    name: event.name,
+    startDate: event.startDate,
+    endDate: event.endDate,
+    isActive: event.isActive,
+  } as SpecialEventRow;
 }
 
 export async function listSpecialEventShifts(eventId: string) {
-  return sql<SpecialEventShiftRow[]>`
-    SELECT * FROM "SpecialEventShift" WHERE "eventId" = ${eventId}
-  `;
+  await connectMongo();
+  const rows = await SpecialEventShiftModel.find({ eventId }).lean();
+  return rows.map(
+    (r) =>
+      ({
+        id: String(r._id),
+        eventId: r.eventId,
+        userId: r.userId,
+        date: r.date,
+        start: r.start,
+        end: r.end,
+      }) as SpecialEventShiftRow
+  );
 }
 
 export async function createUser(data: CreateUserData) {
-  const [newUser] = await sql<UserRow[]>`
-    INSERT INTO "User" ("name", "email", "password", "role", "image", "birthday", "schedule")
-    VALUES (
-      ${data.name},
-      ${data.email},
-      ${data.password},
-      ${data.role},
-      ${data.image ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=random`},
-      ${data.birthday || null},
-      ${data.schedule ? JSON.stringify(data.schedule) : null}
-    )
-    RETURNING "id", "name", "email", "username", "role", "image", "phone",
-              "birthday", "schedule", "tempSchedule",
-              "lastLogin", "lastLoginIP", "lastLoginCountry",
-              "currentPath", "lastActive", "createdAt"
-  `;
-
-  return newUser;
+  await connectMongo();
+  const id = randomUUID();
+  const doc = await UserModel.create({
+    _id: id,
+    name: data.name,
+    email: data.email,
+    password: data.password,
+    role: data.role,
+    image:
+      data.image ??
+      `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=random`,
+    birthday: data.birthday || null,
+    schedule: data.schedule ? JSON.stringify(data.schedule) : null,
+  });
+  return userToRow(doc.toObject() as Record<string, unknown>);
 }
 
 export async function getUserTempSchedule(id: string) {
-  const [currentUser] = await sql<Array<{ tempSchedule: string | null }>>`
-    SELECT "tempSchedule" FROM "User" WHERE "id" = ${id} LIMIT 1
-  `;
-
-  return currentUser?.tempSchedule ?? null;
+  await connectMongo();
+  const user = await UserModel.findById(id).select("tempSchedule").lean();
+  return user?.tempSchedule ?? null;
 }
 
 export async function updateUser(data: UpdateUserData) {
-  const [updatedUser] = await sql<UserRow[]>`
-    UPDATE "User"
-    SET
-      "name" = COALESCE(${data.name || null}, "name"),
-      "email" = COALESCE(${data.email || null}, "email"),
-      "role" = COALESCE(${data.role || null}, "role"),
-      "image" = COALESCE(${data.image ?? null}, "image"),
-      "birthday" = COALESCE(${data.birthday ?? null}, "birthday"),
-      "schedule" = ${data.schedule !== undefined ? (data.schedule ? JSON.stringify(data.schedule) : null) : sql`"schedule"`},
-      "tempSchedule" = ${data.tempSchedule !== undefined ? data.tempSchedule : sql`"tempSchedule"`}
-    WHERE "id" = ${data.id}
-    RETURNING "id", "name", "email", "username", "role", "image", "phone",
-              "birthday", "schedule", "tempSchedule",
-              "lastLogin", "lastLoginIP", "lastLoginCountry",
-              "currentPath", "lastActive", "createdAt"
-  `;
+  await connectMongo();
+  const patch: Record<string, unknown> = {};
+  if (data.name !== undefined) patch.name = data.name;
+  if (data.email !== undefined) patch.email = data.email;
+  if (data.role !== undefined) patch.role = data.role;
+  if (data.image !== undefined) patch.image = data.image;
+  if (data.birthday !== undefined) patch.birthday = data.birthday;
+  if (data.schedule !== undefined) {
+    patch.schedule = data.schedule ? JSON.stringify(data.schedule) : null;
+  }
+  if (data.tempSchedule !== undefined) patch.tempSchedule = data.tempSchedule;
 
-  return updatedUser;
+  const doc = await UserModel.findByIdAndUpdate(data.id, patch, { new: true }).lean();
+  if (!doc) return undefined;
+  return userToRow(doc as Record<string, unknown>);
 }
 
 export async function deleteUser(id: string) {
-  await sql`DELETE FROM "User" WHERE "id" = ${id}`;
+  await connectMongo();
+  await UserModel.findByIdAndDelete(id);
 }

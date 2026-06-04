@@ -8,7 +8,8 @@ import { validateApiAuth } from '@/lib/apiAuth';
 import { withRateLimit } from '@/lib/rateLimitEnhanced';
 import { generateToken } from '@/lib/crypto';
 import { encryptBuffer, hasEncryptionKey } from '@/lib/encryption';
-import sql from '@/lib/db';
+import { connectMongo } from '@/lib/mongo';
+import { UploadedFileModel } from '@/models';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,22 +43,6 @@ const FILE_SIGNATUREATURES = {
   WEBM: [0x1A, 0x45, 0xDF, 0xA3],
 };
 
-
-async function ensureUploadedFileTable() {
-  await sql`
-    CREATE TABLE IF NOT EXISTS "UploadedFile" (
-      "id" TEXT PRIMARY KEY,
-      "filename" TEXT NOT NULL,
-      "contentType" TEXT NOT NULL,
-      "size" INTEGER NOT NULL,
-      "ciphertext" BYTEA NOT NULL,
-      "iv" TEXT NOT NULL,
-      "authTag" TEXT NOT NULL,
-      "createdById" TEXT,
-      "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `;
-}
 
 function validateFileSignature(buffer: Buffer): boolean {
   if (buffer.length < 4) return false;
@@ -142,17 +127,17 @@ export async function POST(req: NextRequest) {
     const id = generateToken(18);
     const filename = file.name.replace(/[\r\n]/g, ' ').trim() || 'archivo';
 
-    await ensureUploadedFileTable();
-    await sql`
-      INSERT INTO "UploadedFile" (
-        "id", "filename", "contentType", "size",
-        "ciphertext", "iv", "authTag", "createdById"
-      )
-      VALUES (
-        ${id}, ${filename}, ${file.type}, ${file.size},
-        ${encrypted.ciphertext}, ${encrypted.iv}, ${encrypted.authTag}, ${userId || null}
-      )
-    `;
+    await connectMongo();
+    await UploadedFileModel.create({
+      _id: id,
+      filename,
+      contentType: file.type,
+      size: file.size,
+      ciphertext: encrypted.ciphertext,
+      iv: encrypted.iv,
+      authTag: encrypted.authTag,
+      createdById: userId || null,
+    });
 
     const isImage = file.type.startsWith('image/');
 

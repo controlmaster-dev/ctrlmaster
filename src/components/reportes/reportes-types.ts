@@ -25,10 +25,13 @@ export interface OperatorStat {
   emailSent: number;
 }
 
+import type { ReportStatsCounts } from "@/lib/reportStats";
+
 export interface ReportsResponse {
   reports?: Report[];
   total?: number;
   totalPages?: number;
+  stats?: ReportStatsCounts;
 }
 
 export function isReportsResponse(

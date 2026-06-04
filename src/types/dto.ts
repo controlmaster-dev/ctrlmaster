@@ -1,3 +1,4 @@
+import type { ReportStatsCounts } from '@/lib/reportStats';
 import type { ReportStatus } from '@/types/report';
 import type { UserRole } from '@/types/auth';
 import type { Shift } from '@/lib/types';
@@ -29,8 +30,17 @@ export type ReportListItemDto = {
   };
 };
 
+export type OperatorReportStatDto = {
+  name: string;
+  total: number;
+  pending: number;
+  resolved: number;
+  emailSent: number;
+};
+
 export type ReportListResponseDto = PaginationDto & {
   reports: ReportListItemDto[];
+  stats: ReportStatsCounts;
 };
 
 export type UserDto = {

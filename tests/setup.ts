@@ -1,2 +1,2 @@
-process.env.DATABASE_URL ??=
-  'postgresql://test:test@127.0.0.1:5432/ctrlmaster_test?sslmode=disable';
+process.env.MONGODB_URI ??=
+  "mongodb://127.0.0.1:27017/controlmaster_test?directConnection=true";

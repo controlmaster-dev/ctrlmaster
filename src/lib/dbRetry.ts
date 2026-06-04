@@ -7,7 +7,6 @@ function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/** Reintenta consultas cuando Neon/Postgres responde con timeout puntual. */
 export async function withDbRetry<T>(
   fn: () => Promise<T>,
   attempts = DEFAULT_ATTEMPTS

@@ -1,12 +1,3 @@
-/**
- * Migra códigos de reporte al formato canal + correlativo (ENL-0001, TX-0042, …).
- *
- * Uso:
- *   npx tsx scripts/migrate-report-codes.ts --dry-run
- *   npx tsx scripts/migrate-report-codes.ts
- *
- * Requiere DATABASE_URL en .env (raíz del proyecto).
- */
 
 import { config } from "dotenv";
 import { resolve } from "node:path";
@@ -24,8 +15,8 @@ type ReportRow = {
 async function main() {
   const dryRun = process.argv.includes("--dry-run");
 
-  const { default: sql } = await import("../src/lib/db");
-  const { ensureReportCodeColumn } = await import("../src/lib/ensureReportCodeColumn");
+  const { connectMongo } = await import("../src/lib/mongo");
+  const { ReportModel } = await import("../src/models");
   const {
     formatReportCode,
     needsReportCodeMigration,
@@ -33,13 +24,20 @@ async function main() {
     seedPrefixCountersFromCodes,
   } = await import("../src/lib/reportCode");
 
-  await ensureReportCodeColumn();
+  await connectMongo();
 
-  const rows = await sql<ReportRow[]>`
-    SELECT "id", "code", "category", "priority", "createdAt"
-    FROM "Report"
-    ORDER BY "createdAt" ASC
-  `;
+  const docs = await ReportModel.find()
+    .select("code category priority createdAt")
+    .sort({ createdAt: 1 })
+    .lean();
+
+  const rows: ReportRow[] = docs.map((d) => ({
+    id: String(d._id),
+    code: d.code ?? null,
+    category: d.category,
+    priority: d.priority,
+    createdAt: d.createdAt,
+  }));
 
   const counters = seedPrefixCountersFromCodes(rows.map((r) => r.code));
   const plan: Array<{ id: string; from: string | null; to: string }> = [];
@@ -62,8 +60,7 @@ async function main() {
   console.log(`A migrar: ${plan.length}`);
   if (plan.length === 0) {
     console.log("Nada que actualizar.");
-    await sql.end({ timeout: 5 });
-    return;
+    process.exit(0);
   }
 
   console.log("\nVista previa (primeros 15):");
@@ -74,18 +71,15 @@ async function main() {
 
   if (dryRun) {
     console.log("\n[dry-run] No se escribió nada en la base de datos.");
-    await sql.end({ timeout: 5 });
-    return;
+    process.exit(0);
   }
 
-  await sql.begin(async (tx) => {
-    for (const item of plan) {
-      await tx`UPDATE "Report" SET "code" = ${item.to} WHERE "id" = ${item.id}`;
-    }
-  });
+  for (const item of plan) {
+    await ReportModel.findByIdAndUpdate(item.id, { code: item.to });
+  }
 
   console.log(`\nMigración completada: ${plan.length} códigos actualizados.`);
-  await sql.end({ timeout: 5 });
+  process.exit(0);
 }
 
 main().catch((err) => {

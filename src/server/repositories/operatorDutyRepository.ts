@@ -1,10 +1,11 @@
-import sql from "@/lib/db";
+import { randomUUID } from "crypto";
+import { connectMongo } from "@/lib/mongo";
 import {
   DIARIOS_EXCLUDED_EMAILS,
   DIARIOS_PROFILE_ROLES,
 } from "@/lib/diariosProfiles";
 import type { DiariosPriority } from "@/lib/diariosPriority";
-import { ensureOperatorDutyTables } from "@/lib/ensureOperatorDutyTables";
+import { OperatorDutyAssignmentModel, OperatorDutyModel, UserModel } from "@/models";
 import type { OperatorDuty, OperatorDutyAssignment } from "@/types/operatorDuty";
 
 export type OperatorDutyRow = OperatorDuty;
@@ -19,47 +20,73 @@ export type DiariosOperatorRow = {
   role: string;
 };
 
-export async function listDiariosProfiles() {
-  await ensureOperatorDutyTables();
-  return sql<DiariosOperatorRow[]>`
-    SELECT "id", "name", "email", "username", "image", "role"
-    FROM "User"
-    WHERE "role" IN ${sql(DIARIOS_PROFILE_ROLES)}
-      AND LOWER(COALESCE("email", '')) NOT IN ${sql(
-        DIARIOS_EXCLUDED_EMAILS.map((e) => e.toLowerCase())
-      )}
-      AND LOWER(COALESCE("username", '')) NOT IN ('rjimenez', 'ingenieria')
-    ORDER BY
-      CASE "role"
-        WHEN 'ADMIN' THEN 0
-        WHEN 'BOSS' THEN 1
-        ELSE 2
-      END,
-      "name" ASC
-  `;
+function dutyRow(d: Record<string, unknown>): OperatorDutyRow {
+  return {
+    id: String(d._id),
+    title: String(d.title),
+    description: (d.description as string) ?? null,
+    sortOrder: Number(d.sortOrder ?? 0),
+    priority: (d.priority as DiariosPriority) ?? "medium",
+    isGeneral: Boolean(d.isGeneral),
+    createdAt: d.createdAt instanceof Date ? d.createdAt.toISOString() : String(d.createdAt),
+    updatedAt: d.updatedAt instanceof Date ? d.updatedAt.toISOString() : String(d.updatedAt),
+  };
 }
 
-/** @deprecated Use listDiariosProfiles */
+function assignmentRow(d: Record<string, unknown>): OperatorDutyAssignmentRow {
+  return {
+    id: String(d._id),
+    dutyId: String(d.dutyId),
+    userId: String(d.userId),
+    sortOrder: Number(d.sortOrder ?? 0),
+    assignedAt:
+      d.assignedAt instanceof Date ? d.assignedAt.toISOString() : String(d.assignedAt),
+  };
+}
+
+export async function listDiariosProfiles() {
+  await connectMongo();
+  const excluded = DIARIOS_EXCLUDED_EMAILS.map((e) => e.toLowerCase());
+  const rows = await UserModel.find({
+    role: { $in: [...DIARIOS_PROFILE_ROLES] },
+    username: { $nin: ["rjimenez", "ingenieria"] },
+  })
+    .select("name email username image role")
+    .lean();
+
+  const roleOrder: Record<string, number> = { ADMIN: 0, BOSS: 1, OPERATOR: 2 };
+  return rows
+    .filter((u) => !excluded.includes((u.email ?? "").toLowerCase()))
+    .map((u) => ({
+      id: String(u._id),
+      name: u.name,
+      email: u.email,
+      username: u.username,
+      image: u.image,
+      role: u.role,
+    }))
+    .sort((a, b) => {
+      const ra = roleOrder[a.role] ?? 9;
+      const rb = roleOrder[b.role] ?? 9;
+      if (ra !== rb) return ra - rb;
+      return a.name.localeCompare(b.name);
+    }) as DiariosOperatorRow[];
+}
+
 export const listOperatorProfiles = listDiariosProfiles;
 
 export async function listAllDuties() {
-  await ensureOperatorDutyTables();
-  return sql<OperatorDutyRow[]>`
-    SELECT
-      "id", "title", "description", "sortOrder", "priority", "isGeneral",
-      "createdAt", "updatedAt"
-    FROM "OperatorDuty"
-    ORDER BY "sortOrder" ASC, "title" ASC
-  `;
+  await connectMongo();
+  const rows = await OperatorDutyModel.find().sort({ sortOrder: 1, title: 1 }).lean();
+  return rows.map((r) => dutyRow(r as Record<string, unknown>));
 }
 
 export async function listAllAssignments() {
-  await ensureOperatorDutyTables();
-  return sql<OperatorDutyAssignmentRow[]>`
-    SELECT "id", "dutyId", "userId", "sortOrder", "assignedAt"
-    FROM "OperatorDutyAssignment"
-    ORDER BY "sortOrder" ASC, "assignedAt" ASC
-  `;
+  await connectMongo();
+  const rows = await OperatorDutyAssignmentModel.find()
+    .sort({ sortOrder: 1, assignedAt: 1 })
+    .lean();
+  return rows.map((r) => assignmentRow(r as Record<string, unknown>));
 }
 
 export async function createDuty(data: {
@@ -69,19 +96,16 @@ export async function createDuty(data: {
   priority?: DiariosPriority;
   isGeneral?: boolean;
 }) {
-  await ensureOperatorDutyTables();
-  const [row] = await sql<OperatorDutyRow[]>`
-    INSERT INTO "OperatorDuty" ("title", "description", "sortOrder", "priority", "isGeneral")
-    VALUES (
-      ${data.title},
-      ${data.description ?? null},
-      ${data.sortOrder ?? 0},
-      ${data.priority ?? "medium"},
-      ${data.isGeneral ?? false}
-    )
-    RETURNING "id", "title", "description", "sortOrder", "priority", "isGeneral", "createdAt", "updatedAt"
-  `;
-  return row;
+  await connectMongo();
+  const doc = await OperatorDutyModel.create({
+    _id: randomUUID(),
+    title: data.title,
+    description: data.description ?? null,
+    sortOrder: data.sortOrder ?? 0,
+    priority: data.priority ?? "medium",
+    isGeneral: data.isGeneral ?? false,
+  });
+  return dutyRow(doc.toObject() as Record<string, unknown>);
 }
 
 export async function updateDuty(
@@ -94,129 +118,105 @@ export async function updateDuty(
     isGeneral?: boolean;
   }
 ) {
-  await ensureOperatorDutyTables();
-  const [row] = await sql<OperatorDutyRow[]>`
-    UPDATE "OperatorDuty"
-    SET
-      "title" = COALESCE(${data.title ?? null}, "title"),
-      "description" = CASE WHEN ${data.description !== undefined} THEN ${data.description ?? null} ELSE "description" END,
-      "sortOrder" = COALESCE(${data.sortOrder ?? null}, "sortOrder"),
-      "priority" = COALESCE(${data.priority ?? null}, "priority"),
-      "isGeneral" = CASE WHEN ${data.isGeneral !== undefined} THEN ${data.isGeneral ?? false} ELSE "isGeneral" END,
-      "updatedAt" = NOW()
-    WHERE "id" = ${id}
-    RETURNING "id", "title", "description", "sortOrder", "priority", "isGeneral", "createdAt", "updatedAt"
-  `;
-  return row ?? null;
+  await connectMongo();
+  const patch: Record<string, unknown> = { updatedAt: new Date() };
+  if (data.title !== undefined) patch.title = data.title;
+  if (data.description !== undefined) patch.description = data.description;
+  if (data.sortOrder !== undefined) patch.sortOrder = data.sortOrder;
+  if (data.priority !== undefined) patch.priority = data.priority;
+  if (data.isGeneral !== undefined) patch.isGeneral = data.isGeneral;
+
+  const doc = await OperatorDutyModel.findByIdAndUpdate(id, patch, { new: true }).lean();
+  return doc ? dutyRow(doc as Record<string, unknown>) : null;
 }
 
 export async function deleteDuty(id: string) {
-  await ensureOperatorDutyTables();
-  await sql`DELETE FROM "OperatorDuty" WHERE "id" = ${id}`;
+  await connectMongo();
+  await OperatorDutyAssignmentModel.deleteMany({ dutyId: id });
+  await OperatorDutyModel.findByIdAndDelete(id);
 }
 
 export async function findDutyById(id: string) {
-  await ensureOperatorDutyTables();
-  const [row] = await sql<OperatorDutyRow[]>`
-    SELECT "id", "title", "description", "sortOrder", "priority", "isGeneral", "createdAt", "updatedAt"
-    FROM "OperatorDuty"
-    WHERE "id" = ${id}
-    LIMIT 1
-  `;
-  return row ?? null;
+  await connectMongo();
+  const doc = await OperatorDutyModel.findById(id).lean();
+  return doc ? dutyRow(doc as Record<string, unknown>) : null;
 }
 
 export async function assignDuty(dutyId: string, userId: string, sortOrder = 0) {
-  await ensureOperatorDutyTables();
-  const [row] = await sql<OperatorDutyAssignmentRow[]>`
-    INSERT INTO "OperatorDutyAssignment" ("dutyId", "userId", "sortOrder")
-    VALUES (${dutyId}, ${userId}, ${sortOrder})
-    ON CONFLICT ("dutyId", "userId") DO UPDATE
-    SET "sortOrder" = EXCLUDED."sortOrder",
-        "assignedAt" = NOW()
-    RETURNING "id", "dutyId", "userId", "sortOrder", "assignedAt"
-  `;
-  return row;
+  await connectMongo();
+  const doc = await OperatorDutyAssignmentModel.findOneAndUpdate(
+    { dutyId, userId },
+    {
+      $set: { sortOrder, assignedAt: new Date() },
+      $setOnInsert: { _id: randomUUID() },
+    },
+    { upsert: true, new: true }
+  ).lean();
+  return assignmentRow(doc as Record<string, unknown>);
 }
 
 export async function unassignDutyFromUser(dutyId: string, userId: string) {
-  await ensureOperatorDutyTables();
-  await sql`
-    DELETE FROM "OperatorDutyAssignment"
-    WHERE "dutyId" = ${dutyId} AND "userId" = ${userId}
-  `;
+  await connectMongo();
+  await OperatorDutyAssignmentModel.deleteOne({ dutyId, userId });
 }
 
 export async function unassignDutyAll(dutyId: string) {
-  await ensureOperatorDutyTables();
-  await sql`DELETE FROM "OperatorDutyAssignment" WHERE "dutyId" = ${dutyId}`;
+  await connectMongo();
+  await OperatorDutyAssignmentModel.deleteMany({ dutyId });
 }
 
 export async function listAssignmentUserIdsForDuty(dutyId: string) {
-  await ensureOperatorDutyTables();
-  const rows = await sql<{ userId: string }[]>`
-    SELECT "userId" FROM "OperatorDutyAssignment" WHERE "dutyId" = ${dutyId}
-  `;
+  await connectMongo();
+  const rows = await OperatorDutyAssignmentModel.find({ dutyId }).select("userId").lean();
   return rows.map((r) => r.userId);
 }
 
 export async function setDutyAssignments(dutyId: string, userIds: string[]) {
-  await ensureOperatorDutyTables();
-  await sql`DELETE FROM "OperatorDutyAssignment" WHERE "dutyId" = ${dutyId}`;
+  await connectMongo();
+  await OperatorDutyAssignmentModel.deleteMany({ dutyId });
   for (let i = 0; i < userIds.length; i++) {
     await assignDuty(dutyId, userIds[i], i);
   }
 }
 
 export async function unassignAllForUser(userId: string) {
-  await ensureOperatorDutyTables();
-  const rows = await sql<OperatorDutyAssignmentRow[]>`
-    DELETE FROM "OperatorDutyAssignment"
-    WHERE "userId" = ${userId}
-    RETURNING "id", "dutyId", "userId", "sortOrder", "assignedAt"
-  `;
-  return rows;
+  await connectMongo();
+  const rows = await OperatorDutyAssignmentModel.find({ userId }).lean();
+  await OperatorDutyAssignmentModel.deleteMany({ userId });
+  return rows.map((r) => assignmentRow(r as Record<string, unknown>));
 }
 
 export async function transferAllDuties(fromUserId: string, toUserId: string) {
-  await ensureOperatorDutyTables();
-  const rows = await sql<OperatorDutyAssignmentRow[]>`
-    UPDATE "OperatorDutyAssignment"
-    SET "userId" = ${toUserId}, "assignedAt" = NOW()
-    WHERE "userId" = ${fromUserId}
-    RETURNING "id", "dutyId", "userId", "sortOrder", "assignedAt"
-  `;
-  return rows;
+  await connectMongo();
+  await OperatorDutyAssignmentModel.updateMany(
+    { userId: fromUserId },
+    { $set: { userId: toUserId, assignedAt: new Date() } }
+  );
+  const rows = await OperatorDutyAssignmentModel.find({ userId: toUserId }).lean();
+  return rows.map((r) => assignmentRow(r as Record<string, unknown>));
 }
 
 export async function reorderAssignmentsForUser(userId: string, dutyIds: string[]) {
-  await ensureOperatorDutyTables();
+  await connectMongo();
   for (let i = 0; i < dutyIds.length; i++) {
-    await sql`
-      UPDATE "OperatorDutyAssignment"
-      SET "sortOrder" = ${i}
-      WHERE "userId" = ${userId} AND "dutyId" = ${dutyIds[i]}
-    `;
+    await OperatorDutyAssignmentModel.updateOne(
+      { userId, dutyId: dutyIds[i] },
+      { $set: { sortOrder: i } }
+    );
   }
 }
 
 export async function reorderUnassignedDuties(dutyIds: string[]) {
-  await ensureOperatorDutyTables();
+  await connectMongo();
   for (let i = 0; i < dutyIds.length; i++) {
-    await sql`
-      UPDATE "OperatorDuty"
-      SET "sortOrder" = ${i}, "updatedAt" = NOW()
-      WHERE "id" = ${dutyIds[i]}
-    `;
+    await OperatorDutyModel.findByIdAndUpdate(dutyIds[i], {
+      sortOrder: i,
+      updatedAt: new Date(),
+    });
   }
 }
 
 export async function countAssignmentsForUser(userId: string) {
-  await ensureOperatorDutyTables();
-  const [row] = await sql<{ count: number }[]>`
-    SELECT COUNT(*)::int AS count
-    FROM "OperatorDutyAssignment"
-    WHERE "userId" = ${userId}
-  `;
-  return row?.count ?? 0;
+  await connectMongo();
+  return OperatorDutyAssignmentModel.countDocuments({ userId });
 }

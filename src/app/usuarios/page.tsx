@@ -22,6 +22,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { motion } from "framer-motion";
+import { fetchDashboardBundle } from "@/lib/fetchDashboardBundle";
+import { getDashboardCache } from "@/lib/dashboardCache";
+import { UsersTableRowsSkeleton } from "@/components/skeletons/UsersTableSkeleton";
 
 interface UserRow {
   id: string;
@@ -35,18 +38,31 @@ interface UserRow {
 
 export default function UsersPage() {
   const [users, setUsers] = useState<UserRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !getDashboardCache());
   const [searchTerm, setSearchTerm] = useState("");
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
-    fetch("/api/users")
-      .then((res) => res.json())
-      .then((data) => {
-        setUsers(data);
-        setLoading(false);
+    const cached = getDashboardCache();
+    if (cached?.users?.length) {
+      setUsers(cached.users as UserRow[]);
+      setLoading(false);
+    }
+
+    void fetchDashboardBundle()
+      .then((bundle) => {
+        if (bundle?.users?.length) {
+          setUsers(bundle.users as UserRow[]);
+        } else {
+          return fetch("/api/users")
+            .then((res) => res.json())
+            .then((data) => {
+              if (Array.isArray(data)) setUsers(data);
+            });
+        }
       })
-      .catch(() => setLoading(false));
+      .catch(() => {})
+      .finally(() => setLoading(false));
 
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
@@ -146,14 +162,7 @@ export default function UsersPage() {
                 </TableHeader>
                 <TableBody>
                   {loading ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={5}
-                        className="h-24 text-center text-muted-foreground"
-                      >
-                        Cargando usuarios...
-                      </TableCell>
-                    </TableRow>
+                    <UsersTableRowsSkeleton rows={8} />
                   ) : filteredUsers.length === 0 ? (
                     <TableRow>
                       <TableCell

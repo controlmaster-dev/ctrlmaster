@@ -1,4 +1,8 @@
-import sql from "@/lib/db";
+import { randomUUID } from "crypto";
+import { connectMongo } from "@/lib/mongo";
+import { withMongoTransaction } from "@/lib/mongoHelpers";
+import { loadUserBriefMap, userBriefFromMap } from "@/lib/batchUsers";
+import { SpecialEventModel, SpecialEventShiftModel } from "@/models";
 
 export type SpecialEventRow = {
   shiftCount: number;
@@ -6,15 +10,18 @@ export type SpecialEventRow = {
 };
 
 export async function listSpecialEvents() {
-  return sql`
-    SELECT se."id", se."name", se."startDate", se."endDate", se."isActive", se."createdAt",
-           COALESCE(ses."shiftCount", 0)::int AS "shiftCount"
-    FROM "SpecialEvent" se
-    LEFT JOIN (
-      SELECT "eventId", COUNT(*) AS "shiftCount" FROM "SpecialEventShift" GROUP BY "eventId"
-    ) ses ON ses."eventId" = se."id"
-    ORDER BY se."startDate" DESC
-  `;
+  await connectMongo();
+  const events = await SpecialEventModel.find().sort({ startDate: -1 }).lean();
+  const counts = await SpecialEventShiftModel.aggregate<{ _id: string; shiftCount: number }>([
+    { $group: { _id: "$eventId", shiftCount: { $sum: 1 } } },
+  ]);
+  const countMap = new Map(counts.map((c) => [c._id, c.shiftCount]));
+
+  return events.map((e) => ({
+    ...e,
+    id: String(e._id),
+    shiftCount: countMap.get(String(e._id)) ?? 0,
+  })) as SpecialEventRow[];
 }
 
 export function mapSpecialEvents(events: SpecialEventRow[]) {
@@ -25,16 +32,22 @@ export function mapSpecialEvents(events: SpecialEventRow[]) {
 }
 
 export async function createSpecialEvent(name: string, startDate: string, endDate: string) {
-  const [event] = await sql`
-    INSERT INTO "SpecialEvent" ("name", "startDate", "endDate", "isActive")
-    VALUES (${name}, ${startDate}, ${endDate}, TRUE)
-    RETURNING *
-  `;
-  return event;
+  await connectMongo();
+  const doc = await SpecialEventModel.create({
+    _id: randomUUID(),
+    name,
+    startDate,
+    endDate,
+    isActive: true,
+  });
+  const o = doc.toObject();
+  return { ...o, id: String(o._id) };
 }
 
 export async function deleteSpecialEvent(id: string) {
-  await sql`DELETE FROM "SpecialEvent" WHERE "id" = ${id}`;
+  await connectMongo();
+  await SpecialEventShiftModel.deleteMany({ eventId: id });
+  await SpecialEventModel.findByIdAndDelete(id);
 }
 
 export async function updateSpecialEvent(data: {
@@ -44,28 +57,30 @@ export async function updateSpecialEvent(data: {
   startDate?: string;
   endDate?: string;
 }) {
-  const { id, isActive, name, startDate, endDate } = data;
-  const [event] = await sql`
-    UPDATE "SpecialEvent"
-    SET
-      "isActive" = COALESCE(${isActive ?? null}, "isActive"),
-      "name" = COALESCE(${name ?? null}, "name"),
-      "startDate" = COALESCE(${startDate ?? null}, "startDate"),
-      "endDate" = COALESCE(${endDate ?? null}, "endDate")
-    WHERE "id" = ${id}
-    RETURNING *
-  `;
-  return event;
+  await connectMongo();
+  const patch: Record<string, unknown> = {};
+  if (data.isActive !== undefined) patch.isActive = data.isActive;
+  if (data.name !== undefined) patch.name = data.name;
+  if (data.startDate !== undefined) patch.startDate = data.startDate;
+  if (data.endDate !== undefined) patch.endDate = data.endDate;
+
+  const doc = await SpecialEventModel.findByIdAndUpdate(data.id, patch, { new: true }).lean();
+  if (!doc) return null;
+  return { ...doc, id: String(doc._id) };
 }
 
 export async function listSpecialEventShifts(eventId: string) {
-  return sql`
-    SELECT ses.*,
-           json_build_object('name', u."name", 'image', u."image") AS "user"
-    FROM "SpecialEventShift" ses
-    JOIN "User" u ON u."id" = ses."userId"
-    WHERE ses."eventId" = ${eventId}
-  `;
+  await connectMongo();
+  const rows = await SpecialEventShiftModel.find({ eventId }).lean();
+  const userMap = await loadUserBriefMap(rows.map((r) => r.userId));
+  return rows.map((ses) => {
+    const u = userBriefFromMap(userMap, ses.userId);
+    return {
+      ...ses,
+      id: String(ses._id),
+      user: { name: u.name, image: u.image },
+    };
+  });
 }
 
 export type SpecialEventShiftInput = {
@@ -79,19 +94,20 @@ export async function replaceSpecialEventShifts(
   userId: string,
   shifts: SpecialEventShiftInput[]
 ) {
-  await sql.begin(async (tx) => {
-    await tx`
-      DELETE FROM "SpecialEventShift"
-      WHERE "eventId" = ${eventId} AND "userId" = ${userId}
-    `;
-
+  await withMongoTransaction(async (session) => {
+    await SpecialEventShiftModel.deleteMany({ eventId, userId }, { session });
     if (shifts.length > 0) {
-      for (const s of shifts) {
-        await tx`
-          INSERT INTO "SpecialEventShift" ("eventId", "userId", "date", "start", "end")
-          VALUES (${eventId}, ${userId}, ${s.date}, ${s.start}, ${s.end})
-        `;
-      }
+      await SpecialEventShiftModel.insertMany(
+        shifts.map((s) => ({
+          _id: randomUUID(),
+          eventId,
+          userId,
+          date: s.date,
+          start: Number(s.start),
+          end: Number(s.end),
+        })),
+        { session }
+      );
     }
   });
 }

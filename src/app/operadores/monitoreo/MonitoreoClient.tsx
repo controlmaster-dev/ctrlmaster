@@ -27,8 +27,9 @@ const VideoJSPlayer = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-full w-full items-center justify-center bg-black text-xs text-white/40">
-        Cargando señal…
+      <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-black">
+        <Skeleton className="h-10 w-10 rounded-full opacity-40" />
+        <Skeleton className="h-2 w-24 opacity-30" />
       </div>
     ),
   }

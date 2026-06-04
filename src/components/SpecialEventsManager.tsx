@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -65,24 +65,28 @@ export function SpecialEventsManager() {
     endDate: "",
   });
 
-  useEffect(() => {
-    fetchEvents();
-    fetchUsers();
+  const loadBootstrap = useCallback(async () => {
+    try {
+      const res = await fetch("/api/special-events/bootstrap", {
+        credentials: "include",
+      });
+      if (!res.ok) return;
+      const data = (await res.json()) as { events?: SpecialEvent[]; users?: EventUser[] };
+      if (Array.isArray(data.events)) setEvents(data.events);
+      if (Array.isArray(data.users)) setUsers(data.users);
+    } catch (e) {
+      console.error("[special-events] bootstrap failed", e);
+    }
   }, []);
+
+  useEffect(() => {
+    void loadBootstrap();
+  }, [loadBootstrap]);
 
   const fetchEvents = async () => {
     try {
       const res = await fetch("/api/special-events");
       if (res.ok) setEvents(await res.json());
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const fetchUsers = async () => {
-    try {
-      const res = await fetch("/api/users");
-      if (res.ok) setUsers(await res.json());
     } catch (e) {
       console.error(e);
     }

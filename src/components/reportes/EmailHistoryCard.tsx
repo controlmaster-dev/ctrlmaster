@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { EmailHistorySkeleton } from "@/components/skeletons/EmailHistorySkeleton";
 import {
   Table,
   TableBody,
@@ -37,7 +38,7 @@ export function EmailHistoryCard() {
   }, []);
 
   if (loading) {
-    return <p className="text-sm text-muted-foreground">Cargando historial...</p>;
+    return <EmailHistorySkeleton />;
   }
 
   if (emails.length === 0) {

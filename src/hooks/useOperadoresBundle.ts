@@ -3,10 +3,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { Operator } from "@/lib/types";
 import { sortOperatorsByShiftQueue } from "@/lib/operadorSchedule";
+import { fetchOperadoresBundle } from "@/lib/fetchOperadoresBundle";
 import {
   getOperadoresBundle,
-  setOperadoresBundle,
   getOperadoresWeekCache,
+  setOperadoresBundle,
   setOperadoresWeekCache,
   invalidateOperadoresCache,
 } from "@/lib/operadoresCache";
@@ -22,52 +23,35 @@ export function useOperadoresBundle(currentWeekStart: string) {
   const [isReady, setIsReady] = useState(false);
   const mountedRef = useRef(true);
 
+  const applyBundle = useCallback(
+    (bundle: NonNullable<Awaited<ReturnType<typeof fetchOperadoresBundle>>>) => {
+      setOperators(bundle.operators);
+      setAllUsers(bundle.allUsers);
+      setSpecialEvents(bundle.specialEvents);
+      setOperadoresBundle(bundle);
+      setOperadoresWeekCache({
+        weekStart: bundle.weekStart,
+        operators: bundle.operators,
+        fetchedAt: bundle.fetchedAt,
+      });
+    },
+    []
+  );
+
   const fetchAll = useCallback(
     async (silent = false) => {
       if (!silent) setIsReady(false);
 
-      try {
-        const [weekRes, allRes, eventsRes] = await Promise.all([
-          fetch(`/api/users?weekStart=${currentWeekStart}`, { cache: "no-store" }),
-          fetch("/api/users"),
-          fetch("/api/special-events"),
-        ]);
+      const bundle = await fetchOperadoresBundle(currentWeekStart);
+      if (!mountedRef.current) return;
 
-        const weekData = weekRes.ok ? await weekRes.json() : [];
-        const allData = allRes.ok ? await allRes.json() : [];
-        const eventsData = eventsRes.ok ? await eventsRes.json() : [];
-
-        if (!mountedRef.current) return;
-
-        const ops = sortOperators(Array.isArray(weekData) ? weekData : []);
-        const all = Array.isArray(allData) ? allData : [];
-        const events = Array.isArray(eventsData) ? eventsData : [];
-
-        setOperators(ops);
-        setAllUsers(all);
-        setSpecialEvents(events);
-
-        const bundle = {
-          weekStart: currentWeekStart,
-          operators: ops,
-          allUsers: all,
-          specialEvents: events,
-          fetchedAt: Date.now(),
-        };
-        setOperadoresBundle(bundle);
-        setOperadoresWeekCache({
-          weekStart: currentWeekStart,
-          operators: ops,
-          fetchedAt: Date.now(),
-        });
-        setIsReady(true);
-      } catch (e) {
-        console.error("Operadores fetch error", e);
-        if (!mountedRef.current) return;
-        if (!silent) setIsReady(true);
+      if (bundle) {
+        applyBundle(bundle);
       }
+
+      setIsReady(true);
     },
-    [currentWeekStart]
+    [currentWeekStart, applyBundle]
   );
 
   useEffect(() => {
@@ -87,6 +71,7 @@ export function useOperadoresBundle(currentWeekStart: string) {
       if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
       void fetchAll(true);
     }, 60000);
+
     return () => {
       mountedRef.current = false;
       clearInterval(timer);
@@ -108,24 +93,18 @@ export function useOperadoresWeek(weekStart: string) {
   const fetchWeek = useCallback(
     async (silent = false) => {
       if (!silent) setIsReady(false);
-      try {
-        const res = await fetch(`/api/users?weekStart=${weekStart}`, {
-          cache: "no-store",
-        });
-        if (!res.ok) throw new Error("week fetch failed");
-        const data = await res.json();
-        const ops = sortOperators(Array.isArray(data) ? data : []);
-        setOperators(ops);
-        setOperadoresWeekCache({
-          weekStart,
-          operators: ops,
-          fetchedAt: Date.now(),
-        });
-        setIsReady(true);
-      } catch (e) {
-        console.error(e);
-        setIsReady(true);
+      const bundle = await fetchOperadoresBundle(weekStart);
+      if (!bundle) {
+        if (!silent) setIsReady(true);
+        return;
       }
+      setOperators(bundle.operators);
+      setOperadoresWeekCache({
+        weekStart,
+        operators: bundle.operators,
+        fetchedAt: bundle.fetchedAt,
+      });
+      setIsReady(true);
     },
     [weekStart]
   );
@@ -136,12 +115,10 @@ export function useOperadoresWeek(weekStart: string) {
       setOperators(sortOperators(cached.operators as Operator[]));
       setIsReady(true);
       void fetchWeek(true);
-    } else {
-      void fetchWeek(false);
+      return;
     }
+    void fetchWeek(false);
   }, [weekStart, fetchWeek]);
 
-  return { operators, isReady };
+  return { operators, isReady, refresh: () => fetchWeek(true) };
 }
-
-export { invalidateOperadoresCache };

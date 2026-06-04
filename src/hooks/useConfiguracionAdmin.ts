@@ -36,10 +36,9 @@ const emptyUser = (): UserFormState => ({
 
 type ConfiguracionAdminDeps = {
   refresh: () => Promise<void>;
-  removeReport: (id: string) => void;
 };
 
-export function useConfiguracionAdmin({ refresh, removeReport }: ConfiguracionAdminDeps) {
+export function useConfiguracionAdmin({ refresh }: ConfiguracionAdminDeps) {
   const [modal, setModal] = useState<ConfirmModalState>({
     isOpen: false,
     title: "",
@@ -182,7 +181,7 @@ export function useConfiguracionAdmin({ refresh, removeReport }: ConfiguracionAd
   );
 
   const confirmDeleteReport = useCallback(
-    (id: string) => {
+    (id: string, onRemoved?: (id: string) => void) => {
       setModal({
         isOpen: true,
         title: "Eliminar Reporte",
@@ -190,13 +189,13 @@ export function useConfiguracionAdmin({ refresh, removeReport }: ConfiguracionAd
         type: "danger",
         action: async () => {
           setModal((prev) => ({ ...prev, isOpen: false }));
-          removeReport(id);
           try {
             const res = await fetch(`/api/reports?id=${id}`, {
               method: "DELETE",
               credentials: "include",
             });
             if (res.ok) {
+              onRemoved?.(id);
               notifyReportDataChanged(id);
               toast.success("Reporte eliminado");
             } else {
@@ -210,7 +209,7 @@ export function useConfiguracionAdmin({ refresh, removeReport }: ConfiguracionAd
         },
       });
     },
-    [refresh, removeReport]
+    [refresh]
   );
 
   const handleScheduleUpdate = useCallback(

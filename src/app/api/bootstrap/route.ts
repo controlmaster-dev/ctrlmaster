@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { apiHandler } from "@/lib/api/handler";
-import sql from "@/lib/db";
+import { connectMongo } from "@/lib/mongo";
 import { withDbRetry } from "@/lib/dbRetry";
-import { ensureReportCodeColumn } from "@/lib/ensureReportCodeColumn";
+import { fetchRecentComments, reportListPipeline } from "@/lib/reportAggregations";
+import { ReportModel } from "@/models";
 import { getReportStats } from "@/server/services/reportService";
+import { listUsers } from "@/server/repositories/userRepository";
+import type { UserRole } from "@/server/repositories/userRepository";
 
 export const dynamic = "force-dynamic";
 
@@ -14,39 +17,27 @@ interface BootstrapReportRow {
 }
 
 export const GET = apiHandler({ auth: true }, async () => {
-  await withDbRetry(() => ensureReportCodeColumn());
-  const [reportsRaw, recentComments, stats] = await withDbRetry(() =>
+  await connectMongo();
+  const [reportsRaw, recentComments, stats, usersRaw] = await withDbRetry(() =>
     Promise.all([
-    sql`
-      SELECT
-        r."id", r."code", r."operatorName", r."operatorEmail", r."problemDescription",
-        r."category", r."priority", r."status", r."createdAt",
-        r."dateStarted", r."dateResolved", r."emailStatus", r."emailRecipients",
-        COALESCE(cc."commentCount", 0)::int AS "commentCount",
-        COALESCE(rc."reactionCount", 0)::int AS "reactionCount"
-      FROM "Report" r
-      LEFT JOIN (
-        SELECT "reportId", COUNT(*) AS "commentCount" FROM "Comment" GROUP BY "reportId"
-      ) cc ON cc."reportId" = r."id"
-      LEFT JOIN (
-        SELECT "reportId", COUNT(*) AS "reactionCount" FROM "Reaction" GROUP BY "reportId"
-      ) rc ON rc."reportId" = r."id"
-      ORDER BY r."createdAt" DESC
-      LIMIT 50
-    `,
-    sql`
-      SELECT c."id", c."content", c."authorId", c."reportId", c."parentId", c."createdAt",
-             json_build_object('name', a."name", 'image', a."image") AS "author",
-             json_build_object('id', r."id", 'problemDescription', r."problemDescription") AS "report"
-      FROM "Comment" c
-      JOIN "User" a ON a."id" = c."authorId"
-      JOIN "Report" r ON r."id" = c."reportId"
-      ORDER BY c."createdAt" DESC
-      LIMIT 10
-    `,
-    getReportStats(),
+      ReportModel.aggregate(reportListPipeline({ limit: 50 })),
+      fetchRecentComments(10),
+      getReportStats(),
+      listUsers(),
     ])
   );
+
+  const users = usersRaw.map((u) => ({
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    username: u.username ?? "",
+    role: u.role as UserRole,
+    image: u.image ?? undefined,
+    avatar: u.image ?? undefined,
+    birthday: u.birthday ?? undefined,
+    phone: u.phone,
+  }));
 
   const reports = (reportsRaw as unknown as BootstrapReportRow[]).map((r) => ({
     ...r,
@@ -54,7 +45,7 @@ export const GET = apiHandler({ auth: true }, async () => {
   }));
 
   return NextResponse.json(
-    { reports, recentComments, stats },
+    { reports, recentComments, stats, users },
     { headers: { "Cache-Control": "private, max-age=15" } }
   );
 });

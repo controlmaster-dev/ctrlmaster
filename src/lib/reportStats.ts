@@ -12,13 +12,6 @@ export type ReportStatsCounts = {
   active: number;
 };
 
-export async function fetchReportStats(): Promise<ReportStatsCounts> {
-  const res = await fetch("/api/reports/stats", { credentials: "include" });
-  if (!res.ok) return normalizeReportStats(null);
-  const data = (await res.json()) as Partial<ReportStatsCounts>;
-  return normalizeReportStats(data);
-}
-
 export function normalizeReportStats(raw: Partial<ReportStatsCounts> | null | undefined): ReportStatsCounts {
   const pending = raw?.pending ?? 0;
   const inProgress = raw?.inProgress ?? 0;

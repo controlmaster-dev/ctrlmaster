@@ -1,4 +1,5 @@
-import sql from "@/lib/db";
+import { connectMongo } from "@/lib/mongo";
+import { UserModel } from "@/models";
 import { sendEmail } from "@/lib/email";
 import { verifyPassword, needsRehash, hashPassword } from "@/lib/crypto";
 import { createToken } from "@/lib/auth";
@@ -7,9 +8,7 @@ import { EMAIL_CONFIG } from "@/config/constants";
 import { renderSecurityAlertEmail } from "@/lib/emailTemplates";
 import { AuthenticationError, ConflictError } from "@/lib/errors";
 import type { LoginInput, PublicRegisterInput } from "@/lib/validation";
-import {
-  markRegistrationCodeUsed,
-} from "@/server/repositories/registrationCodeRepository";
+import { markRegistrationCodeUsed } from "@/server/repositories/registrationCodeRepository";
 import { validateRegistrationCodeForSignup } from "@/server/services/registrationCodeService";
 
 export type LoginSessionUser = {
@@ -73,11 +72,10 @@ export async function loginUser(
 ): Promise<{ user: LoginSessionUser; token: string }> {
   const { email, password } = input;
 
-  const [user] = await sql`
-    SELECT * FROM "User"
-    WHERE "email" = ${email} OR "username" = ${email}
-    LIMIT 1
-  `;
+  await connectMongo();
+  const user = await UserModel.findOne({
+    $or: [{ email }, { username: email }],
+  }).lean();
 
   if (!user) throw new AuthenticationError("Credenciales inválidas");
 
@@ -87,7 +85,7 @@ export async function loginUser(
   if (needsRehash(user.password)) {
     try {
       const upgraded = await hashPassword(password);
-      await sql`UPDATE "User" SET "password" = ${upgraded} WHERE "id" = ${user.id}`;
+      await UserModel.findByIdAndUpdate(user._id, { password: upgraded });
     } catch (rehashError) {
       console.error("Password rehash failed:", rehashError);
     }
@@ -95,23 +93,21 @@ export async function loginUser(
 
   const country = await getCountryFromIp(clientIp);
 
-  await sql`
-    UPDATE "User"
-    SET "lastLogin" = NOW(),
-        "lastLoginIP" = ${clientIp},
-        "lastLoginCountry" = ${country}
-    WHERE "id" = ${user.id}
-  `;
+  await UserModel.findByIdAndUpdate(user._id, {
+    lastLogin: new Date(),
+    lastLoginIP: clientIp,
+    lastLoginCountry: country,
+  });
 
   if (isForeignLogin(country)) {
     await sendSecurityAlert({ name: user.name, email: user.email }, country, clientIp);
   }
 
-  const token = await createToken(user.id);
+  const token = await createToken(String(user._id));
 
   return {
     user: {
-      id: user.id,
+      id: String(user._id),
       name: user.name,
       email: user.email,
       username: user.username,
@@ -148,11 +144,10 @@ export async function registerUser(input: PublicRegisterInput): Promise<Register
 
   const email = input.email.toLowerCase().trim();
 
-  const [existingUser] = await sql`
-    SELECT * FROM "User"
-    WHERE "email" = ${email} OR "username" = ${email}
-    LIMIT 1
-  `;
+  await connectMongo();
+  const existingUser = await UserModel.findOne({
+    $or: [{ email }, { username: email }],
+  }).lean();
 
   if (existingUser) {
     throw new ConflictError("Ya existe un usuario con ese correo");
@@ -162,19 +157,24 @@ export async function registerUser(input: PublicRegisterInput): Promise<Register
   const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(input.name)}&background=random&color=fff&bold=true&size=128`;
   const hashedPassword = await hashPassword(input.password);
 
-  const [newUser] = await sql`
-    INSERT INTO "User" ("name", "email", "username", "password", "role", "image")
-    VALUES (${input.name.trim()}, ${email}, ${username}, ${hashedPassword}, 'OPERATOR', ${avatarUrl})
-    RETURNING *
-  `;
+  const { randomUUID } = await import("crypto");
+  const newUser = await UserModel.create({
+    _id: randomUUID(),
+    name: input.name.trim(),
+    email,
+    username,
+    password: hashedPassword,
+    role: "OPERATOR",
+    image: avatarUrl,
+  });
 
-  await markRegistrationCodeUsed(registrationCode.id, newUser.id);
+  await markRegistrationCodeUsed(registrationCode.id, String(newUser._id));
 
   return {
-    id: newUser.id,
+    id: String(newUser._id),
     name: newUser.name,
     email: newUser.email,
-    username: newUser.username,
+    username: newUser.username ?? username,
     role: newUser.role,
     avatar: newUser.image,
   };

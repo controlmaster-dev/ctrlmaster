@@ -1,8 +1,9 @@
 
 
 
-import { RATE_LIMIT_CONFIG } from '@/config/constants';
-import sql from '@/lib/db';
+import { RATE_LIMIT_CONFIG } from "@/config/constants";
+import { connectMongo } from "@/lib/mongo";
+import { RateLimitModel } from "@/models";
 
 interface RateLimitEntry {
   count: number;
@@ -85,29 +86,30 @@ export async function checkRateLimit(
   const resetAt = new Date(Date.now() + windowMs);
 
   try {
+    await connectMongo();
     if (Math.random() < 0.01) {
-      await sql`DELETE FROM "RateLimit" WHERE "resetAt" < NOW()`;
+      await RateLimitModel.deleteMany({ resetAt: { $lt: new Date() } });
     }
 
-    const [entry] = await sql`
-      INSERT INTO "RateLimit" ("key", "count", "resetAt", "updatedAt")
-      VALUES (${identifier}, 1, ${resetAt.toISOString()}, NOW())
-      ON CONFLICT ("key") DO UPDATE
-      SET
-        "count" = CASE
-          WHEN "RateLimit"."resetAt" < NOW() THEN 1
-          ELSE "RateLimit"."count" + 1
-        END,
-        "resetAt" = CASE
-          WHEN "RateLimit"."resetAt" < NOW() THEN ${resetAt.toISOString()}
-          ELSE "RateLimit"."resetAt"
-        END,
-        "updatedAt" = NOW()
-      RETURNING "count", "resetAt"
-    `;
+    const now = new Date();
+    const existing = await RateLimitModel.findById(identifier).lean();
+    let count = 1;
+    let reset = resetAt;
 
-    const count = Number(entry.count);
-    const reset = new Date(entry.resetAt);
+    if (!existing || new Date(existing.resetAt) < now) {
+      await RateLimitModel.findByIdAndUpdate(
+        identifier,
+        { count: 1, resetAt, updatedAt: now },
+        { upsert: true }
+      );
+    } else {
+      count = existing.count + 1;
+      reset = new Date(existing.resetAt);
+      await RateLimitModel.findByIdAndUpdate(identifier, {
+        count,
+        updatedAt: now,
+      });
+    }
 
     return {
       success: count <= maxRequests,

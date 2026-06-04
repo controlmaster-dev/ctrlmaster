@@ -3,14 +3,13 @@
 import { useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getDashboardCache, setDashboardCache } from "@/lib/dashboardCache";
+import { fetchDashboardBundle } from "@/lib/fetchDashboardBundle";
 import { getOperadoresBundle, setOperadoresBundle, setOperadoresWeekCache } from "@/lib/operadoresCache";
-import {
-  getConfiguracionCache,
-  setConfiguracionCache,
-} from "@/lib/configuracionCache";
 import { getClavesCache, setClavesCache } from "@/lib/clavesCache";
 import { prefetchReportDetails } from "@/lib/reportDetailCache";
 import { isConfigAdmin } from "@/lib/adminAccess";
+import { getConfiguracionCache } from "@/lib/configuracionCache";
+import { prefetchConfiguracionAdmin } from "@/lib/fetchConfiguracionBundle";
 import { getSundayWeekStart } from "@/lib/weekUtils";
 import { prefetchBitcentralNearby } from "@/lib/bitcentralCache";
 import {
@@ -18,22 +17,21 @@ import {
   setReportesListCache,
   toReportesListItems,
 } from "@/lib/reportesListCache";
-import { sortOperators } from "@/hooks/useOperadoresBundle";
+import { fetchOperadoresBundle } from "@/lib/fetchOperadoresBundle";
 import type { Report } from "@/types/report";
-import type { Operator } from "@/lib/types";
-import type { User as AuthUser } from "@/types/auth";
 import { UI_CONFIG } from "@/config/constants";
 import { normalizeReportStats } from "@/lib/reportStats";
 
-function parseReports(data: unknown): unknown[] {
-  if (Array.isArray(data)) return data;
-  if (data && typeof data === "object" && "reports" in data) {
-    const reports = (data as { reports: unknown }).reports;
-    return Array.isArray(reports) ? reports : [];
-  }
-  return [];
+function prefetchFromReports(reports: Report[]) {
+  const sorted = [...reports].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+  const ids = [
+    ...sorted.slice(0, UI_CONFIG.RECENT_REPORTS_LIMIT).map((r) => r.id),
+    ...sorted.filter((r) => r.status === "pending").slice(0, 3).map((r) => r.id),
+  ];
+  void prefetchReportDetails([...new Set(ids)]);
 }
-
 
 export function AppDataPrefetch() {
   const { user } = useAuth();
@@ -50,91 +48,46 @@ export function AppDataPrefetch() {
     const needOperadores = !getOperadoresBundle(weekStart);
     const needReportes = !getReportesListCache(reportesQuery);
 
-
-    const usersPromise: Promise<AuthUser[]> =
-      needDashboard || needOperadores
-        ? fetch("/api/users")
-            .then((r) => (r.ok ? r.json() : []))
-            .then((d) => (Array.isArray(d) ? d : []))
-            .catch(() => [])
-        : Promise.resolve([]);
-
-
     if (needDashboard || needReportes) {
-      Promise.all([
-        fetch("/api/bootstrap").then((r) => (r.ok ? r.json() : null)),
-        needDashboard
-          ? fetch("/api/proxy/whatsapp").then((r) => r.json()).catch(() => null)
-          : Promise.resolve(null),
-        usersPromise,
-      ])
-        .then(([boot, waData, usersData]) => {
-          if (!boot) return;
-          const allReports: Report[] = Array.isArray(boot.reports) ? boot.reports : [];
-          const stats = normalizeReportStats(boot.stats);
+      void fetchDashboardBundle().then((bundle) => {
+        if (!bundle) return;
+        const stats = normalizeReportStats(bundle.reportStats);
 
-          if (needDashboard) {
-            const reports = allReports.filter(
-              (r) => r.operatorName !== "Monitoreo Automático"
-            );
-            setDashboardCache({
-              reports,
-              users: usersData,
-              comments: Array.isArray(boot.recentComments) ? boot.recentComments : [],
-              whatsappHealth: waData,
-              reportStats: stats,
-              fetchedAt: Date.now(),
-            });
+        if (needDashboard) {
+          setDashboardCache(bundle);
+          prefetchFromReports(bundle.reports);
+        }
 
-            const sorted = [...reports].sort(
-              (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-            );
-            const ids = [
-              ...sorted.slice(0, UI_CONFIG.RECENT_REPORTS_LIMIT).map((r) => r.id),
-              ...sorted
-                .filter((r) => r.status === "pending")
-                .slice(0, 3)
-                .map((r) => r.id),
-            ];
-            void prefetchReportDetails([...new Set(ids)]);
-          }
-
-          if (needReportes) {
-            const pageReports = allReports.slice(0, 20);
-            setReportesListCache({
-              queryKey: reportesQuery,
-              reports: toReportesListItems(pageReports),
-              total: stats.total ?? 0,
-              totalPages: Math.max(1, Math.ceil((stats.total ?? 0) / 20)),
-              globalStats: stats,
-              fetchedAt: Date.now(),
-            });
-            void prefetchReportDetails(pageReports.map((r) => r.id));
-          }
-        })
-        .catch(() => {});
+        if (needReportes) {
+          const pageReports = bundle.reports.slice(0, 20);
+          setReportesListCache({
+            queryKey: reportesQuery,
+            reports: toReportesListItems(pageReports),
+            total: stats.total ?? 0,
+            totalPages: Math.max(1, Math.ceil((stats.total ?? 0) / 20)),
+            globalStats: stats,
+            fetchedAt: Date.now(),
+          });
+          void prefetchReportDetails(pageReports.map((r) => r.id));
+        }
+      });
     }
 
-    if (needOperadores) {
-      Promise.all([usersPromise, fetch("/api/special-events").then((r) => r.json())])
-        .then(([allData, eventsData]) => {
-          const all = Array.isArray(allData) ? allData : [];
-          const ops = sortOperators(all as unknown as Operator[]);
-          const events = Array.isArray(eventsData) ? eventsData : [];
-          setOperadoresBundle({
-            weekStart,
-            operators: ops,
-            allUsers: all,
-            specialEvents: events,
-            fetchedAt: Date.now(),
-          });
-          setOperadoresWeekCache({
-            weekStart,
-            operators: ops,
-            fetchedAt: Date.now(),
-          });
-        })
-        .catch(() => {});
+    if (
+      isConfigAdmin(user) &&
+      (!getConfiguracionCache(weekStart) || needOperadores)
+    ) {
+      void prefetchConfiguracionAdmin(weekStart);
+    } else if (needOperadores) {
+      void fetchOperadoresBundle(weekStart).then((bundle) => {
+        if (!bundle) return;
+        setOperadoresBundle(bundle);
+        setOperadoresWeekCache({
+          weekStart: bundle.weekStart,
+          operators: bundle.operators,
+          fetchedAt: bundle.fetchedAt,
+        });
+      });
     }
 
     void prefetchBitcentralNearby();
@@ -147,40 +100,6 @@ export function AppDataPrefetch() {
             credentials: Array.isArray(data) ? data : [],
             fetchedAt: Date.now(),
           });
-        })
-        .catch(() => {});
-    }
-
-    if (isConfigAdmin(user) && !getConfiguracionCache(weekStart)) {
-      Promise.all([
-        fetch(`/api/users?weekStart=${weekStart}`).then((r) => r.json()),
-        fetch("/api/auth/registration-codes").then((r) => r.json()),
-      ])
-        .then(([usersData, codesData]) => {
-          const users = Array.isArray(usersData) ? usersData : [];
-          const securityCodes = Array.isArray(codesData) ? codesData : [];
-          setConfiguracionCache({
-            weekStart,
-            users,
-            reports: [],
-            securityCodes,
-            reportsReady: false,
-            fetchedAt: Date.now(),
-          });
-
-          fetch("/api/reports?limit=500")
-            .then((r) => r.json())
-            .then((reportsData) => {
-              const cached = getConfiguracionCache(weekStart);
-              if (!cached) return;
-              setConfiguracionCache({
-                ...cached,
-                reports: parseReports(reportsData),
-                reportsReady: true,
-                fetchedAt: Date.now(),
-              });
-            })
-            .catch(() => {});
         })
         .catch(() => {});
     }

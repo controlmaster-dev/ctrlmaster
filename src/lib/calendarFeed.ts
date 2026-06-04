@@ -1,34 +1,19 @@
-import sql from '@/lib/db';
-import { generateToken } from '@/lib/crypto';
+import { generateToken } from "@/lib/crypto";
+import { connectMongo } from "@/lib/mongo";
+import { UserModel } from "@/models";
 
-export { verifyCalendarFeedToken } from '@/lib/calendarFeedToken';
-
-let columnEnsured = false;
-
-export async function ensureCalendarFeedColumn(): Promise<void> {
-  if (columnEnsured) return;
-  await sql`
-    ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "calendarFeedToken" TEXT
-  `;
-  columnEnsured = true;
-}
+export { verifyCalendarFeedToken } from "@/lib/calendarFeedToken";
 
 export async function getOrCreateCalendarFeedToken(userId: string): Promise<string | null> {
-  await ensureCalendarFeedColumn();
+  await connectMongo();
+  const user = await UserModel.findById(userId).select("calendarFeedToken").lean();
+  if (!user) return null;
 
-  const [row] = await sql<{ calendarFeedToken: string | null }[]>`
-    SELECT "calendarFeedToken" FROM "User" WHERE "id" = ${userId} LIMIT 1
-  `;
-
-  if (!row) return null;
-
-  if (row.calendarFeedToken) {
-    return row.calendarFeedToken;
+  if (user.calendarFeedToken) {
+    return user.calendarFeedToken;
   }
 
   const token = generateToken(32);
-  await sql`
-    UPDATE "User" SET "calendarFeedToken" = ${token} WHERE "id" = ${userId}
-  `;
+  await UserModel.findByIdAndUpdate(userId, { calendarFeedToken: token });
   return token;
 }

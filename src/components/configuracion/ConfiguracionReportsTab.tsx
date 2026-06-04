@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Loader2, Search, Trash2, FileText } from "lucide-react";
+import { Search, Trash2, FileText } from "lucide-react";
+import { ConfiguracionReportsTableSkeleton } from "@/components/skeletons/ConfiguracionReportsTableSkeleton";
 import { formatReportDisplayId } from "@/lib/reportCode";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { useConfiguracionReports } from "@/hooks/useConfiguracionReports";
 
 export type ReportCleanupRow = {
   id: string;
@@ -25,41 +26,16 @@ export type ReportCleanupRow = {
 };
 
 type ConfiguracionReportsTabProps = {
-  reportsReady: boolean;
-  reports: ReportCleanupRow[];
-  onDeleteReport: (id: string) => void;
+  active: boolean;
+  onDeleteReport: (id: string, onRemoved?: (id: string) => void) => void;
 };
 
-function matchesSearch(report: ReportCleanupRow, query: string) {
-  const q = query.trim().toLowerCase();
-  if (!q) return true;
-  const code = formatReportDisplayId(report.id, report.code).toLowerCase();
-  return (
-    code.includes(q) ||
-    report.operatorName.toLowerCase().includes(q) ||
-    report.problemDescription.toLowerCase().includes(q)
-  );
-}
+export function ConfiguracionReportsTab({ active, onDeleteReport }: ConfiguracionReportsTabProps) {
+  const { reports, total, search, setSearch, loading, ready, removeReport } =
+    useConfiguracionReports(active);
 
-export function ConfiguracionReportsTab({
-  reportsReady,
-  reports,
-  onDeleteReport,
-}: ConfiguracionReportsTabProps) {
-  const [search, setSearch] = useState("");
-
-  const filtered = useMemo(
-    () => reports.filter((r) => matchesSearch(r, search)),
-    [reports, search]
-  );
-
-  if (!reportsReady) {
-    return (
-      <BentoCard className="flex min-h-[220px] flex-col items-center justify-center gap-3 p-8">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">Cargando reportes…</p>
-      </BentoCard>
-    );
+  if (!ready) {
+    return <ConfiguracionReportsTableSkeleton />;
   }
 
   return (
@@ -75,8 +51,9 @@ export function ConfiguracionReportsTab({
             reportes y el panel principal.
           </p>
           <p className="text-xs text-muted-foreground/80">
-            {reports.length} en el registro
-            {search.trim() ? ` · ${filtered.length} coincidencias` : ""}
+            {total} en el registro
+            {search.trim() ? ` · ${reports.length} mostrados` : ""}
+            {loading ? " · buscando…" : ""}
           </p>
         </div>
         <div className="relative w-full md:max-w-xs">
@@ -90,7 +67,7 @@ export function ConfiguracionReportsTab({
         </div>
       </div>
 
-      {filtered.length === 0 ? (
+      {reports.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-2 px-6 py-16 text-center">
           <FileText className="h-8 w-8 text-muted-foreground/50" />
           <p className="text-sm font-medium text-foreground">
@@ -125,7 +102,7 @@ export function ConfiguracionReportsTab({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((report) => (
+              {reports.map((report) => (
                 <TableRow
                   key={report.id}
                   className="border-border/60 hover:bg-muted/30"
@@ -159,7 +136,7 @@ export function ConfiguracionReportsTab({
                       variant="ghost"
                       size="icon"
                       aria-label="Eliminar reporte"
-                      onClick={() => onDeleteReport(report.id)}
+                      onClick={() => onDeleteReport(report.id, removeReport)}
                       className="h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                     >
                       <Trash2 className="h-4 w-4" />

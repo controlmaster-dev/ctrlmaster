@@ -6,6 +6,7 @@ import {
   deleteReport,
   findReportId,
   getReportDetailById,
+  getOperatorReportStats as getOperatorReportStatsFromDb,
   getReportStats as getReportStatsFromDb,
   listReports,
   updateReport,
@@ -45,11 +46,14 @@ export async function getReports(filters: ReportFilters): Promise<ReportListResp
   const safeLimit = Math.min(filters.limit || 50, 500);
   const safePage = Math.max(filters.page || 1, 1);
 
-  const { reports, total } = await listReports({
-    ...filters,
-    page: safePage,
-    limit: safeLimit,
-  });
+  const [{ reports, total }, stats] = await Promise.all([
+    listReports({
+      ...filters,
+      page: safePage,
+      limit: safeLimit,
+    }),
+    getReportStatsFromDb(),
+  ]);
 
   return {
     reports: reports.map(mapReportListItem),
@@ -57,7 +61,12 @@ export async function getReports(filters: ReportFilters): Promise<ReportListResp
     page: safePage,
     limit: safeLimit,
     totalPages: Math.ceil(total / safeLimit),
+    stats,
   };
+}
+
+export async function getOperatorReportStats() {
+  return getOperatorReportStatsFromDb();
 }
 
 export async function createReportWithAttachments(data: CreateReportInput) {

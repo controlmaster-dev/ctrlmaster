@@ -1,45 +1,40 @@
-
-import { generateToken } from '@/lib/crypto';
-import { SESSION_MAX_AGE_MS } from '@/lib/authConfig';
-import { isTransientDbError } from '@/lib/dbErrors';
-import { withDbRetry } from '@/lib/dbRetry';
-import sql from '@/lib/db';
+import { generateToken } from "@/lib/crypto";
+import { SESSION_MAX_AGE_MS } from "@/lib/authConfig";
+import { isTransientDbError } from "@/lib/dbErrors";
+import { withDbRetry } from "@/lib/dbRetry";
+import { connectMongo } from "@/lib/mongo";
+import { SessionTokenModel, UserModel } from "@/models";
 
 const TOKEN_EXPIRY = SESSION_MAX_AGE_MS;
-
 
 export async function createToken(userId: string): Promise<string> {
   const token = generateToken(64);
   const expiresAt = new Date(Date.now() + TOKEN_EXPIRY);
 
-  await sql`
-    INSERT INTO "SessionToken" ("token", "userId", "expiresAt", "userAgent", "ipAddress")
-    VALUES (${token}, ${userId}, ${expiresAt.toISOString()}, '', '')
-  `;
+  await connectMongo();
+  await SessionTokenModel.create({
+    _id: token,
+    userId,
+    expiresAt,
+    userAgent: "",
+    ipAddress: "",
+  });
 
   return token;
 }
 
-
-export async function validateToken(
-  userId: string,
-  token: string
-): Promise<boolean> {
+export async function validateToken(userId: string, token: string): Promise<boolean> {
   try {
-    const [sessionToken] = await withDbRetry(() => sql`
-      SELECT * FROM "SessionToken" WHERE "token" = ${token}
-    `);
+    const sessionToken = await withDbRetry(async () => {
+      await connectMongo();
+      return SessionTokenModel.findById(token).lean();
+    });
 
-    if (!sessionToken) {
-      return false;
-    }
-
-    if (sessionToken.userId !== userId) {
-      return false;
-    }
+    if (!sessionToken) return false;
+    if (sessionToken.userId !== userId) return false;
 
     if (new Date(sessionToken.expiresAt) < new Date()) {
-      await sql`DELETE FROM "SessionToken" WHERE "token" = ${token}`;
+      await SessionTokenModel.findByIdAndDelete(token);
       return false;
     }
 
@@ -52,67 +47,71 @@ export async function validateToken(
 
 export async function touchSession(token: string): Promise<void> {
   const expiresAt = new Date(Date.now() + TOKEN_EXPIRY);
-  await sql`
-    UPDATE "SessionToken"
-    SET "expiresAt" = ${expiresAt.toISOString()}
-    WHERE "token" = ${token}
-  `;
+  await connectMongo();
+  await SessionTokenModel.findByIdAndUpdate(token, { expiresAt });
 }
-
 
 export async function revokeToken(token: string): Promise<void> {
   try {
-    await sql`DELETE FROM "SessionToken" WHERE "token" = ${token}`;
+    await connectMongo();
+    await SessionTokenModel.findByIdAndDelete(token);
   } catch {
-
+    /* ignore */
   }
 }
-
 
 export async function revokeAllUserTokens(userId: string): Promise<void> {
-  await sql`DELETE FROM "SessionToken" WHERE "userId" = ${userId}`;
+  await connectMongo();
+  await SessionTokenModel.deleteMany({ userId });
 }
-
 
 export async function cleanupExpiredTokens(): Promise<number> {
-  const result = await sql`
-    DELETE FROM "SessionToken" WHERE "expiresAt" < NOW()
-  `;
-  return result.count;
+  await connectMongo();
+  const result = await SessionTokenModel.deleteMany({
+    expiresAt: { $lt: new Date() },
+  });
+  return result.deletedCount ?? 0;
 }
 
-
 export async function getUserFromToken(token: string | undefined) {
-  if (!token) {
-    return null;
-  }
+  if (!token) return null;
 
   try {
-    const rows = await withDbRetry(() => sql`
-      SELECT u."id", u."name", u."email", u."username", u."role",
-             u."image", u."phone", u."lastLogin", u."lastLoginIP",
-             u."lastLoginCountry", u."currentPath", u."lastActive",
-             u."birthday", u."schedule", u."tempSchedule", u."createdAt",
-             st."expiresAt" as "tokenExpiresAt"
-      FROM "SessionToken" st
-      JOIN "User" u ON u."id" = st."userId"
-      WHERE st."token" = ${token}
-    `);
+    const row = await withDbRetry(async () => {
+      await connectMongo();
+      const session = await SessionTokenModel.findById(token).lean();
+      if (!session) return null;
+      const user = await UserModel.findById(session.userId).lean();
+      if (!user) return null;
+      return { user, expiresAt: session.expiresAt };
+    });
 
-    if (rows.length === 0) {
+    if (!row) return null;
+
+    if (new Date(row.expiresAt) < new Date()) {
+      await SessionTokenModel.findByIdAndDelete(token);
       return null;
     }
 
-    const row = rows[0];
-
-    if (new Date(row.tokenExpiresAt) < new Date()) {
-      await sql`DELETE FROM "SessionToken" WHERE "token" = ${token}`;
-      return null;
-    }
-
-
-    const { tokenExpiresAt, ...user } = row;
-    return user;
+    const { user } = row;
+    return {
+      id: String(user._id),
+      name: user.name,
+      email: user.email,
+      username: user.username,
+      role: user.role,
+      image: user.image,
+      phone: user.phone,
+      lastLogin: user.lastLogin,
+      lastLoginIP: user.lastLoginIP,
+      lastLoginCountry: user.lastLoginCountry,
+      currentPath: user.currentPath,
+      lastActive: user.lastActive,
+      birthday: user.birthday,
+      schedule: user.schedule,
+      tempSchedule: user.tempSchedule,
+      createdAt: user.createdAt,
+    };
   } catch (error) {
     if (isTransientDbError(error)) throw error;
     return null;

@@ -8,6 +8,7 @@ export function isTransientDbError(error: unknown): boolean {
     return error.errors.some((e) => isTransientDbError(e));
   }
   const code = errorCode(error);
+  const name = String((error as { name?: string }).name ?? "");
   return (
     code === "ETIMEDOUT" ||
     code === "ECONNRESET" ||
@@ -15,12 +16,7 @@ export function isTransientDbError(error: unknown): boolean {
     code === "CONNECT_TIMEOUT" ||
     code === "CONNECTION_CLOSED" ||
     code === "CONNECTION_DESTROYED" ||
-    code === "0A000"
+    name === "MongoServerSelectionError" ||
+    name === "MongoNetworkError"
   );
-}
-
-/** Plan preparado inválido tras cambio de esquema (p. ej. nueva columna `code`). */
-export function isCachedPlanError(error: unknown): boolean {
-  if (!error || typeof error !== "object") return false;
-  return String((error as { code?: string }).code ?? "") === "0A000";
 }

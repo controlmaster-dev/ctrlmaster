@@ -1,6 +1,8 @@
+import { randomUUID } from "crypto";
 import { z } from "zod";
 import { apiHandler } from "@/lib/api/handler";
-import sql from "@/lib/db";
+import { connectMongo } from "@/lib/mongo";
+import { CommentReactionModel } from "@/models";
 
 const reactSchema = z.object({
   commentId: z.string().min(1),
@@ -13,23 +15,24 @@ export const POST = apiHandler(
     const authorId = String(user?.id ?? "");
     const { commentId, emoji } = body;
 
-    const [existing] = await sql`
-      SELECT * FROM "CommentReaction"
-      WHERE "authorId" = ${authorId}
-        AND "commentId" = ${commentId}
-        AND "emoji" = ${emoji}
-      LIMIT 1
-    `;
+    await connectMongo();
+    const existing = await CommentReactionModel.findOne({
+      authorId,
+      commentId,
+      emoji,
+    }).lean();
 
     if (existing) {
-      await sql`DELETE FROM "CommentReaction" WHERE "id" = ${existing.id}`;
+      await CommentReactionModel.findByIdAndDelete(existing._id);
       return { action: "removed" };
     }
 
-    await sql`
-      INSERT INTO "CommentReaction" ("commentId", "authorId", "emoji")
-      VALUES (${commentId}, ${authorId}, ${emoji})
-    `;
+    await CommentReactionModel.create({
+      _id: randomUUID(),
+      commentId,
+      authorId,
+      emoji,
+    });
     return { action: "added" };
   }
 );

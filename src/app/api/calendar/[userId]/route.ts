@@ -1,14 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
-import sql from '@/lib/db';
-import { generateICS } from '@/utils/icsGenerator';
-import type { Shift } from '@/lib/types';
+import { NextRequest, NextResponse } from "next/server";
+import { connectMongo } from "@/lib/mongo";
+import { UserModel } from "@/models";
+import { generateICS } from "@/utils/icsGenerator";
+import type { Shift } from "@/lib/types";
 import {
   getOrCreateCalendarFeedToken,
   verifyCalendarFeedToken,
-} from '@/lib/calendarFeed';
-import { validateApiAuth } from '@/lib/apiAuth';
+} from "@/lib/calendarFeed";
+import { validateApiAuth } from "@/lib/apiAuth";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 interface CalendarUserRow {
   id: string;
@@ -22,19 +23,25 @@ async function authorizeCalendarAccess(
   req: NextRequest,
   userId: string
 ): Promise<{ ok: true; row: CalendarUserRow } | { ok: false; status: number; message: string }> {
-  const [row] = await sql<CalendarUserRow[]>`
-    SELECT "id", "name", "schedule", "tempSchedule", "calendarFeedToken"
-    FROM "User"
-    WHERE "id" = ${userId}
-    LIMIT 1
-  `;
+  await connectMongo();
+  const user = await UserModel.findById(userId)
+    .select("name schedule tempSchedule calendarFeedToken")
+    .lean();
 
-  if (!row) {
-    return { ok: false, status: 404, message: 'User not found' };
+  if (!user) {
+    return { ok: false, status: 404, message: "User not found" };
   }
 
+  const row: CalendarUserRow = {
+    id: String(user._id),
+    name: user.name,
+    schedule: user.schedule,
+    tempSchedule: user.tempSchedule,
+    calendarFeedToken: user.calendarFeedToken,
+  };
+
   const feedToken = row.calendarFeedToken ?? (await getOrCreateCalendarFeedToken(userId));
-  const queryToken = req.nextUrl.searchParams.get('token');
+  const queryToken = req.nextUrl.searchParams.get("token");
 
   if (queryToken && feedToken && verifyCalendarFeedToken(queryToken, feedToken)) {
     return { ok: true, row: { ...row, calendarFeedToken: feedToken } };
@@ -42,11 +49,11 @@ async function authorizeCalendarAccess(
 
   const authResult = await validateApiAuth(req);
   if (authResult instanceof NextResponse) {
-    return { ok: false, status: 401, message: 'No autorizado' };
+    return { ok: false, status: 401, message: "No autorizado" };
   }
 
   if (String(authResult.user.id) !== userId) {
-    return { ok: false, status: 403, message: 'No autorizado para este calendario' };
+    return { ok: false, status: 403, message: "No autorizado para este calendario" };
   }
 
   return { ok: true, row: { ...row, calendarFeedToken: feedToken } };
@@ -72,12 +79,12 @@ export async function GET(
     const diff = now.getDate() - day;
     const sunday = new Date(now.setDate(diff));
     const year = sunday.getFullYear();
-    const month = String(sunday.getMonth() + 1).padStart(2, '0');
-    const d = String(sunday.getDate()).padStart(2, '0');
+    const month = String(sunday.getMonth() + 1).padStart(2, "0");
+    const d = String(sunday.getDate()).padStart(2, "0");
     const weekStart = `${year}-${month}-${d}`;
 
     const weeksRequested = Math.min(
-      Math.max(parseInt(searchParams.get('weeks') || '4', 10) || 4, 1),
+      Math.max(parseInt(searchParams.get("weeks") || "4", 10) || 4, 1),
       52
     );
     const startWeekDate = weekStart;
@@ -96,8 +103,8 @@ export async function GET(
       currentWeekDate.setDate(currentWeekDate.getDate() + i * 7);
 
       const y = currentWeekDate.getFullYear();
-      const m = String(currentWeekDate.getMonth() + 1).padStart(2, '0');
-      const dd = String(currentWeekDate.getDate()).padStart(2, '0');
+      const m = String(currentWeekDate.getMonth() + 1).padStart(2, "0");
+      const dd = String(currentWeekDate.getDate()).padStart(2, "0");
       const weekKey = `${y}-${m}-${dd}`;
 
       if (Array.isArray(tempParsed)) {
@@ -112,21 +119,22 @@ export async function GET(
     const icsContent = generateICS(
       combinedShifts,
       startWeekDate,
-      userRow.name || 'Operador',
+      userRow.name || "Operador",
       weeksRequested
     );
 
-    const safeName = (userRow.name || 'operador').replace(/[^\w\s-]/g, '').trim() || 'operador';
+    const safeName =
+      (userRow.name || "operador").replace(/[^\w\s-]/g, "").trim() || "operador";
 
     return new NextResponse(icsContent, {
       headers: {
-        'Content-Type': 'text/calendar; charset=utf-8',
-        'Content-Disposition': `attachment; filename="horario_${safeName}.ics"`,
-        'Cache-Control': 'private, no-store',
+        "Content-Type": "text/calendar; charset=utf-8",
+        "Content-Disposition": `attachment; filename="horario_${safeName}.ics"`,
+        "Cache-Control": "private, no-store",
       },
     });
   } catch (error) {
-    console.error('Error generating calendar API:', error);
-    return new NextResponse('Internal Server Error', { status: 500 });
+    console.error("Error generating calendar API:", error);
+    return new NextResponse("Internal Server Error", { status: 500 });
   }
 }

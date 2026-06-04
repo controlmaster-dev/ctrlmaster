@@ -1,4 +1,5 @@
-import sql from "@/lib/db";
+import { connectMongo } from "@/lib/mongo";
+import { ReportModel } from "@/models";
 import { emailRateLimiter } from "@/lib/rateLimit";
 import { ValidationError } from "@/lib/errors";
 import { formatReportDisplayId } from "@/lib/reportCode";
@@ -42,7 +43,8 @@ function parseRecipients(json: string | null): string[] {
 
 async function markEmailStatus(reportId: string, status: "sent" | "failed") {
   if (!reportId) return;
-  await sql`UPDATE "Report" SET "emailStatus" = ${status} WHERE "id" = ${reportId}`;
+  await connectMongo();
+  await ReportModel.findByIdAndUpdate(reportId, { emailStatus: status });
 }
 
 export type SendReportEmailResult = {
@@ -78,9 +80,8 @@ export async function sendReportEmailFromForm(
     };
   }
 
-  const [reportRow] = await sql<{ code: string | null }[]>`
-    SELECT "code" FROM "Report" WHERE "id" = ${reportId} LIMIT 1
-  `;
+  await connectMongo();
+  const reportRow = await ReportModel.findById(reportId).select("code").lean();
   const reportCode = formatReportDisplayId(reportId, reportRow?.code);
   const formattedCategories = category
     .split(",")

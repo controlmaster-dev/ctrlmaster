@@ -7,11 +7,6 @@ export function hasAuthCookies(request: NextRequest): boolean {
   return Boolean(token && userId);
 }
 
-/**
- * El middleware no debe llamar a /api/auth/verify en cada navegación:
- * un timeout de Neon se interpretaba como "sesión inválida" y mandaba al login.
- * La validación real ocurre en cada ruta API con validateApiAuth.
- */
 export async function isSessionValid(request: NextRequest): Promise<boolean> {
   return hasAuthCookies(request);
 }

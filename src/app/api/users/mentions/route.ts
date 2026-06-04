@@ -1,15 +1,23 @@
 import { NextResponse } from "next/server";
 import { apiHandler } from "@/lib/api/handler";
-import sql from "@/lib/db";
+import { connectMongo } from "@/lib/mongo";
+import { UserModel } from "@/models";
 
 export const dynamic = "force-dynamic";
 
 export const GET = apiHandler({ auth: true }, async () => {
-  const users = await sql`
-    SELECT "id", "name", "image" FROM "User" ORDER BY "name" ASC
-  `;
+  await connectMongo();
+  const users = await UserModel.find()
+    .select("name image")
+    .sort({ name: 1 })
+    .lean();
 
-  return NextResponse.json(users, {
-    headers: { "Cache-Control": "private, max-age=300" },
-  });
+  return NextResponse.json(
+    users.map((u) => ({
+      id: String(u._id),
+      name: u.name,
+      image: u.image,
+    })),
+    { headers: { "Cache-Control": "private, max-age=300" } }
+  );
 });

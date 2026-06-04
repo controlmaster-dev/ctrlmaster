@@ -19,10 +19,7 @@ import { ConfiguracionSkeleton } from "@/components/skeletons/ConfiguracionSkele
 import { ConfiguracionUsersTab } from "@/components/configuracion/ConfiguracionUsersTab";
 import { ConfiguracionScheduleTab } from "@/components/configuracion/ConfiguracionScheduleTab";
 import { ConfiguracionSecurityTab } from "@/components/configuracion/ConfiguracionSecurityTab";
-import {
-  ConfiguracionReportsTab,
-  type ReportCleanupRow,
-} from "@/components/configuracion/ConfiguracionReportsTab";
+import { ConfiguracionReportsTab } from "@/components/configuracion/ConfiguracionReportsTab";
 import type { ConfiguracionUserCard } from "@/components/configuracion/UserRoleGridSection";
 import { useConfiguracionBundle } from "@/hooks/useConfiguracionBundle";
 import { useConfiguracionAdmin } from "@/hooks/useConfiguracionAdmin";
@@ -49,10 +46,12 @@ export default function ConfigurationPage() {
   const [currentWeekStart, setCurrentWeekStart] = useState(getSundayWeekStart);
   const [scheduleMode, setScheduleMode] = useState("weekly");
 
-  const { users, reports, securityCodes, isReady, reportsReady, refresh, removeReport } =
-    useConfiguracionBundle(currentWeekStart, isAdmin);
+  const { users, securityCodes, isReady, refresh } = useConfiguracionBundle(
+    currentWeekStart,
+    isAdmin
+  );
 
-  const admin = useConfiguracionAdmin({ refresh, removeReport });
+  const admin = useConfiguracionAdmin({ refresh });
 
   useEffect(() => {
     const savedUser = localStorage.getItem("enlace-user");
@@ -210,8 +209,7 @@ export default function ConfigurationPage() {
 
           {activeTab === "reports" && (
             <ConfiguracionReportsTab
-              reportsReady={reportsReady}
-              reports={reports as ReportCleanupRow[]}
+              active
               onDeleteReport={admin.confirmDeleteReport}
             />
           )}

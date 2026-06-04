@@ -1,6 +1,8 @@
+import { randomUUID } from "crypto";
 import { z } from "zod";
 import { apiHandler } from "@/lib/api/handler";
-import sql from "@/lib/db";
+import { connectMongo } from "@/lib/mongo";
+import { ReactionModel, UserModel } from "@/models";
 
 export const dynamic = "force-dynamic";
 
@@ -15,32 +17,37 @@ export const POST = apiHandler(
     const authorId = String(user?.id ?? "");
     const { reportId, emoji } = body;
 
-    const [existingReaction] = await sql`
-      SELECT * FROM "Reaction"
-      WHERE "authorId" = ${authorId}
-        AND "reportId" = ${reportId}
-        AND "emoji" = ${emoji}
-      LIMIT 1
-    `;
+    await connectMongo();
+    const existingReaction = await ReactionModel.findOne({
+      authorId,
+      reportId,
+      emoji,
+    }).lean();
 
     if (existingReaction) {
-      await sql`DELETE FROM "Reaction" WHERE "id" = ${existingReaction.id}`;
-      return { action: "removed", id: existingReaction.id };
+      await ReactionModel.findByIdAndDelete(existingReaction._id);
+      return { action: "removed", id: String(existingReaction._id) };
     }
 
-    const [newReaction] = await sql`
-      INSERT INTO "Reaction" ("reportId", "authorId", "emoji")
-      VALUES (${reportId}, ${authorId}, ${emoji})
-      RETURNING *
-    `;
+    const newReaction = await ReactionModel.create({
+      _id: randomUUID(),
+      reportId,
+      authorId,
+      emoji,
+    });
 
-    const [author] = await sql`
-      SELECT "name", "image" FROM "User" WHERE "id" = ${authorId} LIMIT 1
-    `;
+    const author = await UserModel.findById(authorId).select("name image").lean();
 
+    const plain = newReaction.toObject();
     return {
       action: "added",
-      reaction: { ...newReaction, author },
+      reaction: {
+        ...plain,
+        id: String(plain._id),
+        author: author
+          ? { name: author.name, image: author.image }
+          : { name: "Usuario", image: null },
+      },
     };
   }
 );

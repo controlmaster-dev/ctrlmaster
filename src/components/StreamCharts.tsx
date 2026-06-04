@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
+import { StreamChartsSkeleton } from "@/components/skeletons/StreamChartsSkeleton";
 
 const BarChart = dynamic(
   () => import("recharts").then((mod) => mod.BarChart),
@@ -86,11 +87,7 @@ export function StreamCharts() {
   }, []);
 
   if (isLoading && data.length === 0) {
-    return (
-      <div className="w-full h-[300px] border border-border/50 rounded-lg p-6 mt-8 flex items-center justify-center bg-card">
-        <span className="text-muted-foreground text-sm">Cargando métricas...</span>
-      </div>
-    );
+    return <StreamChartsSkeleton />;
   }
 
   return (

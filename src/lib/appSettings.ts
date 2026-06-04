@@ -1,17 +1,10 @@
+import { connectMongo } from "@/lib/mongo";
+import { AppSettingModel } from "@/models";
 
-
-
-import sql from '@/lib/db';
-
-
-export async function getSetting(
-  key: string,
-  fallback = ''
-): Promise<string> {
+export async function getSetting(key: string, fallback = ""): Promise<string> {
   try {
-    const [row] = await sql`
-      SELECT "value" FROM "AppSetting" WHERE "key" = ${key} LIMIT 1
-    `;
+    await connectMongo();
+    const row = await AppSettingModel.findById(key).lean();
     if (row?.value !== undefined && row?.value !== null) {
       return String(row.value);
     }
@@ -25,18 +18,16 @@ export async function getSetting(
   return fallback;
 }
 
-
 export async function getBooleanSetting(key: string): Promise<boolean> {
-  const value = await getSetting(key, 'false');
-  return value === 'true';
+  const value = await getSetting(key, "false");
+  return value === "true";
 }
 
-
 export async function setSetting(key: string, value: string): Promise<void> {
-  await sql`
-    INSERT INTO "AppSetting" ("key", "value", "updatedAt")
-    VALUES (${key}, ${value}, NOW())
-    ON CONFLICT ("key")
-    DO UPDATE SET "value" = ${value}, "updatedAt" = NOW()
-  `;
+  await connectMongo();
+  await AppSettingModel.findByIdAndUpdate(
+    key,
+    { value, updatedAt: new Date() },
+    { upsert: true, new: true }
+  );
 }

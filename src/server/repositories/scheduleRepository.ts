@@ -1,37 +1,48 @@
-import sql from "@/lib/db";
+import { randomUUID } from "crypto";
+import { connectMongo } from "@/lib/mongo";
+import { loadUserBriefMap, userBriefFromMap } from "@/lib/batchUsers";
+import { withMongoTransaction } from "@/lib/mongoHelpers";
+import { WeeklyScheduleModel, WorkScheduleModel } from "@/models";
 
 export async function listScheduleOverrides(start: string, end: string) {
-  return sql`
-    SELECT ws.*, json_build_object('id', u."id", 'name', u."name", 'image', u."image") AS "user"
-    FROM "WorkSchedule" ws
-    JOIN "User" u ON u."id" = ws."userId"
-    WHERE ws."date" >= ${start}::date
-      AND ws."date" <= ${end}::date
-      AND ws."isOverride" = TRUE
-  `;
+  await connectMongo();
+  const rows = await WorkScheduleModel.find({
+    date: { $gte: start, $lte: end },
+    isOverride: true,
+  }).lean();
+
+  const userMap = await loadUserBriefMap(rows.map((r) => r.userId));
+  return rows.map((ws) => ({
+    ...ws,
+    id: String(ws._id),
+    user: userBriefFromMap(userMap, ws.userId),
+  }));
 }
 
 export async function resetScheduleOverride(date: string) {
-  await sql`DELETE FROM "WorkSchedule" WHERE "date" = ${date}::date`;
+  await connectMongo();
+  await WorkScheduleModel.deleteMany({ date });
 }
 
 export async function upsertScheduleOverride(date: string, userId: string) {
-  const [override] = await sql`
-    INSERT INTO "WorkSchedule" ("date", "userId", "isOverride")
-    VALUES (${date}::date, ${userId}, TRUE)
-    ON CONFLICT ("date")
-    DO UPDATE SET "userId" = EXCLUDED."userId", "isOverride" = TRUE
-    RETURNING *
-  `;
-  return override;
+  await connectMongo();
+  const doc = await WorkScheduleModel.findOneAndUpdate(
+    { date },
+    { $set: { userId, isOverride: true }, $setOnInsert: { _id: randomUUID() } },
+    { upsert: true, new: true }
+  ).lean();
+  return { ...doc, id: String(doc!._id) };
 }
 
 export async function listWeeklyScheduleConfig() {
-  return sql`
-    SELECT ws.*, json_build_object('id', u."id", 'name', u."name", 'image', u."image") AS "user"
-    FROM "WeeklySchedule" ws
-    JOIN "User" u ON u."id" = ws."userId"
-  `;
+  await connectMongo();
+  const rows = await WeeklyScheduleModel.find().lean();
+  const userMap = await loadUserBriefMap(rows.map((r) => r.userId));
+  return rows.map((ws) => ({
+    ...ws,
+    id: String(ws._id),
+    user: userBriefFromMap(userMap, ws.userId),
+  }));
 }
 
 export type WeeklyScheduleItem = {
@@ -42,17 +53,19 @@ export type WeeklyScheduleItem = {
 export async function saveWeeklyScheduleConfig(schedule: WeeklyScheduleItem[]) {
   if (schedule.length === 0) return;
 
-  await sql.begin(async (tx) => {
+  await withMongoTransaction(async (session) => {
     for (const item of schedule) {
       if (item.userId === "REMOVE") {
-        await tx`DELETE FROM "WeeklySchedule" WHERE "dayOfWeek" = ${item.dayOfWeek}`;
+        await WeeklyScheduleModel.deleteMany({ dayOfWeek: item.dayOfWeek }, { session });
       } else {
-        await tx`
-          INSERT INTO "WeeklySchedule" ("dayOfWeek", "userId")
-          VALUES (${item.dayOfWeek}, ${item.userId})
-          ON CONFLICT ("dayOfWeek")
-          DO UPDATE SET "userId" = EXCLUDED."userId"
-        `;
+        await WeeklyScheduleModel.findOneAndUpdate(
+          { dayOfWeek: item.dayOfWeek },
+          {
+            $set: { userId: item.userId },
+            $setOnInsert: { _id: randomUUID() },
+          },
+          { upsert: true, session }
+        );
       }
     }
   });

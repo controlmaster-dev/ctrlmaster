@@ -1,5 +1,0 @@
--- Los códigos legibles (ENL-0001, TX-0042, …) se asignan con:
---   npx tsx scripts/migrate-report-codes.ts --dry-run
---   npx tsx scripts/migrate-report-codes.ts
---
--- No ejecutar UPDATE manual aquí; el script respeta createdAt y evita colisiones.

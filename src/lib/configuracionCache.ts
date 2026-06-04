@@ -16,9 +16,7 @@ export interface SecurityCode {
 export interface ConfiguracionBundle {
   weekStart: string;
   users: unknown[];
-  reports: unknown[];
   securityCodes: SecurityCode[];
-  reportsReady?: boolean;
   fetchedAt: number;
 }
 

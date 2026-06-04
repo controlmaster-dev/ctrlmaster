@@ -34,6 +34,7 @@ import {
 import { fetchMentionUsers, getCachedMentionUsers } from "@/lib/mentionUsersCache";
 import { cn } from "@/lib/utils";
 import { formatReportDisplayId } from "@/lib/reportCode";
+import { ActivityFeedSkeleton } from "@/components/skeletons/ActivityFeedSkeleton";
 
 interface ReportDetailModalProps {
   isOpen: boolean;
@@ -417,11 +418,7 @@ export function ReportDetailModal({
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-4 md:px-6 md:py-5">
               {loadingSocials &&
               !(toCommentItems(fullReport?.comments).length || toReactionItems(fullReport?.reactions).length) ? (
-                <div className="flex flex-1 items-center justify-center">
-                  <p className="text-sm text-muted-foreground animate-pulse">
-                    Cargando actividad...
-                  </p>
-                </div>
+                <ActivityFeedSkeleton lines={5} />
               ) : (
                 <ReportSocials
                   embedded
