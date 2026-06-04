@@ -5,7 +5,7 @@
   "main": "electron/main.js",
   "scripts": {
     "dev": "next dev -H 0.0.0.0 --turbopack",
-    "build": "NODE_OPTIONS='--max-old-space-size=4096' next build",
+    "build": "next build",
     "start": "next start",
     "electron:dev": "NODE_ENV=development electron .",
     "electron:build": "electron-builder",
