@@ -118,7 +118,7 @@ export function DiariosOperatorColumn({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 shrink-0 rounded-md text-[var(--diarios-list-muted)] hover:bg-black/5 hover:text-[var(--diarios-list-fg)] dark:hover:bg-white/10"
+                className="diarios-btn-ghost h-8 w-8 shrink-0 text-[var(--diarios-list-muted)] hover:bg-black/5 hover:text-[var(--diarios-list-fg)] dark:hover:bg-white/10"
               >
                 <MoreHorizontal className="h-4 w-4" />
               </Button>

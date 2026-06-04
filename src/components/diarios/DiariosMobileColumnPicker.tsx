@@ -54,15 +54,15 @@ export function DiariosMobileColumnPicker({
               id={`diarios-tab-${op.id}`}
               onClick={() => onSelect(op.id)}
               className={cn(
-                "flex shrink-0 touch-manipulation items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left transition-colors",
+                "diarios-mobile-tab flex shrink-0 touch-manipulation items-center gap-2 border px-2.5 py-1.5 text-left transition-colors",
                 active
-                  ? "border-brand/40 bg-card text-foreground shadow-sm ring-1 ring-brand/25"
-                  : "border-border/70 bg-muted/40 text-muted-foreground"
+                  ? "text-foreground"
+                  : "border-border/70 bg-transparent text-muted-foreground"
               )}
             >
-              <Avatar className="h-7 w-7 border border-border/60">
+              <Avatar className="h-7 w-7 rounded-[3px] border border-border/60">
                 <AvatarImage src={op.image || ""} alt={op.name} />
-                <AvatarFallback className="text-[9px] font-semibold">
+                <AvatarFallback className="rounded-[3px] text-[9px] font-semibold">
                   {getInitials(op.name)}
                 </AvatarFallback>
               </Avatar>
@@ -71,8 +71,8 @@ export function DiariosMobileColumnPicker({
               </span>
               <span
                 className={cn(
-                  "min-w-[1.25rem] rounded-md px-1.5 py-0.5 text-center text-[10px] font-bold tabular-nums",
-                  active ? "bg-brand/15 text-brand" : "bg-muted text-muted-foreground"
+                  "min-w-[1.25rem] rounded-[3px] px-1.5 py-0.5 text-center text-[10px] font-bold tabular-nums",
+                  active ? "bg-muted text-foreground" : "bg-muted/60 text-muted-foreground"
                 )}
               >
                 {count}

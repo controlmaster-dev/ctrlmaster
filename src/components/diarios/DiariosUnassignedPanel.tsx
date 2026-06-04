@@ -135,12 +135,12 @@ export function DiariosUnassignedPanel({
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-dashed border-border/80 bg-background/80">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[3px] border border-dashed border-border/80 bg-background/80">
               <Inbox className="h-4 w-4 text-muted-foreground" />
             </div>
             {count > 0 && (
               <span
-                className="flex h-5 min-w-5 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-bold text-white"
+                className="flex h-5 min-w-5 items-center justify-center rounded-[3px] bg-brand px-1 text-[10px] font-bold text-white"
                 title={`${count} sin asignar`}
               >
                 {count > 99 ? "99+" : count}
@@ -198,7 +198,7 @@ export function DiariosUnassignedPanel({
             <Button
               type="button"
               variant="ghost"
-              className="h-8 w-full justify-start gap-2 rounded-[3px] text-[var(--diarios-list-muted)] hover:bg-black/5 hover:text-[var(--diarios-list-fg)] dark:hover:bg-white/10"
+              className="diarios-btn-ghost h-8 w-full justify-start gap-2 text-[var(--diarios-list-muted)] hover:bg-black/5 hover:text-[var(--diarios-list-fg)] dark:hover:bg-white/10"
               onClick={onAddDuty}
             >
               <Plus className="h-4 w-4" />

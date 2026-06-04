@@ -116,7 +116,7 @@ export function DiariosDutyCard({
       onDragOver={handleCardDragOver}
       onDrop={handleCardDrop}
       className={cn(
-        "diarios-card group relative pl-2.5 pr-2 py-2 transition-shadow",
+        "diarios-card group relative px-2 py-2 transition-shadow",
         priorityMeta.cardClass,
         canEdit && "cursor-grab touch-manipulation active:cursor-grabbing",
         dragging && "diarios-card--dragging"

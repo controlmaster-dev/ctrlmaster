@@ -310,7 +310,7 @@ export function DiariosClient() {
             {canEdit && (
               <Button
                 size="sm"
-                className="h-8 gap-1.5 rounded-md bg-brand px-3 text-xs font-medium text-white hover:bg-brand-hover"
+                className="h-8 gap-1.5 rounded-[3px] bg-brand px-3 text-xs font-medium text-white hover:bg-brand-hover"
                 onClick={openCreateDuty}
                 disabled={saving}
               >
