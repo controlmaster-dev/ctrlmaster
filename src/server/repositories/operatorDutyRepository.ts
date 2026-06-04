@@ -3,6 +3,7 @@ import {
   DIARIOS_EXCLUDED_EMAILS,
   DIARIOS_PROFILE_ROLES,
 } from "@/lib/diariosProfiles";
+import type { DiariosPriority } from "@/lib/diariosPriority";
 import { ensureOperatorDutyTables } from "@/lib/ensureOperatorDutyTables";
 import type { OperatorDuty, OperatorDutyAssignment } from "@/types/operatorDuty";
 
@@ -45,7 +46,7 @@ export async function listAllDuties() {
   await ensureOperatorDutyTables();
   return sql<OperatorDutyRow[]>`
     SELECT
-      "id", "title", "description", "sortOrder",
+      "id", "title", "description", "sortOrder", "priority", "isGeneral",
       "createdAt", "updatedAt"
     FROM "OperatorDuty"
     ORDER BY "sortOrder" ASC, "title" ASC
@@ -65,23 +66,33 @@ export async function createDuty(data: {
   title: string;
   description?: string | null;
   sortOrder?: number;
+  priority?: DiariosPriority;
+  isGeneral?: boolean;
 }) {
   await ensureOperatorDutyTables();
   const [row] = await sql<OperatorDutyRow[]>`
-    INSERT INTO "OperatorDuty" ("title", "description", "sortOrder")
+    INSERT INTO "OperatorDuty" ("title", "description", "sortOrder", "priority", "isGeneral")
     VALUES (
       ${data.title},
       ${data.description ?? null},
-      ${data.sortOrder ?? 0}
+      ${data.sortOrder ?? 0},
+      ${data.priority ?? "medium"},
+      ${data.isGeneral ?? false}
     )
-    RETURNING "id", "title", "description", "sortOrder", "createdAt", "updatedAt"
+    RETURNING "id", "title", "description", "sortOrder", "priority", "isGeneral", "createdAt", "updatedAt"
   `;
   return row;
 }
 
 export async function updateDuty(
   id: string,
-  data: { title?: string; description?: string | null; sortOrder?: number }
+  data: {
+    title?: string;
+    description?: string | null;
+    sortOrder?: number;
+    priority?: DiariosPriority;
+    isGeneral?: boolean;
+  }
 ) {
   await ensureOperatorDutyTables();
   const [row] = await sql<OperatorDutyRow[]>`
@@ -90,9 +101,11 @@ export async function updateDuty(
       "title" = COALESCE(${data.title ?? null}, "title"),
       "description" = CASE WHEN ${data.description !== undefined} THEN ${data.description ?? null} ELSE "description" END,
       "sortOrder" = COALESCE(${data.sortOrder ?? null}, "sortOrder"),
+      "priority" = COALESCE(${data.priority ?? null}, "priority"),
+      "isGeneral" = CASE WHEN ${data.isGeneral !== undefined} THEN ${data.isGeneral ?? false} ELSE "isGeneral" END,
       "updatedAt" = NOW()
     WHERE "id" = ${id}
-    RETURNING "id", "title", "description", "sortOrder", "createdAt", "updatedAt"
+    RETURNING "id", "title", "description", "sortOrder", "priority", "isGeneral", "createdAt", "updatedAt"
   `;
   return row ?? null;
 }
@@ -105,7 +118,7 @@ export async function deleteDuty(id: string) {
 export async function findDutyById(id: string) {
   await ensureOperatorDutyTables();
   const [row] = await sql<OperatorDutyRow[]>`
-    SELECT "id", "title", "description", "sortOrder", "createdAt", "updatedAt"
+    SELECT "id", "title", "description", "sortOrder", "priority", "isGeneral", "createdAt", "updatedAt"
     FROM "OperatorDuty"
     WHERE "id" = ${id}
     LIMIT 1
@@ -174,6 +187,28 @@ export async function transferAllDuties(fromUserId: string, toUserId: string) {
     RETURNING "id", "dutyId", "userId", "sortOrder", "assignedAt"
   `;
   return rows;
+}
+
+export async function reorderAssignmentsForUser(userId: string, dutyIds: string[]) {
+  await ensureOperatorDutyTables();
+  for (let i = 0; i < dutyIds.length; i++) {
+    await sql`
+      UPDATE "OperatorDutyAssignment"
+      SET "sortOrder" = ${i}
+      WHERE "userId" = ${userId} AND "dutyId" = ${dutyIds[i]}
+    `;
+  }
+}
+
+export async function reorderUnassignedDuties(dutyIds: string[]) {
+  await ensureOperatorDutyTables();
+  for (let i = 0; i < dutyIds.length; i++) {
+    await sql`
+      UPDATE "OperatorDuty"
+      SET "sortOrder" = ${i}, "updatedAt" = NOW()
+      WHERE "id" = ${dutyIds[i]}
+    `;
+  }
 }
 
 export async function countAssignmentsForUser(userId: string) {

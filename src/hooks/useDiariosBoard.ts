@@ -1,7 +1,30 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { DiariosBoardDto } from "@/types/operatorDuty";
+import type { DiariosPriority } from "@/lib/diariosPriority";
+import { reorderDutiesInList } from "@/lib/diariosReorder";
+import { sortDutyIdsByPriority } from "@/lib/diariosSort";
+import type { DiariosBoardDto, OperatorDuty } from "@/types/operatorDuty";
+
+function sortColumnDuties(duties: OperatorDuty[]): OperatorDuty[] {
+  if (duties.length < 2) return duties;
+  const orderMap = new Map(duties.map((d, i) => [d.id, i]));
+  const ids = sortDutyIdsByPriority(duties, orderMap);
+  const byId = new Map(duties.map((d) => [d.id, d]));
+  return ids.map((id) => byId.get(id)!).filter(Boolean);
+}
+
+function withSortedColumns(board: DiariosBoardDto): DiariosBoardDto {
+  const byOperator: Record<string, OperatorDuty[]> = {};
+  for (const op of board.operators) {
+    byOperator[op.id] = sortColumnDuties(board.byOperator[op.id] ?? []);
+  }
+  return {
+    ...board,
+    byOperator,
+    unassigned: sortColumnDuties(board.unassigned),
+  };
+}
 
 const emptyBoard = (): DiariosBoardDto => ({
   operators: [],
@@ -32,7 +55,7 @@ export function useDiariosBoard(enabled = true) {
       }
       const board = data as DiariosBoardDto;
       if (!mountedRef.current) return;
-      setBoard(board);
+      setBoard(withSortedColumns(board));
     } catch (e) {
       console.error("[diarios] fetch error", e);
     } finally {
@@ -51,7 +74,7 @@ export function useDiariosBoard(enabled = true) {
   }, [enabled, fetchBoard]);
 
   const applyBoard = useCallback((next: DiariosBoardDto) => {
-    setBoard(next);
+    setBoard(withSortedColumns(next));
   }, []);
 
   const optimisticAssign = useCallback(
@@ -102,12 +125,12 @@ export function useDiariosBoard(enabled = true) {
           unassigned = [...unassigned, duty];
         }
 
-        return {
+        return withSortedColumns({
           ...prev,
           assignments: nextAssignments,
           byOperator: nextByOperator,
           unassigned,
-        };
+        });
       });
     },
     []
@@ -132,20 +155,25 @@ export function useDiariosBoard(enabled = true) {
 
   const optimisticBulkUnassign = useCallback((userId: string) => {
     setBoard((prev) => {
-      const moving = prev.byOperator[userId] ?? [];
-      const nextByOperator = { ...prev.byOperator, [userId]: [] };
-      const nextAssignments = prev.assignments.filter((a) => a.userId !== userId);
+      const column = prev.byOperator[userId] ?? [];
+      const keep = column.filter((d) => d.isGeneral);
+      const moving = column.filter((d) => !d.isGeneral);
+
+      const nextByOperator = { ...prev.byOperator, [userId]: keep };
+      const nextAssignments = prev.assignments.filter(
+        (a) => !(a.userId === userId && moving.some((d) => d.id === a.dutyId))
+      );
       const unassignedIds = new Set(prev.unassigned.map((d) => d.id));
       const extraUnassigned = moving.filter((d) => {
         const stillOnOthers = nextAssignments.some((a) => a.dutyId === d.id);
         return !stillOnOthers && !unassignedIds.has(d.id);
       });
-      return {
+      return withSortedColumns({
         ...prev,
         byOperator: nextByOperator,
         assignments: nextAssignments,
         unassigned: [...prev.unassigned, ...extraUnassigned],
-      };
+      });
     });
   }, []);
 
@@ -168,6 +196,55 @@ export function useDiariosBoard(enabled = true) {
       duties: [...prev.duties, duty],
       unassigned: [...prev.unassigned, duty],
     }));
+  }, []);
+
+  const optimisticReorderColumn = useCallback(
+    (userId: string | null, dutyIds: string[]) => {
+      setBoard((prev) => {
+        const orderMap = new Map(dutyIds.map((id, i) => [id, i]));
+        const sortList = (list: OperatorDuty[]) =>
+          [...list].sort(
+            (a, b) => (orderMap.get(a.id) ?? 999) - (orderMap.get(b.id) ?? 999)
+          );
+
+        if (userId === null) {
+          return {
+            ...prev,
+            unassigned: sortList(prev.unassigned),
+            duties: sortList(prev.duties),
+          };
+        }
+
+        const nextByOperator = { ...prev.byOperator };
+        nextByOperator[userId] = sortList(prev.byOperator[userId] ?? []);
+
+        const nextAssignments = prev.assignments.map((a) =>
+          a.userId === userId
+            ? { ...a, sortOrder: orderMap.get(a.dutyId) ?? a.sortOrder }
+            : a
+        );
+
+        return { ...prev, byOperator: nextByOperator, assignments: nextAssignments };
+      });
+    },
+    []
+  );
+
+  const optimisticPriority = useCallback((dutyId: string, priority: DiariosPriority) => {
+    setBoard((prev) => {
+      const patchDuty = (d: OperatorDuty) =>
+        d.id === dutyId ? { ...d, priority } : d;
+      const byOperator: Record<string, OperatorDuty[]> = {};
+      for (const op of prev.operators) {
+        byOperator[op.id] = (prev.byOperator[op.id] ?? []).map(patchDuty);
+      }
+      return withSortedColumns({
+        ...prev,
+        duties: prev.duties.map(patchDuty),
+        unassigned: prev.unassigned.map(patchDuty),
+        byOperator,
+      });
+    });
   }, []);
 
   const runMutation = useCallback(
@@ -211,10 +288,62 @@ export function useDiariosBoard(enabled = true) {
     [board, optimisticAssign, runMutation, applyBoard]
   );
 
+  const reorderColumn = useCallback(
+    async (userId: string | null, dutyIds: string[]) => {
+      const snapshot = board;
+      optimisticReorderColumn(userId, dutyIds);
+      return runMutation(
+        () =>
+          fetch("/api/operator-duties/reorder", {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId, dutyIds }),
+          }),
+        () => applyBoard(snapshot)
+      );
+    },
+    [board, optimisticReorderColumn, runMutation, applyBoard]
+  );
+
+  const reorderDutyInColumn = useCallback(
+    async (
+      userId: string | null,
+      duties: OperatorDuty[],
+      draggedId: string,
+      toIndex: number
+    ) => {
+      const next = reorderDutiesInList(duties, draggedId, toIndex);
+      if (next.map((d) => d.id).join() === duties.map((d) => d.id).join()) return true;
+      return reorderColumn(userId, next.map((d) => d.id));
+    },
+    [reorderColumn]
+  );
+
+  const updatePriority = useCallback(
+    async (dutyId: string, priority: DiariosPriority) => {
+      const snapshot = board;
+      optimisticPriority(dutyId, priority);
+      return runMutation(
+        () =>
+          fetch(`/api/operator-duties/${encodeURIComponent(dutyId)}`, {
+            method: "PATCH",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ priority }),
+          }),
+        () => applyBoard(snapshot)
+      );
+    },
+    [board, optimisticPriority, runMutation, applyBoard]
+  );
+
   const createDuty = useCallback(
     async (payload: {
       title: string;
       description?: string;
+      priority?: DiariosPriority;
+      isGeneral?: boolean;
       assignToAll?: boolean;
       operatorIds?: string[];
     }) => {
@@ -226,6 +355,8 @@ export function useDiariosBoard(enabled = true) {
           body: JSON.stringify({
             title: payload.title,
             description: payload.description || null,
+            priority: payload.priority,
+            isGeneral: payload.isGeneral ?? false,
             assignToAll: payload.assignToAll ?? false,
             operatorIds: payload.operatorIds ?? [],
           }),
@@ -241,6 +372,8 @@ export function useDiariosBoard(enabled = true) {
       data: {
         title?: string;
         description?: string | null;
+        priority?: DiariosPriority;
+        isGeneral?: boolean;
         assignToAll?: boolean;
         operatorIds?: string[];
       }
@@ -320,5 +453,8 @@ export function useDiariosBoard(enabled = true) {
     deleteDuty,
     bulkUnassign,
     bulkTransfer,
+    reorderColumn,
+    reorderDutyInColumn,
+    updatePriority,
   };
 }

@@ -14,12 +14,26 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  DIARIOS_PRIORITY_DEFAULT,
+  DIARIOS_PRIORITY_OPTIONS,
+  type DiariosPriority,
+} from "@/lib/diariosPriority";
 import type { DiariosOperator, OperatorDuty } from "@/types/operatorDuty";
 import { cn } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export type DiariosDutyFormPayload = {
   title: string;
   description: string;
+  priority: DiariosPriority;
+  isGeneral: boolean;
   assignToAll: boolean;
   operatorIds: string[];
 };
@@ -31,6 +45,7 @@ type DiariosDutyFormDialogProps = {
   operators: DiariosOperator[];
   initialOperatorIds?: string[];
   initialAssignToAll?: boolean;
+  initialIsGeneral?: boolean;
   saving?: boolean;
   onSubmit: (data: DiariosDutyFormPayload) => Promise<boolean>;
 };
@@ -42,11 +57,14 @@ export function DiariosDutyFormDialog({
   operators,
   initialOperatorIds = [],
   initialAssignToAll = false,
+  initialIsGeneral = false,
   saving,
   onSubmit,
 }: DiariosDutyFormDialogProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [priority, setPriority] = useState<DiariosPriority>(DIARIOS_PRIORITY_DEFAULT);
+  const [isGeneral, setIsGeneral] = useState(false);
   const [assignToAll, setAssignToAll] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
@@ -54,14 +72,16 @@ export function DiariosDutyFormDialog({
     if (!open) return;
     setTitle(duty?.title ?? "");
     setDescription(duty?.description ?? "");
-    setAssignToAll(initialAssignToAll);
+    setPriority(duty?.priority ?? DIARIOS_PRIORITY_DEFAULT);
+    setIsGeneral(duty?.isGeneral ?? initialIsGeneral);
+    setAssignToAll(initialAssignToAll || duty?.isGeneral === true);
     setSelectedIds(new Set(initialOperatorIds));
-  }, [open, duty, initialAssignToAll, initialOperatorIds]);
+  }, [open, duty, initialAssignToAll, initialIsGeneral, initialOperatorIds]);
 
   const effectiveIds = useMemo(() => {
-    if (assignToAll) return operators.map((o) => o.id);
+    if (isGeneral || assignToAll) return operators.map((o) => o.id);
     return Array.from(selectedIds);
-  }, [assignToAll, operators, selectedIds]);
+  }, [isGeneral, assignToAll, operators, selectedIds]);
 
   const toggleOperator = (id: string) => {
     setSelectedIds((prev) => {
@@ -77,7 +97,9 @@ export function DiariosDutyFormDialog({
     const ok = await onSubmit({
       title: title.trim(),
       description: description.trim(),
-      assignToAll,
+      priority,
+      isGeneral,
+      assignToAll: isGeneral || assignToAll,
       operatorIds: effectiveIds,
     });
     if (ok) onOpenChange(false);
@@ -117,16 +139,49 @@ export function DiariosDutyFormDialog({
                 className="resize-none"
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="duty-priority">Prioridad</Label>
+              <Select value={priority} onValueChange={(v) => setPriority(v as DiariosPriority)}>
+                <SelectTrigger id="duty-priority">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {DIARIOS_PRIORITY_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
             <div className="space-y-3 rounded-md border border-border/80 bg-muted/20 p-3">
               <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Asignación
               </p>
+              <label className="flex cursor-pointer items-center gap-2 rounded-md border border-brand/25 bg-brand/5 px-2 py-2">
+                <Checkbox
+                  checked={isGeneral}
+                  onCheckedChange={(v) => {
+                    const on = v === true;
+                    setIsGeneral(on);
+                    if (on) setAssignToAll(true);
+                  }}
+                  disabled={operators.length === 0}
+                />
+                <span className="text-sm font-medium text-foreground">
+                  Tarea general (todo el equipo)
+                </span>
+              </label>
+              <p className="text-xs text-muted-foreground">
+                Aparece en la columna de cada persona. Si entra alguien nuevo al tablero, también la
+                recibe.
+              </p>
               <label className="flex cursor-pointer items-center gap-2">
                 <Checkbox
                   checked={assignToAll}
                   onCheckedChange={(v) => setAssignToAll(v === true)}
-                  disabled={operators.length === 0}
+                  disabled={operators.length === 0 || isGeneral}
                 />
                 <span className="text-sm text-foreground">Aplicar a todo el equipo</span>
               </label>
@@ -135,14 +190,14 @@ export function DiariosDutyFormDialog({
               ) : (
                 <>
                   <p className="text-xs text-muted-foreground">
-                    {assignToAll
+                    {isGeneral || assignToAll
                       ? `Se asignará a ${operators.length} persona(s).`
-                      : "O seleccione personas específicas:"}
+                      : "Seleccione quién debe tener esta función:"}
                   </p>
                   <div
                     className={cn(
                       "flex max-h-40 flex-col gap-1 overflow-y-auto",
-                      assignToAll && "pointer-events-none opacity-50"
+                      (isGeneral || assignToAll) && "pointer-events-none opacity-50"
                     )}
                   >
                     {operators.map((op) => (
@@ -151,15 +206,15 @@ export function DiariosDutyFormDialog({
                         className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-1 hover:bg-muted/40"
                       >
                         <Checkbox
-                          checked={assignToAll || selectedIds.has(op.id)}
+                          checked={isGeneral || assignToAll || selectedIds.has(op.id)}
                           onCheckedChange={() => toggleOperator(op.id)}
-                          disabled={assignToAll}
+                          disabled={isGeneral || assignToAll}
                         />
                         <span className="text-sm text-foreground">{op.name}</span>
                       </label>
                     ))}
                   </div>
-                  {!assignToAll && effectiveIds.length === 0 && (
+                  {!isGeneral && !assignToAll && effectiveIds.length === 0 && (
                     <p className="text-xs text-amber-600 dark:text-amber-400">
                       Sin selección: la función quedará en «Sin asignar».
                     </p>

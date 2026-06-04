@@ -177,9 +177,13 @@ export const calendarEventSchema = z.object({
 });
 
 
+const diariosPrioritySchema = z.enum(["low", "medium", "high", "urgent"]);
+
 export const createOperatorDutySchema = z.object({
   title: z.string().min(1, 'El título es requerido').max(120),
   description: z.string().max(500).optional().nullable(),
+  priority: diariosPrioritySchema.optional(),
+  isGeneral: z.boolean().optional(),
   assignToAll: z.boolean().optional(),
   operatorIds: z.array(z.string().min(1)).optional(),
 });
@@ -187,8 +191,15 @@ export const createOperatorDutySchema = z.object({
 export const updateOperatorDutySchema = z.object({
   title: z.string().min(1).max(120).optional(),
   description: z.string().max(500).optional().nullable(),
+  priority: diariosPrioritySchema.optional(),
+  isGeneral: z.boolean().optional(),
   assignToAll: z.boolean().optional(),
   operatorIds: z.array(z.string().min(1)).optional(),
+});
+
+export const reorderOperatorDutiesSchema = z.object({
+  userId: z.string().min(1).nullable(),
+  dutyIds: z.array(z.string().min(1)).min(1),
 });
 
 export const deleteOperatorDutySchema = z.object({

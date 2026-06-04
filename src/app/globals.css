@@ -263,57 +263,92 @@
     background-color: transparent !important;
   }
 
-  /* Diarios: tablero tipo Trello — scroll horizontal, columnas fijas */
+  /* Diarios — tablero kanban con tokens del tema Control Máster */
+  .diarios-ui {
+    --diarios-list-bg: hsl(var(--muted) / 0.65);
+    --diarios-list-fg: hsl(var(--foreground));
+    --diarios-list-muted: hsl(var(--muted-foreground));
+    --diarios-card-bg: hsl(var(--card));
+    --diarios-card-fg: hsl(var(--card-foreground));
+    --diarios-card-muted: hsl(var(--muted-foreground));
+    background: hsl(var(--background));
+  }
+
+  .diarios-toolbar {
+    background: hsl(var(--background) / 0.92);
+    border-bottom: 1px solid hsl(var(--border));
+    backdrop-filter: blur(10px);
+  }
+
   .diarios-board {
     overflow-x: auto;
     overflow-y: hidden;
     overscroll-behavior-x: contain;
-    scrollbar-gutter: stable;
+    -webkit-overflow-scrolling: touch;
   }
 
   .diarios-board-track {
     display: flex;
-    align-items: stretch;
-    gap: 0.75rem;
+    align-items: flex-start;
+    gap: 0.5rem;
     height: 100%;
     min-height: 100%;
-    padding: 0.75rem 1rem 1rem;
+    padding: 0.75rem 0.75rem 1rem;
     width: max-content;
     min-width: 100%;
   }
 
   .diarios-column {
     display: flex;
-    flex: 0 0 17.5rem;
-    width: 17.5rem;
+    flex: 0 0 17rem;
+    width: 17rem;
     max-height: 100%;
     min-height: 0;
     flex-direction: column;
-    border-radius: 0.75rem;
-    background: color-mix(in oklch, var(--card) 88%, transparent);
-    box-shadow: 0 1px 2px rgb(0 0 0 / 0.06);
+    border-radius: 12px;
+    background: var(--diarios-list-bg);
+    border: none;
+    box-shadow: none;
   }
 
   .diarios-column--unassigned {
-    background: color-mix(in oklch, var(--muted) 55%, var(--card));
+    background: color-mix(in srgb, var(--diarios-list-bg) 88%, var(--diarios-card-bg));
+  }
+
+  .diarios-column--drag-over {
+    outline: 2px solid hsl(var(--brand));
+    outline-offset: 0;
   }
 
   .diarios-column--collapsed {
-    flex: 0 0 3.25rem;
-    width: 3.25rem;
-    min-width: 3.25rem;
+    flex: 0 0 3rem;
+    width: 3rem;
+    min-width: 3rem;
   }
 
   .diarios-column--collapsed .diarios-column-header {
-    border-radius: 0.75rem;
+    border-radius: 12px;
     flex: 1;
     min-height: 0;
   }
 
   .diarios-column-header {
     flex-shrink: 0;
-    border-radius: 0.75rem 0.75rem 0 0;
-    padding: 0.625rem 0.75rem;
+    padding: 0.5rem 0.5rem 0.25rem;
+    color: var(--diarios-list-fg);
+    background: transparent;
+  }
+
+  .diarios-column-title {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--diarios-list-fg);
+  }
+
+  .diarios-column-meta {
+    font-size: 12px;
+    color: var(--diarios-list-muted);
   }
 
   .diarios-column-body {
@@ -328,11 +363,103 @@
   }
 
   .diarios-column-body::-webkit-scrollbar {
-    width: 6px;
+    width: 8px;
   }
 
   .diarios-column-body::-webkit-scrollbar-thumb {
     border-radius: 999px;
-    background: color-mix(in oklch, var(--muted-foreground) 25%, transparent);
+    background: hsl(var(--muted-foreground) / 0.25);
+  }
+
+  .diarios-card {
+    border-radius: calc(var(--radius) + 4px);
+    background: var(--diarios-card-bg);
+    color: var(--diarios-card-fg);
+    border: 1px solid hsl(var(--border) / 0.75);
+    border-left-width: 4px;
+    border-left-color: hsl(var(--border) / 0.5);
+    box-shadow: none;
+  }
+
+  .diarios-card:hover {
+    box-shadow: 0 2px 10px hsl(var(--foreground) / 0.08);
+  }
+
+  .diarios-card--priority-low {
+    border-left-color: #c5d0dc;
+    border-color: color-mix(in srgb, #e8edf2 70%, hsl(var(--border)));
+    background: color-mix(in srgb, var(--diarios-card-bg) 72%, #eef2f6);
+  }
+
+  .diarios-card--priority-medium {
+    border-left-color: #9fd9b8;
+    border-color: color-mix(in srgb, #d8f3e5 75%, hsl(var(--border)));
+    background: color-mix(in srgb, var(--diarios-card-bg) 68%, #e8f9ef);
+  }
+
+  .diarios-card--priority-high {
+    border-left-color: #f0dfa0;
+    border-color: color-mix(in srgb, #fff4d6 80%, hsl(var(--border)));
+    background: color-mix(in srgb, var(--diarios-card-bg) 68%, #fffbeb);
+  }
+
+  .diarios-card--priority-urgent {
+    border-left-color: #f0b4b4;
+    border-color: color-mix(in srgb, #ffe3e3 80%, hsl(var(--border)));
+    background: color-mix(in srgb, var(--diarios-card-bg) 68%, #fff0f0);
+  }
+
+  .diarios-card--priority-urgent:hover {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, #f0b4b4 35%, transparent),
+      0 4px 12px color-mix(in srgb, #ffe3e3 40%, transparent);
+  }
+
+  .dark .diarios-card--priority-low {
+    border-left-color: #5a6a7d;
+    background: color-mix(in srgb, var(--diarios-card-bg) 75%, #2a323c);
+  }
+
+  .dark .diarios-card--priority-medium {
+    border-left-color: #4d8f6a;
+    background: color-mix(in srgb, var(--diarios-card-bg) 72%, #1a3328);
+  }
+
+  .dark .diarios-card--priority-high {
+    border-left-color: #a89250;
+    background: color-mix(in srgb, var(--diarios-card-bg) 72%, #2e2818);
+  }
+
+  .dark .diarios-card--priority-urgent {
+    border-left-color: #b87878;
+    background: color-mix(in srgb, var(--diarios-card-bg) 72%, #331f1f);
+  }
+
+  .diarios-card--dragging {
+    opacity: 0.55;
+    transform: rotate(2deg);
+  }
+
+  .diarios-dropzone {
+    border-radius: calc(var(--radius) + 4px);
+    border: 2px dashed hsl(var(--border));
+    background: hsl(var(--card) / 0.45);
+  }
+
+  .diarios-dropzone--active {
+    border-color: hsl(var(--brand) / 0.55);
+    background: hsl(var(--brand) / 0.06);
+  }
+
+  .diarios-board-mobile {
+    background: hsl(var(--background));
+    overflow: hidden;
+  }
+
+  .diarios-column--mobile-full {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+    max-width: none;
   }
 }

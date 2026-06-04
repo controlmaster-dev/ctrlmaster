@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { ClipboardList, Loader2, Plus } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -10,10 +10,12 @@ import {
   DiariosDutyFormDialog,
   type DiariosDutyFormPayload,
 } from "@/components/diarios/DiariosDutyFormDialog";
+import { DiariosMobileColumnPicker } from "@/components/diarios/DiariosMobileColumnPicker";
 import { DiariosOperatorColumn } from "@/components/diarios/DiariosOperatorColumn";
 import { DiariosTransferDialog } from "@/components/diarios/DiariosTransferDialog";
 import { DiariosUnassignedPanel } from "@/components/diarios/DiariosUnassignedPanel";
 import { useDiariosBoard } from "@/hooks/useDiariosBoard";
+import type { DiariosPriority } from "@/lib/diariosPriority";
 import { cn } from "@/lib/utils";
 import type { DiariosOperator, OperatorDuty } from "@/types/operatorDuty";
 
@@ -34,8 +36,12 @@ export function DiariosClient() {
     deleteDuty,
     bulkUnassign,
     bulkTransfer,
+    reorderDutyInColumn,
+    updatePriority,
   } = useDiariosBoard(!!user);
 
+  const [mobileOperatorId, setMobileOperatorId] = useState("");
+  const mobilePickedRef = useRef(false);
   const [draggingDutyId, setDraggingDutyId] = useState<string | null>(null);
   const [dragSource, setDragSource] = useState<{
     dutyId: string;
@@ -61,6 +67,46 @@ export function DiariosClient() {
     return counts;
   }, [board.assignments]);
 
+  const operatorDutyCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const op of board.operators) {
+      counts[op.id] = board.byOperator[op.id]?.length ?? 0;
+    }
+    return counts;
+  }, [board.operators, board.byOperator]);
+
+  const operatorIdsKey = useMemo(
+    () => board.operators.map((o) => o.id).join("|"),
+    [board.operators]
+  );
+
+  useEffect(() => {
+    if (!board.operators.length) {
+      setMobileOperatorId("");
+      mobilePickedRef.current = false;
+      return;
+    }
+    const stillValid =
+      mobileOperatorId && board.operators.some((o) => o.id === mobileOperatorId);
+    if (mobilePickedRef.current && stillValid) return;
+
+    const defaultId =
+      currentUserId && board.operators.some((o) => o.id === currentUserId)
+        ? currentUserId
+        : board.operators[0].id;
+    setMobileOperatorId(defaultId);
+  }, [operatorIdsKey, currentUserId, mobileOperatorId, board.operators]);
+
+  const handleMobileSelect = (id: string) => {
+    mobilePickedRef.current = true;
+    setMobileOperatorId(id);
+  };
+
+  const endDrag = () => {
+    setDraggingDutyId(null);
+    setDragSource(null);
+  };
+
   const handleAssign = async (
     dutyId: string,
     userId: string | null,
@@ -68,12 +114,59 @@ export function DiariosClient() {
   ) => {
     const ok = await assignDuty(dutyId, userId, fromUserId);
     if (!ok) toast.error("No se pudo mover la función");
-    setDragSource(null);
+    endDrag();
+  };
+
+  const handleReorderAtIndex = async (
+    columnUserId: string | null,
+    draggedId: string,
+    toIndex: number
+  ) => {
+    const list =
+      columnUserId === null
+        ? board.unassigned
+        : (board.byOperator[columnUserId] ?? []);
+    const ok = await reorderDutyInColumn(columnUserId, list, draggedId, toIndex);
+    if (!ok) toast.error("No se pudo reordenar");
+    endDrag();
+  };
+
+  const handleMoveUp = async (columnUserId: string | null, dutyId: string) => {
+    const list =
+      columnUserId === null
+        ? board.unassigned
+        : (board.byOperator[columnUserId] ?? []);
+    const idx = list.findIndex((d) => d.id === dutyId);
+    if (idx <= 0) return;
+    await handleReorderAtIndex(columnUserId, dutyId, idx - 1);
+  };
+
+  const handleMoveDown = async (columnUserId: string | null, dutyId: string) => {
+    const list =
+      columnUserId === null
+        ? board.unassigned
+        : (board.byOperator[columnUserId] ?? []);
+    const idx = list.findIndex((d) => d.id === dutyId);
+    if (idx < 0 || idx >= list.length - 1) return;
+    await handleReorderAtIndex(columnUserId, dutyId, idx + 1);
+  };
+
+  const handlePriorityChange = async (dutyId: string, priority: DiariosPriority) => {
+    const ok = await updatePriority(dutyId, priority);
+    if (!ok) toast.error("No se pudo cambiar la prioridad");
+  };
+
+  const handleMoveDutyTo = (
+    dutyId: string,
+    toUserId: string | null,
+    fromUserId: string | null
+  ) => {
+    void handleAssign(dutyId, toUserId, fromUserId);
   };
 
   const dutyFormAssignment = useMemo(() => {
     if (!editingDuty) {
-      return { operatorIds: [] as string[], assignToAll: false };
+      return { operatorIds: [] as string[], assignToAll: false, isGeneral: false };
     }
     const operatorIds = board.assignments
       .filter((a) => a.dutyId === editingDuty.id)
@@ -83,7 +176,11 @@ export function DiariosClient() {
       allIds.length > 0 &&
       allIds.length === operatorIds.length &&
       allIds.every((id) => operatorIds.includes(id));
-    return { operatorIds, assignToAll };
+    return {
+      operatorIds,
+      assignToAll: editingDuty.isGeneral || assignToAll,
+      isGeneral: editingDuty.isGeneral,
+    };
   }, [editingDuty, board.assignments, board.operators]);
 
   const openCreateDuty = () => {
@@ -101,6 +198,8 @@ export function DiariosClient() {
       const ok = await updateDuty(editingDuty.id, {
         title: data.title,
         description: data.description || null,
+        priority: data.priority,
+        isGeneral: data.isGeneral,
         assignToAll: data.assignToAll,
         operatorIds: data.operatorIds,
       });
@@ -111,6 +210,8 @@ export function DiariosClient() {
     const ok = await createDuty({
       title: data.title,
       description: data.description,
+      priority: data.priority,
+      isGeneral: data.isGeneral,
       assignToAll: data.assignToAll,
       operatorIds: data.operatorIds,
     });
@@ -149,7 +250,7 @@ export function DiariosClient() {
 
   if (loading) {
     return (
-      <div className="diarios-ui flex h-[calc(100dvh-3.5rem-60px)] items-center justify-center bg-muted/20 md:h-[calc(100dvh-3.5rem)]">
+      <div className="diarios-ui flex h-[calc(100dvh-3.5rem-60px)] items-center justify-center md:h-[calc(100dvh-3.5rem)]">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
@@ -181,6 +282,7 @@ export function DiariosClient() {
         operators={board.operators}
         initialOperatorIds={dutyFormAssignment.operatorIds}
         initialAssignToAll={dutyFormAssignment.assignToAll}
+        initialIsGeneral={dutyFormAssignment.isGeneral}
         saving={saving}
         onSubmit={handleDutySubmit}
       />
@@ -195,123 +297,199 @@ export function DiariosClient() {
         onConfirm={handleTransfer}
       />
 
-      <div
-        className={cn(
-          "diarios-ui flex h-[calc(100dvh-3.5rem-60px)] flex-col overflow-hidden",
-          "bg-[#e8eaed] dark:bg-muted/15 md:h-[calc(100dvh-3.5rem)]"
-        )}
-      >
-        <header className="diarios-toolbar shrink-0 border-b border-border/60 bg-background/90 px-3 py-2.5 backdrop-blur-sm md:px-5 md:py-3">
-          <div className="mx-auto flex max-w-[2200px] flex-wrap items-center gap-3 md:gap-4">
-            <div className="flex min-w-0 flex-1 items-center gap-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-brand/10 text-brand">
-                <ClipboardList className="h-4 w-4" />
-              </div>
-              <div className="min-w-0">
-                <h1 className="truncate text-base font-semibold tracking-tight md:text-lg">
-                  Diarios
-                </h1>
-                <p className="hidden text-xs text-muted-foreground sm:block">
-                  {canEdit
-                    ? "Arrastre tarjetas entre columnas · delegue o desligue al cambiar de puesto"
-                    : "Funciones obligatorias del equipo en Control Máster"}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2 text-xs">
-              <span className="rounded-md bg-muted/80 px-2.5 py-1 font-medium text-foreground">
-                {board.duties.length} catálogo
-              </span>
-              <span className="rounded-md bg-muted/80 px-2.5 py-1 text-muted-foreground">
-                {totalAssigned} asignadas
-              </span>
-              <span className="rounded-md bg-muted/80 px-2.5 py-1 text-muted-foreground">
-                {board.unassigned.length} sin asignar
-              </span>
-              <span className="rounded-md bg-muted/80 px-2.5 py-1 text-muted-foreground">
-                {board.operators.length} columnas
-              </span>
-            </div>
-
+      <div className="diarios-ui flex h-[calc(100dvh-3.5rem-60px)] flex-col overflow-hidden md:h-[calc(100dvh-3.5rem)]">
+        <header className="diarios-toolbar shrink-0 px-4 py-3 md:px-6">
+          <div className="flex items-center gap-3">
+            <h1 className="text-[15px] font-semibold tracking-tight text-foreground md:text-base">
+              Diarios
+            </h1>
+            <span className="hidden text-xs text-muted-foreground md:inline">
+              · {board.duties.length} funciones · {board.operators.length} personas
+            </span>
+            <div className="flex-1" />
             {canEdit && (
               <Button
-                className="h-9 shrink-0 gap-2 bg-brand text-white hover:bg-brand-hover"
+                size="sm"
+                className="h-8 gap-1.5 rounded-md bg-brand px-3 text-xs font-medium text-white hover:bg-brand-hover"
                 onClick={openCreateDuty}
                 disabled={saving}
               >
-                <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">Nueva función</span>
-                <span className="sm:hidden">Nueva</span>
+                <Plus className="h-3.5 w-3.5" />
+                Nueva función
               </Button>
             )}
           </div>
         </header>
 
-        <div className="diarios-board flex-1 min-h-0" role="region" aria-label="Tablero de funciones">
-          {board.operators.length === 0 && !canEdit ? (
-            <div className="flex h-full items-center justify-center p-8">
-              <p className="max-w-md text-center text-sm text-muted-foreground">
-                No hay perfiles en el tablero. Agregue usuarios (operador o admin) en
-                configuración.
-              </p>
+        {board.operators.length > 0 && (
+          <DiariosMobileColumnPicker
+            operators={board.operators}
+            selectedId={mobileOperatorId}
+            dutyCounts={operatorDutyCounts}
+            onSelect={handleMobileSelect}
+          />
+        )}
+
+        {board.operators.length === 0 && !canEdit ? (
+          <div className="flex flex-1 items-center justify-center p-8">
+            <p className="max-w-md text-center text-sm text-muted-foreground">
+              No hay perfiles en el tablero. Agregue usuarios (operador o admin) en
+              configuración.
+            </p>
+          </div>
+        ) : (
+          <>
+            <div
+              className="diarios-board hidden min-h-0 flex-1 md:block"
+              role="region"
+              aria-label="Tablero de funciones"
+            >
+              <div className="diarios-board-track" role="list" aria-label="Columnas del tablero">
+                {canEdit && (
+                  <DiariosUnassignedPanel
+                    duties={board.unassigned}
+                    operators={board.operators}
+                    dutySharedCounts={dutySharedCounts}
+                    canEdit={canEdit}
+                    draggingDutyId={draggingDutyId}
+                    dragSourceUserId={dragSource?.userId}
+                    onDropUnassigned={(dutyId) =>
+                      handleAssign(dutyId, null, dragSource?.userId ?? undefined)
+                    }
+                    onReorderAtIndex={(id, idx) => handleReorderAtIndex(null, id, idx)}
+                    onMoveUp={(id) => handleMoveUp(null, id)}
+                    onMoveDown={(id) => handleMoveDown(null, id)}
+                    onPriorityChange={handlePriorityChange}
+                    onMoveDutyTo={(id, uid) => handleMoveDutyTo(id, uid, null)}
+                    onEditDuty={openEditDuty}
+                    onDeleteDuty={setDeleteTarget}
+                    onAddDuty={openCreateDuty}
+                    onDragStartDuty={(dutyId) => {
+                      setDraggingDutyId(dutyId);
+                      setDragSource({ dutyId, userId: null });
+                    }}
+                    onDragEnd={endDrag}
+                  />
+                )}
+                {board.operators.map((op) => (
+                  <DiariosOperatorColumn
+                    key={op.id}
+                    operator={op}
+                    operators={board.operators}
+                    duties={board.byOperator[op.id] ?? []}
+                    dutySharedCounts={dutySharedCounts}
+                    canEdit={canEdit}
+                    draggingDutyId={draggingDutyId}
+                    dragSourceUserId={dragSource?.userId}
+                    onDropDuty={(dutyId, toUserId) =>
+                      handleAssign(dutyId, toUserId, dragSource?.userId ?? undefined)
+                    }
+                    onReorderAtIndex={(id, idx) => handleReorderAtIndex(op.id, id, idx)}
+                    onMoveUp={(id) => handleMoveUp(op.id, id)}
+                    onMoveDown={(id) => handleMoveDown(op.id, id)}
+                    onPriorityChange={handlePriorityChange}
+                    onMoveDutyTo={(id, uid) => handleMoveDutyTo(id, uid, op.id)}
+                    onEditDuty={openEditDuty}
+                    onDeleteDuty={setDeleteTarget}
+                    onUnassignAll={() => setUnassignTarget(op)}
+                    onDelegateAll={() => {
+                      setTransferFrom(op);
+                      setTransferOpen(true);
+                    }}
+                    onDragStartDuty={(dutyId, fromUserId) => {
+                      setDraggingDutyId(dutyId);
+                      setDragSource({ dutyId, userId: fromUserId });
+                    }}
+                    onDragEnd={endDrag}
+                  />
+                ))}
+              </div>
             </div>
-          ) : (
-            <div className="diarios-board-track" role="list" aria-label="Columnas del tablero">
-              {canEdit && (
-                <DiariosUnassignedPanel
-                  duties={board.unassigned}
-                  dutySharedCounts={dutySharedCounts}
-                  canEdit={canEdit}
-                  draggingDutyId={draggingDutyId}
-                  onDropUnassigned={(dutyId) =>
-                    handleAssign(dutyId, null, dragSource?.userId ?? undefined)
-                  }
-                  onEditDuty={openEditDuty}
-                  onDeleteDuty={setDeleteTarget}
-                  onAddDuty={openCreateDuty}
-                  onDragStartDuty={(dutyId) => {
-                    setDraggingDutyId(dutyId);
-                    setDragSource({ dutyId, userId: null });
-                  }}
-                  onDragEnd={() => {
-                    setDraggingDutyId(null);
-                    setDragSource(null);
-                  }}
-                />
-              )}
-              {board.operators.map((op) => (
-                <DiariosOperatorColumn
-                  key={op.id}
-                  operator={op}
-                  duties={board.byOperator[op.id] ?? []}
-                  dutySharedCounts={dutySharedCounts}
-                  canEdit={canEdit}
-                  isCurrentUser={currentUserId === op.id}
-                  draggingDutyId={draggingDutyId}
-                  onDropDuty={(dutyId, toUserId) =>
-                    handleAssign(dutyId, toUserId, dragSource?.userId ?? undefined)
-                  }
-                  onEditDuty={openEditDuty}
-                  onDeleteDuty={setDeleteTarget}
-                  onUnassignAll={() => setUnassignTarget(op)}
-                  onDelegateAll={() => {
-                    setTransferFrom(op);
-                    setTransferOpen(true);
-                  }}
-                  onDragStartDuty={(dutyId, fromUserId) => {
-                    setDraggingDutyId(dutyId);
-                    setDragSource({ dutyId, userId: fromUserId });
-                  }}
-                  onDragEnd={() => {
-                    setDraggingDutyId(null);
-                    setDragSource(null);
-                  }}
-                />
-              ))}
+
+            <div
+              className="diarios-board-mobile flex min-h-0 flex-1 flex-col overflow-hidden md:hidden"
+              role="region"
+              aria-label="Tablero móvil"
+            >
+              <div className="flex min-h-0 flex-1 gap-2 px-2 pb-2 pt-1">
+                {canEdit && (
+                  <DiariosUnassignedPanel
+                    duties={board.unassigned}
+                    operators={board.operators}
+                    dutySharedCounts={dutySharedCounts}
+                    canEdit={canEdit}
+                    draggingDutyId={draggingDutyId}
+                    dragSourceUserId={dragSource?.userId}
+                    onDropUnassigned={(dutyId) =>
+                      handleAssign(dutyId, null, dragSource?.userId ?? undefined)
+                    }
+                    onReorderAtIndex={(id, idx) => handleReorderAtIndex(null, id, idx)}
+                    onMoveUp={(id) => handleMoveUp(null, id)}
+                    onMoveDown={(id) => handleMoveDown(null, id)}
+                    onPriorityChange={handlePriorityChange}
+                    onMoveDutyTo={(id, uid) => handleMoveDutyTo(id, uid, null)}
+                    onEditDuty={openEditDuty}
+                    onDeleteDuty={setDeleteTarget}
+                    onAddDuty={openCreateDuty}
+                    onDragStartDuty={(dutyId) => {
+                      setDraggingDutyId(dutyId);
+                      setDragSource({ dutyId, userId: null });
+                    }}
+                    onDragEnd={endDrag}
+                  />
+                )}
+                {board.operators.map((op) => {
+                  const isActive = op.id === mobileOperatorId;
+                  return (
+                    <div
+                      key={op.id}
+                      id={`diarios-panel-${op.id}`}
+                      role="tabpanel"
+                      aria-labelledby={`diarios-tab-${op.id}`}
+                      className={cn(
+                        "flex min-h-0 min-w-0 flex-1 flex-col",
+                        !isActive && "hidden"
+                      )}
+                    >
+                      <DiariosOperatorColumn
+                        operator={op}
+                        operators={board.operators}
+                        duties={board.byOperator[op.id] ?? []}
+                        dutySharedCounts={dutySharedCounts}
+                        canEdit={canEdit}
+                        draggingDutyId={draggingDutyId}
+                        dragSourceUserId={dragSource?.userId}
+                        fullWidth
+                        onDropDuty={(dutyId, toUserId) =>
+                          handleAssign(dutyId, toUserId, dragSource?.userId ?? undefined)
+                        }
+                        onReorderAtIndex={(id, idx) =>
+                          handleReorderAtIndex(op.id, id, idx)
+                        }
+                        onMoveUp={(id) => handleMoveUp(op.id, id)}
+                        onMoveDown={(id) => handleMoveDown(op.id, id)}
+                        onPriorityChange={handlePriorityChange}
+                        onMoveDutyTo={(id, uid) => handleMoveDutyTo(id, uid, op.id)}
+                        onEditDuty={openEditDuty}
+                        onDeleteDuty={setDeleteTarget}
+                        onUnassignAll={() => setUnassignTarget(op)}
+                        onDelegateAll={() => {
+                          setTransferFrom(op);
+                          setTransferOpen(true);
+                        }}
+                        onDragStartDuty={(dutyId, fromUserId) => {
+                          setDraggingDutyId(dutyId);
+                          setDragSource({ dutyId, userId: fromUserId });
+                        }}
+                        onDragEnd={endDrag}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          )}
-        </div>
+          </>
+        )}
 
         {!canEdit && board.unassigned.length > 0 && (
           <div className="shrink-0 border-t border-border/60 bg-background/95 px-4 py-2 md:hidden">

@@ -74,6 +74,16 @@ async function bootstrapOperatorDutyTables() {
     CREATE INDEX IF NOT EXISTS "OperatorDutyAssignment_userId_idx"
       ON "OperatorDutyAssignment" ("userId")
   `;
+
+  await sql`
+    ALTER TABLE "OperatorDuty"
+    ADD COLUMN IF NOT EXISTS "priority" TEXT NOT NULL DEFAULT 'medium'
+  `;
+
+  await sql`
+    ALTER TABLE "OperatorDuty"
+    ADD COLUMN IF NOT EXISTS "isGeneral" BOOLEAN NOT NULL DEFAULT false
+  `;
 }
 
 export async function ensureOperatorDutyTables(): Promise<void> {

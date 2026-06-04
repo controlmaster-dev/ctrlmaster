@@ -1,8 +1,12 @@
+import type { DiariosPriority } from "@/lib/diariosPriority";
+
 export type OperatorDuty = {
   id: string;
   title: string;
   description: string | null;
   sortOrder: number;
+  priority: DiariosPriority;
+  isGeneral: boolean;
   createdAt: string;
   updatedAt: string;
 };
