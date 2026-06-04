@@ -66,8 +66,8 @@ export function ReportesFiltersBar({
 
   return (
     <BentoCard variant="default" className="p-4">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-        <div className="relative flex-1">
+      <div className="flex flex-col gap-3">
+        <div className="relative min-w-0 flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Buscar por ID, operador o descripción…"
@@ -80,8 +80,8 @@ export function ReportesFiltersBar({
           />
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex overflow-hidden rounded-md border border-border bg-muted/15">
+        <div className="-mx-1 overflow-x-auto px-1 pb-0.5">
+          <div className="flex w-max min-w-full overflow-hidden rounded-md border border-border bg-muted/15">
             {["all", "Enlace", "EJTV", "Enlace USA"].map((filter, i, arr) => (
               <button
                 key={filter}
@@ -90,13 +90,15 @@ export function ReportesFiltersBar({
                   onPriorityFilterChange(filter);
                   resetPage();
                 }}
-                className={`px-3 py-1.5 text-xs font-medium transition-colors ${i < arr.length - 1 ? "border-r border-border" : ""} ${filterChip(priorityFilter === filter)}`}
+                className={`shrink-0 whitespace-nowrap px-3 py-1.5 text-xs font-medium transition-colors ${i < arr.length - 1 ? "border-r border-border" : ""} ${filterChip(priorityFilter === filter)}`}
               >
                 {filter === "all" ? "Todos" : filter}
               </button>
             ))}
           </div>
+        </div>
 
+        <div className="flex flex-wrap items-center gap-2">
           <Select
             value={statusFilter}
             onValueChange={(v) => {
@@ -104,7 +106,7 @@ export function ReportesFiltersBar({
               resetPage();
             }}
           >
-            <SelectTrigger className="h-9 w-[140px] rounded-md border-border bg-muted/20 text-xs">
+            <SelectTrigger className="h-9 min-w-[8.5rem] flex-1 rounded-md border-border bg-muted/20 text-xs sm:w-[140px] sm:flex-none">
               <SelectValue placeholder="Estado" />
             </SelectTrigger>
             <SelectContent>
