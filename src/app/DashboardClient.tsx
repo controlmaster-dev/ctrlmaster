@@ -3,17 +3,9 @@
 import React, { useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import {
   CheckCircle,
   Clock,
   Activity,
-  Cake,
 } from "lucide-react";
 import type { Report } from "@/types/report";
 import type { ReportDetail } from "@/components/ReportDetailModal";

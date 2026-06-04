@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { connectMongo } from "@/lib/mongo";
 import { fetchWithTimeout } from "@/lib/fetch";
 import mongoose from "mongoose";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(_req: NextRequest) {
+export async function GET() {
   const checks: Record<string, { status: "ok" | "error" | "degraded"; message?: string }> = {};
   let overallStatus: "healthy" | "degraded" | "unhealthy" = "healthy";
 
