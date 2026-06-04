@@ -1,28 +1,23 @@
 "use client";
 
 import { useCallback, useState, useEffect, useMemo } from "react";
-import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
-  LogIn,
   Calendar,
   Download,
-  Home,
   Copy,
   Check,
 } from "lucide-react";
-import Link from "next/link";
 import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { WeeklyCalendar } from "@/components/WeeklyCalendar";
 import { AllDayWidget } from "@/components/AllDayWidget";
 import { OperatorCard } from "@/components/operadores/OperatorCard";
 import { useAuth } from "@/contexts/AuthContext";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { Operator, Shift } from "@/lib/types";
 import { toast } from "sonner";
 import { OperadoresPageSkeleton } from "@/components/skeletons/OperadoresPageSkeleton";
-import { pageHeaderBarClass, pageMainClass } from "@/lib/page-layout";
+import { pageMainClass } from "@/lib/page-layout";
 import { getSundayWeekStart } from "@/lib/weekUtils";
 import {
   countOperatorsOnDuty,
@@ -72,18 +67,18 @@ export default function OperatorsPage() {
   const { operators, specialEvents, isReady } = useOperadoresBundle(currentRealWeek);
   const todayIdx = getCurrentDayIndex();
   const currentHour = getCurrentHourDecimal();
-  const nextOperatorId = useMemo(
-    () => getNextOperatorId(operators, todayIdx, currentHour),
-    [operators, todayIdx, currentHour, scheduleTick]
-  );
-  const onDutyCount = useMemo(
-    () => countOperatorsOnDuty(operators, todayIdx, currentHour),
-    [operators, todayIdx, currentHour, scheduleTick]
-  );
-  const displayedOperators = useMemo(
-    () => sortOperators(operators),
-    [operators, scheduleTick]
-  );
+  const nextOperatorId = useMemo(() => {
+    void scheduleTick;
+    return getNextOperatorId(operators, todayIdx, currentHour);
+  }, [operators, todayIdx, currentHour, scheduleTick]);
+  const onDutyCount = useMemo(() => {
+    void scheduleTick;
+    return countOperatorsOnDuty(operators, todayIdx, currentHour);
+  }, [operators, todayIdx, currentHour, scheduleTick]);
+  const displayedOperators = useMemo(() => {
+    void scheduleTick;
+    return sortOperators(operators);
+  }, [operators, scheduleTick]);
   const { operators: modalOperators, isReady: modalReady } =
     useOperadoresWeek(modalWeekStart);
   const eventsList = specialEvents as SpecialEvent[];

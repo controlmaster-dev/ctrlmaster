@@ -54,11 +54,6 @@ export function DiariosClient() {
   const [deleteTarget, setDeleteTarget] = useState<OperatorDuty | null>(null);
   const [unassignTarget, setUnassignTarget] = useState<DiariosOperator | null>(null);
 
-  const totalAssigned = useMemo(
-    () => board.assignments.length,
-    [board.assignments.length]
-  );
-
   const dutySharedCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const a of board.assignments) {
