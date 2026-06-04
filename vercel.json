@@ -1,4 +1,9 @@
 {
+  "build": {
+    "env": {
+      "NODE_OPTIONS": "--max-old-space-size=3072"
+    }
+  },
   "crons": [
     {
       "path": "/api/cron/shift-reminders",

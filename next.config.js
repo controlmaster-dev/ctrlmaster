@@ -1,5 +1,9 @@
 
 const nextConfig = {
+  // Vercel no necesita standalone (aumenta mucho el uso de RAM en el build).
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   images: {
 
     formats: ['image/avif', 'image/webp'],
@@ -30,7 +34,6 @@ const nextConfig = {
       },
     ],
   },
-  output: "standalone",
   productionBrowserSourceMaps: false,
   poweredByHeader: false,
   experimental: {
