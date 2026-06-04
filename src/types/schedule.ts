@@ -1,9 +1,4 @@
 
-
-
-import type { User } from './auth';
-
-
 export enum DayOfWeek {
   SUNDAY = 0,
   MONDAY = 1,

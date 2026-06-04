@@ -190,14 +190,6 @@ export function useDiariosBoard(enabled = true) {
     });
   }, []);
 
-  const optimisticAddDuty = useCallback((duty: DiariosBoardDto["duties"][0]) => {
-    setBoard((prev) => ({
-      ...prev,
-      duties: [...prev.duties, duty],
-      unassigned: [...prev.unassigned, duty],
-    }));
-  }, []);
-
   const optimisticReorderColumn = useCallback(
     (userId: string | null, dutyIds: string[]) => {
       setBoard((prev) => {

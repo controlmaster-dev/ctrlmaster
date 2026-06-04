@@ -118,10 +118,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const interval = window.setInterval(refreshSession, 15 * 60 * 1000);
     return () => window.clearInterval(interval);
-  }, [user?.id]);
+  }, [user]);
 
 
-  const login = async (userData: User, _token?: string) => {
+  const login = async (userData: User) => {
     setUser(userData);
     localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
   };

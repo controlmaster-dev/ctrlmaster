@@ -1,8 +1,8 @@
 
 
 
-import { format, parseISO, isValid, startOfDay, endOfDay, startOfWeek, endOfWeek, differenceInDays, differenceInHours, differenceInMinutes, addDays, addHours, addMinutes } from 'date-fns';
-import { formatInTimeZone, toDate } from 'date-fns-tz';
+import { format, parseISO, isValid, startOfDay, endOfDay, startOfWeek, endOfWeek, differenceInDays, differenceInHours, differenceInMinutes, addDays, addHours } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 import { es } from 'date-fns/locale';
 
 const TIMEZONE = 'America/Costa_Rica';

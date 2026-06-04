@@ -1,4 +1,4 @@
-import { CheckCircle, Eye, ThumbsUp, type LucideIcon } from "lucide-react";
+import { CheckCircle, Eye, ThumbsUp } from "lucide-react";
 
 export const REPORT_REACTIONS = [
   { id: "useful", label: "Útil", Icon: ThumbsUp },

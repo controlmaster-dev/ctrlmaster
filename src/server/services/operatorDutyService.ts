@@ -15,7 +15,6 @@ import {
   reorderAssignmentsForUser,
   reorderUnassignedDuties,
   setDutyAssignments,
-  transferAllDuties,
   unassignDutyAll,
   unassignDutyFromUser,
   updateDuty,
@@ -127,10 +126,9 @@ async function syncGeneralDutyAssignments(
 }
 
 export async function getDiariosBoard(): Promise<DiariosBoardDto> {
-  const [operators, dutiesRaw, assignmentsRaw] = await Promise.all([
+  const [operators, dutiesRaw] = await Promise.all([
     listDiariosProfiles(),
     listAllDuties(),
-    listAllAssignments(),
   ]);
 
   const duties = dutiesRaw.map(mapDuty);
