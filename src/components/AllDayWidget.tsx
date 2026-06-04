@@ -136,18 +136,25 @@ function DayShiftList({
 export function AllDayWidget({ operators, specialEvents = [] }: AllDayWidgetProps) {
   const scheduleTick = useScheduleClock();
 
-  const todayOperators = useMemo(
-    () => getDayOperators(operators, 0),
-    [operators, scheduleTick]
-  );
-  const tomorrowOperators = useMemo(
-    () => getDayOperators(operators, 1),
-    [operators, scheduleTick]
-  );
-  const todayLabel = useMemo(() => formatCostaRicaDayLabel(0), [scheduleTick]);
-  const tomorrowLabel = useMemo(() => formatCostaRicaDayLabel(1), [scheduleTick]);
+  const todayOperators = useMemo(() => {
+    void scheduleTick;
+    return getDayOperators(operators, 0);
+  }, [operators, scheduleTick]);
+  const tomorrowOperators = useMemo(() => {
+    void scheduleTick;
+    return getDayOperators(operators, 1);
+  }, [operators, scheduleTick]);
+  const todayLabel = useMemo(() => {
+    void scheduleTick;
+    return formatCostaRicaDayLabel(0);
+  }, [scheduleTick]);
+  const tomorrowLabel = useMemo(() => {
+    void scheduleTick;
+    return formatCostaRicaDayLabel(1);
+  }, [scheduleTick]);
 
   const activeEvent = useMemo(() => {
+    void scheduleTick;
     const now = new Date();
     return specialEvents.find((e) => {
       if (!e.isActive) return false;
