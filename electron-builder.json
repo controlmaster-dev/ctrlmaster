@@ -11,9 +11,17 @@
   ],
   "mac": {
     "target": [
-      "dmg"
+      {
+        "target": "zip",
+        "arch": ["x64"]
+      },
+      {
+        "target": "dir",
+        "arch": ["x64"]
+      }
     ],
-    "category": "public.app-category.productivity"
+    "category": "public.app-category.productivity",
+    "minimumSystemVersion": "10.13.0"
   },
   "win": {
     "target": [
