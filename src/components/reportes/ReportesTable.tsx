@@ -7,7 +7,6 @@ import {
   Send,
   MessageSquare,
   ThumbsUp,
-  Zap,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -31,7 +30,6 @@ import { ReportesStatusBadge } from "@/components/reportes/ReportesStatusBadge";
 import { splitCategoryLabels } from "@/components/reportes/reportTableUi";
 import { prefetchReportDetail } from "@/lib/reportDetailCache";
 import { formatReportDisplayId } from "@/lib/reportCode";
-import { cn } from "@/lib/utils";
 import type { Report } from "@/components/reportes/reportes-types";
 
 type ReportesTableProps = {

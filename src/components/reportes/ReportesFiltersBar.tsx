@@ -126,7 +126,7 @@ export function ReportesFiltersBar({
           <Button
             variant="outline"
             size="icon"
-            className="h-9 w-9 rounded-md border-border"
+            className={`h-9 w-9 rounded-md border-border ${showStats ? "bg-muted" : ""}`}
             onClick={onToggleStats}
             title="Estadísticas"
           >

@@ -111,11 +111,13 @@ export function WeeklyCalendar({
   }, [currentWeekStart, onWeekChange]);
 
   const isCurrentRealWeek = useMemo(() => {
+    void scheduleTick;
     const todayCr = getCostaRicaDateString();
     return weekDates.some((wd) => wd.fullDate === todayCr);
   }, [weekDates, scheduleTick]);
 
   const nextShiftSlot = useMemo(() => {
+    void scheduleTick;
     if (!isCurrentRealWeek) return null;
     return getNextShiftSlot(operators, todayIdx, currentHour);
   }, [operators, todayIdx, currentHour, isCurrentRealWeek, scheduleTick]);
