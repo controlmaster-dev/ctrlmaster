@@ -2,9 +2,6 @@
   "name": "control-master",
   "version": "0.1.0",
   "private": true,
-  "engines": {
-    "node": "20.x"
-  },
   "main": "electron/main.js",
   "scripts": {
     "dev": "next dev -H 0.0.0.0 --turbopack",
