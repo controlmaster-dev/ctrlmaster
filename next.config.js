@@ -4,6 +4,10 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  typescript: {
+    // En Vercel el paso `tsc` del build supera ~3GB; el chequeo sigue en `npm run typecheck`.
+    ignoreBuildErrors: process.env.VERCEL === "1",
+  },
   images: {
 
     formats: ['image/avif', 'image/webp'],

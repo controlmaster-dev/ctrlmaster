@@ -37,6 +37,12 @@
   ],
   "exclude": [
     "node_modules",
-    "monorepo-wsp"
+    "monorepo-wsp",
+    "tests",
+    "scripts",
+    "electron",
+    "dist",
+    "dist-desktop",
+    ".next"
   ]
 }

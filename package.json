@@ -2,6 +2,9 @@
   "name": "control-master",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "20.x"
+  },
   "main": "electron/main.js",
   "scripts": {
     "dev": "next dev -H 0.0.0.0 --turbopack",
@@ -9,7 +12,7 @@
     "start": "next start",
     "electron:dev": "NODE_ENV=development electron .",
     "electron:build": "electron-builder",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
     "lint": "npm run typecheck && npx eslint .",
     "test": "node --import tsx --import ./tests/setup.ts --test tests/**/*.test.ts",
     "migrate:report-codes": "tsx scripts/migrate-report-codes.ts",
