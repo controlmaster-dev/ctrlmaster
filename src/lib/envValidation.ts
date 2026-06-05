@@ -1,7 +1,5 @@
-const PRODUCTION_REQUIRED_STRING_VARS = [
-  'CRON_SECRET',
-  'CREDENTIALS_ENC_KEY',
-] as const;
+// CRON_SECRET se valida solo al invocar rutas /api/cron/* (requireCronAuth).
+const PRODUCTION_REQUIRED_STRING_VARS = ['CREDENTIALS_ENC_KEY'] as const;
 
 function resolveMongoUri(): string | undefined {
   return process.env.MONGODB_URI || process.env.MONGO_URI;

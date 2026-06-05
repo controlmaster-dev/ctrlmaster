@@ -49,8 +49,21 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Error al iniciar sesión");
+      const contentType = res.headers.get("content-type") ?? "";
+      const data = contentType.includes("application/json")
+        ? await res.json()
+        : null;
+      if (!res.ok) {
+        const fallback =
+          res.status >= 500
+            ? "El servidor no respondió correctamente. Revisa variables de entorno en Vercel (MONGODB_URI, CREDENTIALS_ENC_KEY)."
+            : "Error al iniciar sesión";
+        throw new Error(
+          data && typeof data === "object" && "error" in data
+            ? String((data as { error: string }).error)
+            : fallback
+        );
+      }
 
       toast.success(`¡Bienvenido de vuelta, ${data.name?.split(" ")[0] || "usuario"}!`, {
         description: "Sesión iniciada correctamente.",

@@ -30,8 +30,8 @@ describe('envValidation', () => {
 
     const errors = getProductionEnvErrors();
     assert.ok(errors.some((error) => error.includes('MONGODB_URI')));
-    assert.ok(errors.some((error) => error.includes('CRON_SECRET')));
     assert.ok(errors.some((error) => error.includes('CREDENTIALS_ENC_KEY')));
+    assert.ok(!errors.some((error) => error.includes('CRON_SECRET')));
   });
 
   it('skips validation during next production build phase', () => {

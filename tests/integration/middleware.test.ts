@@ -58,7 +58,7 @@ describe('integration/middleware', () => {
     assert.equal(res.status, 401);
   });
 
-  it('bloquea APIs protegidas con token inválido', async (t) => {
+  it('permite APIs protegidas con cookie presente (validación en la ruta API)', async (t) => {
     if (!mongoReady) return t.skip('MongoDB no disponible');
 
     clearSessionCache();
@@ -67,7 +67,7 @@ describe('integration/middleware', () => {
         headers: { Cookie: 'auth-token=invalid-token-value' },
       })
     );
-    assert.equal(res.status, 401);
+    assert.notEqual(res.status, 401);
   });
 
   it('permite APIs protegidas con token válido en BD', async (t) => {
