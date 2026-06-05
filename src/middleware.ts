@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { hasAuthCookies } from '@/lib/authCookies';
 
 const PUBLIC_ROUTES = [
   '/login',
@@ -20,63 +19,47 @@ const PUBLIC_API_ROUTES = [
   '/api/health',
 ];
 
-const SECURITY_HEADERS = {
+const SECURITY_HEADERS: Record<string, string> = {
   'X-Frame-Options': 'DENY',
   'X-Content-Type-Options': 'nosniff',
   'X-XSS-Protection': '1; mode=block',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'Permissions-Policy':
     'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
-} as const;
+};
 
-function pathMatches(path: string, patterns: string[]): boolean {
-  return patterns.some((pattern) => {
-    if (path === pattern) return true;
-    if (path.startsWith(pattern + '/')) return true;
-    return false;
-  });
+function pathMatches(path: string, patterns: readonly string[]): boolean {
+  for (const pattern of patterns) {
+    if (path === pattern || path.startsWith(`${pattern}/`)) {
+      return true;
+    }
+  }
+  return false;
 }
 
-function isPublicApiRoute(pathname: string): boolean {
-  return pathMatches(pathname, PUBLIC_API_ROUTES);
+function hasAuthCookie(request: NextRequest): boolean {
+  const token = request.cookies.get('auth-token')?.value;
+  return typeof token === 'string' && token.length > 0;
 }
 
-function isPublicRoute(pathname: string): boolean {
-  return pathMatches(pathname, PUBLIC_ROUTES);
-}
-
-function isApiRoute(pathname: string): boolean {
-  return pathname.startsWith('/api/');
-}
-
-function hasCronSecret(request: NextRequest): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return false;
-  return request.headers.get('authorization') === `Bearer ${secret}`;
-}
-
-function jsonApiResponse(
-  body: { error: string },
-  status: number
-): NextResponse {
-  return NextResponse.json(body, {
-    status,
-    headers: SECURITY_HEADERS,
-  });
-}
-
-function unauthorizedApiResponse(): NextResponse {
-  return jsonApiResponse(
-    { error: 'No autorizado. Inicia sesión nuevamente.' },
-    401
-  );
+function applySecurityHeaders(response: NextResponse): NextResponse {
+  for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
+    response.headers.set(key, value);
+  }
+  if (process.env.NODE_ENV === 'production') {
+    response.headers.set(
+      'Strict-Transport-Security',
+      'max-age=31536000; includeSubDomains; preload'
+    );
+  }
+  return response;
 }
 
 /**
- * Edge-compatible: solo comprueba presencia de cookie.
- * La validación contra MongoDB ocurre en apiHandler / validateApiAuth.
+ * Edge-only: sin imports @/ ni Mongoose.
+ * La validación de token en BD ocurre en las rutas API (apiHandler).
  */
-export async function middleware(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (
@@ -84,44 +67,43 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/_static') ||
     pathname.startsWith('/favicon') ||
     pathname.startsWith('/manifest') ||
-    pathname.startsWith('/uploads')
+    pathname.startsWith('/uploads') ||
+    pathname.startsWith('/fonts') ||
+    pathname.startsWith('/icons') ||
+    /\.(?:png|jpe?g|gif|svg|ico|webp|woff2?|ttf|pdf)$/i.test(pathname)
   ) {
     return NextResponse.next();
   }
 
   const isPublic =
-    isPublicRoute(pathname) ||
-    isPublicApiRoute(pathname) ||
-    (pathname.startsWith('/api/cron/') && hasCronSecret(request));
+    pathMatches(pathname, PUBLIC_ROUTES) ||
+    pathMatches(pathname, PUBLIC_API_ROUTES) ||
+    (pathname.startsWith('/api/cron/') &&
+      process.env.CRON_SECRET &&
+      request.headers.get('authorization') ===
+        `Bearer ${process.env.CRON_SECRET}`);
 
-  if (!isPublic && !hasAuthCookies(request)) {
-    if (isApiRoute(pathname)) {
-      return unauthorizedApiResponse();
+  if (!isPublic && !hasAuthCookie(request)) {
+    if (pathname.startsWith('/api/')) {
+      return applySecurityHeaders(
+        NextResponse.json(
+          { error: 'No autorizado. Inicia sesión nuevamente.' },
+          { status: 401 }
+        )
+      );
     }
 
-    const loginUrl = new URL('/login', request.nextUrl.origin);
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = '/login';
     loginUrl.searchParams.set('callbackUrl', pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  const response = NextResponse.next();
-
-  Object.entries(SECURITY_HEADERS).forEach(([key, value]) => {
-    response.headers.set(key, value);
-  });
-
-  if (process.env.NODE_ENV === 'production') {
-    response.headers.set(
-      'Strict-Transport-Security',
-      'max-age=31536000; includeSubDomains; preload'
-    );
-  }
-
-  return response;
+  return applySecurityHeaders(NextResponse.next());
 }
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon|manifest|uploads).*)',
+    '/((?!_next/static|_next/image|favicon.ico|manifest.json|uploads|fonts|icons).*)',
   ],
 };
