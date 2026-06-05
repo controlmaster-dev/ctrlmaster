@@ -17,7 +17,7 @@
     "lint": "npm run typecheck && npm run lint:eslint",
     "lint:eslint": "eslint .",
     "audit:ci": "npm audit --audit-level=high",
-    "ci": "npm run lint:eslint && npm run typecheck && npm test && npm run audit:ci",
+    "ci": "npm run lint:eslint && npm test && npm run audit:ci",
     "test": "node scripts/run-tests.mjs",
     "test:integration": "node --import tsx --import ./tests/setup.ts --test tests/integration/auth.test.ts tests/integration/comments.test.ts tests/integration/credentials.test.ts tests/integration/middleware.test.ts tests/integration/reports.test.ts tests/integration/upload.test.ts",
     "migrate:report-codes": "tsx scripts/migrate-report-codes.ts",

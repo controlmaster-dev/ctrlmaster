@@ -102,7 +102,9 @@ Patrón de rutas y capas: [`src/lib/api/README.md`](src/lib/api/README.md).
 
 ## CI
 
-En cada push/PR a `main` corre ESLint, typecheck (con heap ampliado), tests con MongoDB 7 en replica set, audit de dependencias (falla en vulnerabilidades high) y build.
+En cada push/PR a `main` corre ESLint, tests con MongoDB 7 en replica set, audit de dependencias (falla en vulnerabilidades high) y build.
+
+El `tsc` completo (`npm run typecheck`) no corre en GitHub Actions: el proyecto supera la RAM del runner (~7 GB). Ejecútalo en local antes de mergear, o en una máquina con más memoria.
 
 ```bash
 npm run ci
