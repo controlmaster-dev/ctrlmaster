@@ -1,0 +1,18 @@
+{
+  "installCommand": "npm install && npm uninstall electron electron-builder --no-save",
+  "build": {
+    "env": {
+      "NODE_OPTIONS": "--max-old-space-size=6144"
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/shift-reminders",
+      "schedule": "15 17 * * *"
+    },
+    {
+      "path": "/api/cron/cleanup-tokens",
+      "schedule": "0 9 * * *"
+    }
+  ]
+}

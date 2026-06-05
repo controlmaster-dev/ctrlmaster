@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configurar Control Master</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #07090e;
+      --card-bg: rgba(13, 18, 30, 0.45);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --accent-color: #3b82f6;
+      --accent-glow: rgba(59, 130, 246, 0.5);
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --gradient-primary: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      --gradient-radial: radial-gradient(circle at center, rgba(30, 41, 59, 0.8) 0%, rgba(7, 9, 14, 1) 100%);
+      --success-color: #10b981;
+      --error-color: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--bg-dark);
+      background-image: var(--gradient-radial);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      position: relative;
+      -webkit-app-region: drag;
+    }
+
+    .card, .btn, .back-btn, input {
+      -webkit-app-region: no-drag !important;
+    }
+
+    /* Fondo animado de partículas / orbes */
+    .bg-glow {
+      position: absolute;
+      width: 500px;
+      height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, rgba(59, 130, 246, 0) 70%);
+      top: -100px;
+      right: -100px;
+      z-index: 0;
+      animation: float 20s infinite alternate ease-in-out;
+    }
+
+    .bg-glow-2 {
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.06) 0%, rgba(99, 102, 241, 0) 70%);
+      bottom: -150px;
+      left: -150px;
+      z-index: 0;
+      animation: float 25s infinite alternate-reverse ease-in-out;
+    }
+
+    @keyframes float {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(50px, 30px) scale(1.1); }
+    }
+
+    /* Contenedor principal estilo Glassmorphism */
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 520px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), 
+                  inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      z-index: 10;
+      animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .header-logo {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .logo-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent-color);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+      background: linear-gradient(120deg, #ffffff 30%, #93c5fd 90%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-align: center;
+    }
+
+    p.subtitle {
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--text-muted);
+      margin-bottom: 32px;
+      text-align: center;
+    }
+
+    /* Formulario */
+    .form-group {
+      margin-bottom: 24px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 8px;
+      text-align: left;
+    }
+
+    .input-wrapper {
+      position: relative;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 14px 16px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1.5px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 14px;
+      color: var(--text-main);
+      outline: none;
+      transition: all 0.2s ease;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    input[type="text"]:focus {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: var(--accent-color);
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.15),
+                  inset 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .input-hint {
+      display: block;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 8px;
+      text-align: left;
+    }
+
+    /* Alertas */
+    .alert {
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      line-height: 1.4;
+      margin-bottom: 24px;
+      display: none;
+      text-align: left;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .alert-success {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      color: var(--success-color);
+    }
+
+    .alert-error {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      color: var(--error-color);
+    }
+
+    /* Botón de Guardado */
+    .btn {
+      width: 100%;
+      padding: 16px 28px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      color: #ffffff;
+      background: var(--gradient-primary);
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      outline: none;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 4px 15px var(--accent-glow);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px var(--accent-glow);
+      filter: brightness(1.1);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #ffffff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: none;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .back-btn {
+      display: block;
+      text-align: center;
+      margin-top: 20px;
+      font-size: 13px;
+      color: var(--text-muted);
+      text-decoration: none;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    .back-btn:hover {
+      color: var(--accent-color);
+    }
+
+    .footer {
+      position: absolute;
+      bottom: 24px;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.2);
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg-glow"></div>
+  <div class="bg-glow-2"></div>
+
+  <div class="card">
+    <div class="header-logo">
+      <div class="logo-badge">Configuración</div>
+      <h1>Control Master</h1>
+      <p class="subtitle">Conecta tu aplicación de escritorio con tu servidor en la nube (Vercel) para sincronizar datos y operar de manera remota.</p>
+    </div>
+
+    <div class="alert alert-success" id="success-alert"></div>
+    <div class="alert alert-error" id="error-alert"></div>
+
+    <div class="form-group">
+      <label for="url-input">Dirección URL de Producción</label>
+      <div class="input-wrapper">
+        <input type="text" id="url-input" placeholder="https://controlmaster-dev.vercel.app" autocomplete="off" spellcheck="false">
+      </div>
+      <span class="input-hint">Ingresa la dirección web completa de tu despliegue en Vercel o tu dominio personalizado.</span>
+    </div>
+
+    <button class="btn" id="save-btn" onclick="saveUrl()">
+      <span class="spinner" id="spinner"></span>
+      <span id="btn-text">Guardar y Conectar</span>
+    </button>
+
+    <a class="back-btn" id="back-link" onclick="goBack()" style="display: none;">Volver atrás</a>
+  </div>
+
+  <div class="footer">Control Master Desktop v1.0.0</div>
+
+  <script>
+    // Al cargar, consultar si ya tenemos una URL
+    window.onload = function() {
+      if (window.electronAPI) {
+        window.electronAPI.getCurrentUrl();
+        
+        window.electronAPI.onGetCurrentUrlResponse((response) => {
+          if (response && response.serverUrl) {
+            document.getElementById('url-input').value = response.serverUrl;
+            // Mostrar botón volver si ya tenemos una URL configurada (significa que el usuario entró a editar)
+            document.getElementById('back-link').style.display = 'block';
+          }
+        });
+
+        window.electronAPI.onSaveServerUrlResponse((response) => {
+          const btn = document.getElementById('save-btn');
+          const text = document.getElementById('btn-text');
+          const spinner = document.getElementById('spinner');
+          const successAlert = document.getElementById('success-alert');
+          const errorAlert = document.getElementById('error-alert');
+
+          // Desactivar cargando
+          btn.disabled = false;
+          spinner.style.display = 'none';
+          text.textContent = 'Guardar y Conectar';
+
+          if (response.success) {
+            errorAlert.style.display = 'none';
+            successAlert.textContent = response.message;
+            successAlert.style.display = 'block';
+            
+            // Cerrar la ventana de setup y navegar al cabo de 1 segundo
+            setTimeout(() => {
+              // El proceso principal de Electron se encarga de recargar a la nueva URL
+            }, 1000);
+          } else {
+            successAlert.style.display = 'none';
+            errorAlert.textContent = response.message;
+            errorAlert.style.display = 'block';
+          }
+        });
+      }
+    };
+
+    function saveUrl() {
+      const urlInput = document.getElementById('url-input').value.trim();
+      const btn = document.getElementById('save-btn');
+      const text = document.getElementById('btn-text');
+      const spinner = document.getElementById('spinner');
+      const successAlert = document.getElementById('success-alert');
+      const errorAlert = document.getElementById('error-alert');
+
+      if (!urlInput) {
+        successAlert.style.display = 'none';
+        errorAlert.textContent = 'Por favor, ingresa una URL válida.';
+        errorAlert.style.display = 'block';
+        return;
+      }
+
+      // Activar cargando
+      btn.disabled = true;
+      spinner.style.display = 'inline-block';
+      text.textContent = 'Conectando...';
+
+      if (window.electronAPI) {
+        window.electronAPI.saveServerUrl(urlInput);
+      } else {
+        // Modo navegador (mock)
+        setTimeout(() => {
+          btn.disabled = false;
+          spinner.style.display = 'none';
+          text.textContent = 'Guardar y Conectar';
+          successAlert.textContent = 'URL simulada correctamente (Modo desarrollo navegador).';
+          successAlert.style.display = 'block';
+        }, 1000);
+      }
+    }
+
+    function goBack() {
+      if (window.electronAPI) {
+        window.electronAPI.retryConnection();
+      }
+    }
+  </script>
+</body>
+</html>
