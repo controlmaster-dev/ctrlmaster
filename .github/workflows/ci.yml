@@ -32,9 +32,15 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npm run typecheck
+      # App y tests por separado: menos pico de RAM (runner ≈ 7 GB).
+      - name: Typecheck app
+        run: npm run typecheck:app
         env:
-          TYPECHECK_HEAP_MB: 8192
+          NODE_OPTIONS: --max-old-space-size=5632
+      - name: Typecheck tests
+        run: npm run typecheck:tests
+        env:
+          NODE_OPTIONS: --max-old-space-size=3072
 
   test:
     name: Tests
