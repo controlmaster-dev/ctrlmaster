@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { hasAuthCookies as hasAuthCookiesEdge } from "@/lib/authCookies";
 import { validateSessionToken } from "@/lib/auth";
 import { isTransientDbError } from "@/lib/dbErrors";
 
@@ -41,10 +42,8 @@ export function clearSessionCache(): void {
   sessionCache.clear();
 }
 
-/** Comprueba que exista la cookie de sesión (sin ir a la BD). */
-export function hasAuthCookies(request: NextRequest): boolean {
-  return Boolean(request.cookies.get("auth-token")?.value);
-}
+/** Re-export para tests y código server; implementación edge-safe en authCookies. */
+export const hasAuthCookies = hasAuthCookiesEdge;
 
 export type SessionValidationResult =
   | { ok: true }
