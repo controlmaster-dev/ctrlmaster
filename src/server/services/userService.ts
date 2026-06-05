@@ -305,9 +305,12 @@ export async function updateUserAccount(data: UpdateUserScheduleInput) {
     finalTempScheduleString = JSON.stringify(scheduleMap);
   }
 
+  const { password, ...rest } = data;
+
   return updateUser({
-    ...data,
+    ...rest,
     tempSchedule: finalTempScheduleString,
+    ...(password ? { password: await hashPassword(password) } : {}),
   });
 }
 

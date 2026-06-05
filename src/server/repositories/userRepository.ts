@@ -60,6 +60,7 @@ export type UpdateUserData = {
   id: string;
   name?: string;
   email?: string;
+  password?: string;
   role?: UserRole;
   image?: string;
   birthday?: string;
@@ -171,6 +172,7 @@ export async function updateUser(data: UpdateUserData) {
   const patch: Record<string, unknown> = {};
   if (data.name !== undefined) patch.name = data.name;
   if (data.email !== undefined) patch.email = data.email;
+  if (data.password !== undefined) patch.password = data.password;
   if (data.role !== undefined) patch.role = data.role;
   if (data.image !== undefined) patch.image = data.image;
   if (data.birthday !== undefined) patch.birthday = data.birthday;

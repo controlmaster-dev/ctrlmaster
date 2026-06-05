@@ -22,6 +22,8 @@
     "test:integration": "node --import tsx --import ./tests/setup.ts --test tests/integration/auth.test.ts tests/integration/comments.test.ts tests/integration/credentials.test.ts tests/integration/middleware.test.ts tests/integration/reports.test.ts tests/integration/upload.test.ts",
     "migrate:report-codes": "tsx scripts/migrate-report-codes.ts",
     "migrate:report-codes:dry": "tsx scripts/migrate-report-codes.ts --dry-run",
+    "migrate:passwords": "tsx scripts/migrate-passwords.ts",
+    "migrate:passwords:dry": "tsx scripts/migrate-passwords.ts --dry-run",
     "db:indexes": "tsx scripts/mongo-create-indexes.ts",
     "db:health": "tsx scripts/db-health.ts",
     "format": "npx biome format --write",

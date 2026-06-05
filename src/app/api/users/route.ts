@@ -30,6 +30,7 @@ const updateUserSchema = z.object({
   id: z.string().min(1, 'ID de usuario es requerido'),
   name: z.string().min(2).optional(),
   email: z.string().email().optional(),
+  password: z.string().min(6, 'La contrasena debe tener al menos 6 caracteres').optional(),
   role: z.enum(['ADMIN', 'BOSS', 'ENGINEER', 'OPERATOR']).optional(),
   image: z.string().optional(),
   birthday: z.string().optional(),
