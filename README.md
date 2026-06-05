@@ -42,11 +42,13 @@ Copia `.env.example` y rellena lo que aplique. Lo mínimo para trabajar en serio
 | `YOUTUBE_API_KEY` | No | Estado live de YouTube en `/api/social/status` |
 | `NEXT_PUBLIC_*` | Varias | URL de la app, destinatarios de correo visibles en el cliente, etc. |
 
-Generar una clave de cifrado (32 bytes en base64):
+Generar una clave de cifrado (debe decodificar a **exactamente 32 bytes** en base64):
 
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
+
+Si ves `CREDENTIALS_ENC_KEY must decode to 32 bytes` en Vercel, la clave está mal generada o tiene espacios de más.
 
 En producción la app **no arranca** si faltan `MONGODB_URI`, `CRON_SECRET` o las claves de cifrado válidas. Eso es intencional.
 

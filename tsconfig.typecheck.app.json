@@ -2,8 +2,7 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "composite": false,
-    "incremental": true,
-    "tsBuildInfoFile": ".cache/typecheck-app.tsbuildinfo"
+    "incremental": false
   },
   "include": [
     "next-env.d.ts",

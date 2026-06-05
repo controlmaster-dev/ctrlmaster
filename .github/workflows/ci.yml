@@ -32,15 +32,14 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      # App y tests por separado: menos pico de RAM (runner ≈ 7 GB).
+      - name: Typecheck tests (rápido)
+        run: npm run typecheck:tests
+        env:
+          NODE_OPTIONS: --max-old-space-size=2048
       - name: Typecheck app
         run: npm run typecheck:app
         env:
-          NODE_OPTIONS: --max-old-space-size=5632
-      - name: Typecheck tests
-        run: npm run typecheck:tests
-        env:
-          NODE_OPTIONS: --max-old-space-size=3072
+          NODE_OPTIONS: --max-old-space-size=5120
 
   test:
     name: Tests
@@ -66,6 +65,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+        env:
+          CREDENTIALS_ENC_KEY: dGVzdC1jcmVkZW50aWFscy1rZXktMzJieXRlcyEhIQ==
+          FILE_ENC_KEY: dGVzdC1maWxlLWVuYy1rZXktMzJieXRlcyEhISE=
+          CRON_SECRET: test-cron-secret
       - name: Stop MongoDB
         if: always()
         run: docker rm -f mongo-ci

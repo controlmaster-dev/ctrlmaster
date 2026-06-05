@@ -1,8 +1,7 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "incremental": true,
-    "tsBuildInfoFile": ".cache/typecheck-tests.tsbuildinfo"
+    "incremental": false
   },
   "include": [
     "tests/**/*.ts"
