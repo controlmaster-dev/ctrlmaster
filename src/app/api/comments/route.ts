@@ -27,7 +27,7 @@ export const POST = apiHandler(
     const plain = newComment.toObject();
     const commentWithAuthor = {
       ...plain,
-      id: String(plain._id),
+      id: String(newComment._id),
       author,
     };
 

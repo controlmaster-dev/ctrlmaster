@@ -43,7 +43,7 @@ export const POST = apiHandler(
       action: "added",
       reaction: {
         ...plain,
-        id: String(plain._id),
+        id: String(newReaction._id),
         author: author
           ? { name: author.name, image: author.image }
           : { name: "Usuario", image: null },

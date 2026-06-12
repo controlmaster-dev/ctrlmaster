@@ -41,7 +41,7 @@ export async function createSpecialEvent(name: string, startDate: string, endDat
     isActive: true,
   });
   const o = doc.toObject();
-  return { ...o, id: String(o._id) };
+  return { ...o, id: String(doc._id) };
 }
 
 export async function deleteSpecialEvent(id: string) {

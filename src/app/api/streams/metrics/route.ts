@@ -21,6 +21,6 @@ export const POST = apiHandler(
       value: body.value ?? null,
     });
     const plain = metric.toObject();
-    return { ...plain, id: String(plain._id) };
+    return { ...plain, id: String(metric._id) };
   }
 );

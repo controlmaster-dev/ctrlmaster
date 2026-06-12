@@ -246,10 +246,10 @@ export async function createReport(data: CreateReportInput) {
       const plain = newReport.toObject();
       return {
         ...plain,
-        id: String(plain._id),
+        id: String(newReport._id),
         attachments: attachments.map((a) => {
           const o = a.toObject();
-          return { ...o, id: String(o._id) };
+          return { ...o, id: String(a._id) };
         }),
       };
     })
